@@ -255,6 +255,195 @@ body.no-scroll-fixed {
   opacity: 0.9;
 }
 
+/* ==================== SCROLL PROGRESS BAR ==================== */
+.scroll-progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  z-index: 10000;
+  pointer-events: none; /* не блокирует клики по контенту */
+}
+
+.scroll-progress-bar {
+  width: 0%;
+  height: 100%;
+  background: var(--vd-orange);
+  transition: width 0.1s ease-out;
+}
+
+/* Для пользователей, предпочитающих минимальную анимацию */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-progress-bar {
+    transition: none;
+  }
+}
+
+/* ==================== АНИМАЦИИ ПОЯВЛЕНИЯ ПРИ СКРОЛЛЕ ==================== */
+
+/* Базовое состояние – скрыто */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px); /* для fade‑up по умолчанию, но каждый тип переопределит */
+  will-change: opacity, transform;
+}
+
+/* Общие ключевые кадры для разных типов анимаций */
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeLeft {
+  0% { opacity: 0; transform: translateX(-30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeRight {
+  0% { opacity: 0; transform: translateX(30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes zoomIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes zoomOut {
+  0% { opacity: 0; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes rotateIn {
+  0% { opacity: 0; transform: rotate(-5deg) scale(0.95); }
+  100% { opacity: 1; transform: rotate(0) scale(1); }
+}
+@keyframes shake {
+  0% { transform: translateX(-10px); opacity: 0; }
+  25% { transform: translateX(10px); }
+  50% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes flipX {
+  0% { transform: perspective(400px) rotateY(90deg); opacity: 0; }
+  100% { transform: perspective(400px) rotateY(0); opacity: 1; }
+}
+@keyframes flipY {
+  0% { transform: perspective(400px) rotateX(90deg); opacity: 0; }
+  100% { transform: perspective(400px) rotateX(0); opacity: 1; }
+}
+@keyframes blurIn {
+  0% { filter: blur(10px); transform: scale(0.98); opacity: 0; }
+  100% { filter: blur(0); transform: scale(1); opacity: 1; }
+}
+@keyframes glowIn {
+  0% { opacity: 0; filter: drop-shadow(0 0 0 rgba(255, 102, 0, 0)); transform: scale(0.95); }
+  50% { opacity: 0.7; filter: drop-shadow(0 0 12px rgba(255, 102, 0, 0.8)); transform: scale(1.02); }
+  100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(255, 102, 0, 0)); transform: scale(1); }
+}
+@keyframes bounceIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes slideRotate {
+  0% { transform: translateX(-40px) rotate(-10deg); opacity: 0; }
+  100% { transform: translateX(0) rotate(0); opacity: 1; }
+}
+
+/* Привязка анимаций к классам и поддержка задержек через CSS-переменную */
+.fade-up.visible,
+.animate-on-scroll.fade-up.visible {
+  animation: fadeUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.fade-down.visible {
+  animation: fadeDown 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.fade-left.visible {
+  animation: fadeLeft 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.fade-right.visible {
+  animation: fadeRight 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.zoom-in.visible {
+  animation: zoomIn 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.zoom-out.visible {
+  animation: zoomOut 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.rotate-in.visible {
+  animation: rotateIn 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.shake.visible {
+  animation: shake 0.5s ease-in-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.flip-x.visible {
+  animation: flipX 0.6s ease-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.flip-y.visible {
+  animation: flipY 0.6s ease-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.blur-in.visible {
+  animation: blurIn 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.glow-in.visible {
+  animation: glowIn 0.5s ease-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.bounce-in.visible {
+  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+.slide-rotate.visible {
+  animation: slideRotate 0.5s ease-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+
+/* Классы задержек – задают переменную (без !important) */
+.delay-100 { --animation-delay: 0.1s; }
+.delay-200 { --animation-delay: 0.2s; }
+.delay-300 { --animation-delay: 0.3s; }
+.delay-400 { --animation-delay: 0.4s; }
+.delay-500 { --animation-delay: 0.5s; }
+.delay-600 { --animation-delay: 0.6s; }
+.delay-700 { --animation-delay: 0.7s; }
+.delay-800 { --animation-delay: 0.8s; }
+.delay-900 { --animation-delay: 0.9s; }
+
+/* Для пользователей, предпочитающих минимум анимации */
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-scroll,
+  .animate-on-scroll.visible,
+  .visible,
+  .visible *,
+  .shake.visible,
+  .flip-x.visible,
+  .flip-y.visible,
+  .blur-in.visible,
+  .glow-in.visible,
+  .bounce-in.visible,
+  .slide-rotate.visible {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+}
+
 /* ==================== НАВИГАЦИЯ ==================== */
 body:not(.app-ready) .page-loader {
   display: flex;
@@ -663,18 +852,6 @@ body.app-ready>footer {
   transform: scale(1.02);
 }
 
-@keyframes gentleFloat {
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
 /* Применяем анимацию к контейнеру слайд‑шоу */
 .hero-slideshow .slideshow-container {
   animation: gentleFloat 3s ease-in-out infinite;
@@ -851,7 +1028,6 @@ body.app-ready>footer {
   fill: currentColor;
 }
 
-
 /* ==================== УСЛУГИ ==================== */
 .services {
   padding: clamp(20px, 8vh, 25px) 5%;
@@ -893,7 +1069,7 @@ body.app-ready>footer {
 /* ==================== БАЗОВЫЕ СТИЛИ КАРТОЧЕК ==================== */
 .card {
   background: var(--vd-light-gray);
-  height: 270px;
+  height: 320px;           /* было 270px */
   border-radius: 20px;
   padding: clamp(1.0rem, 3vw, 1.5rem);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -935,13 +1111,14 @@ body.app-ready>footer {
   color: var(--metallic);
   line-height: 1.6;
   font-size: clamp(0.85rem, 1.2vw, 0.95rem);
+  flex: 1;
+  overflow-y: auto;
   padding-bottom: 0;
 }
 
-
 /* ==================== SERVICES ==================== */
-.service-card--wide {
-  grid-column: span 2;
+.service-card--fullwidth {
+  grid-column: 1 / -1;
 }
 
 .service-card-link,
@@ -977,6 +1154,7 @@ body.app-ready>footer {
   overflow: hidden;
   fill: var(--vd);
     transition: fill var(--duration-normal) var(--ease-smooth);
+  flex-shrink: 0;
 }
 
 .service-icon::before {
@@ -1082,6 +1260,9 @@ body.app-ready>footer {
   font-size: clamp(0.875rem, 1.2vw, 1rem);
 }
 
+.projects-preview {
+  padding: clamp(20px, 8vh, 25px) 5%;
+}
 
 /* ==================== CTA BLOCKS (SERVICES, NEWS, CONTACTS) ==================== */
 .cta-block {
@@ -1182,7 +1363,7 @@ body.app-ready>footer {
 /* ==================== ПАРТНЕРЫ ==================== */
 .partners {
   padding: clamp(20px, 8vh, 25px) 5%;
-  background: linear-gradient(135deg, var(--vd-light-gray) 0%, white 100%);
+  background: white;
 }
 
 .partners-header {
@@ -1339,7 +1520,7 @@ body.app-ready>footer {
 /* ==================== КОНТАКТЫ ==================== */
 .contact {
   padding: clamp(20px, 8vh, 25px) 5%;
-  background: white;
+  background: var(--vd-light-gray);
   scroll-margin-top: 100px;
 }
 
@@ -1681,6 +1862,29 @@ body.app-ready>footer {
   fill: var(--vd-dark);
 }
 
+.modal-back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--vd, #004E96);
+    padding: 0.5rem 0.75rem;
+    margin-right: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.modal-back-btn:hover {
+    background-color: rgba(0, 78, 150, 0.1);
+}
+.modal-back-btn:focus-visible {
+    outline: 3px solid #9CA3AF;
+    outline-offset: 2px;
+}
+
 /* Изображение новости внизу модального окна */
 .modal-container .modal-image {
   order: 3;
@@ -1692,7 +1896,6 @@ body.app-ready>footer {
   cursor: zoom-in;
   transition: opacity 0.2s ease;
   flex-shrink: 0;
-  border-radius: 0 0 16px 16px;
 }
 
 .modal-container .modal-image:hover {

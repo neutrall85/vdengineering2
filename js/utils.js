@@ -386,44 +386,6 @@ const Utils = (function() {
      */
     createShortSlug(title) {
       return this.generateSlug(title);
-    },
-
-    /**
-     * Генерирует полную ссылку на новость (заглушка для совместимости)
-     * @param {Object} news - объект новости
-     * @param {string} baseUrl - базовый URL
-     * @returns {string} '#'
-     */
-    generateNewsLink(news, baseUrl = 'news.html') {
-      return '#';
-    },
-
-    /**
-     * Создаёт slug для новости с ID для использования в хеше (заглушка)
-     * @param {string} title - заголовок новости
-     * @param {number} id - ID новости
-     * @returns {string} пустая строка
-     */
-    createNewsSlug(title, id) {
-      return '';
-    },
-
-    /**
-     * Извлекает ID новости из slug (заглушка)
-     * @param {string} slug - slug
-     * @returns {null} null
-     */
-    extractNewsIdFromSlug(slug) {
-      return null;
-    },
-
-    /**
-     * Парсит путь вида /YYYY/MM/DD/slug (заглушка)
-     * @param {string} path - путь
-     * @returns {null} null
-     */
-    parseNewsPath(path) {
-      return null;
     }
   };
 

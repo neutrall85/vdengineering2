@@ -9,6 +9,10 @@ class Application {
     this.modules = [];
     this.errors = [];
     this.services = {};
+    // НОВОЕ: переменные для прогресс-бара
+    this.scrollProgressElements = null;
+    this._boundProgressHandler = null;
+    this._boundResizeHandler = null;
   }
 
   async init() {
@@ -83,6 +87,9 @@ class Application {
       this._initImageLazyLoading();
       this._initPrefersReducedMotion();
       this._handleHashScroll();
+      
+      // НОВОЕ: инициализация полосы прогресса
+      this._initScrollProgressBar();
       
       this.initialized = true;
       if (this.errors.length > 0) {
@@ -400,6 +407,54 @@ class Application {
     }, 800);
   }
 
+  // НОВОЕ: инициализация прогресс-бара прокрутки
+  _initScrollProgressBar() {
+    // Избегаем дублирования
+    if (this.scrollProgressElements) return;
+
+    // Создаём контейнер и полосу
+    const container = document.createElement('div');
+    container.className = 'scroll-progress-container';
+    const bar = document.createElement('div');
+    bar.className = 'scroll-progress-bar';
+    container.appendChild(bar);
+    document.body.appendChild(container);
+    this.scrollProgressElements = { container, bar };
+
+    // Функция обновления ширины
+    const updateProgress = () => {
+      const winScroll = window.scrollY;
+      const height = document.documentElement.scrollHeight - window.innerHeight;
+      const scrolled = (winScroll / height) * 100;
+      requestAnimationFrame(() => {
+        bar.style.width = scrolled + '%';
+      });
+    };
+
+    // Привязываем обработчики с сохранением ссылок для удаления
+    this._boundProgressHandler = updateProgress;
+    this._boundResizeHandler = updateProgress;
+    window.addEventListener('scroll', this._boundProgressHandler);
+    window.addEventListener('resize', this._boundResizeHandler);
+    // Запускаем один раз для установки начального значения
+    updateProgress();
+  }
+
+  // НОВОЕ: удаление прогресс-бара (очистка ресурсов)
+  _destroyScrollProgressBar() {
+    if (this.scrollProgressElements) {
+      const { container, bar } = this.scrollProgressElements;
+      if (container && container.parentNode) container.parentNode.removeChild(container);
+      this.scrollProgressElements = null;
+    }
+    if (this._boundProgressHandler) {
+      window.removeEventListener('scroll', this._boundProgressHandler);
+      window.removeEventListener('resize', this._boundResizeHandler);
+      this._boundProgressHandler = null;
+      this._boundResizeHandler = null;
+    }
+  }
+
   _showError(error) {
     const errorContainer = document.getElementById('appError');
     if (errorContainer) {
@@ -472,6 +527,9 @@ class Application {
       document.removeEventListener('input', this._boundInputHandler);
       this._boundInputHandler = null;
     }
+    
+    // НОВОЕ: удаляем прогресс-бар
+    this._destroyScrollProgressBar();
     
     // Делегируем очистку модулям
     if (this.services.navigationManager && typeof this.services.navigationManager.destroy === 'function') {
@@ -632,4 +690,3 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
-

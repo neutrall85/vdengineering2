@@ -1,224 +1,221 @@
-// Данные услуг (12 пунктов) с детальными списками для модальных окон
-window.servicesData = {
-  1: {
-    title: 'Модификация конструкции планера',
-    details: [
-      'Внесение изменений в фюзеляж',
-      'Модификация крыльев и оперения',
-      'Изменения в гондолах/пилонах',
-      'Двери, люки, створки',
-      'Окна, фонари',
-      'Шасси и системы крепления'
-    ],
-    category: 'Конструкция планера'
-  },
-  2: {
-    title: 'Модификация газотурбинных двигателей',
-    details: [
-      'Капот и крепление двигателя',
-      'Воздухозаборник и дренаж',
-      'Топливная система двигателя',
-      'Зажигание и отбор воздуха',
-      'Управление двигателем и приборы контроля',
-      'Выхлоп (включая реверс тяги)',
-      'Масляная система и запуск'
-    ],
-    category: 'Двигательные системы'
-  },
-  3: {
-    title: 'Модификация авионики и пилотажно-навигационного оборудования',
-    details: [
-      'Информация об условиях полёта',
-      'Пространственное положение и курс',
-      'Автономное и зависимое определение положения',
-      'Приборные доски, панели управления',
-      'Бортовые регистраторы и вычислители',
-      'Системы оповещения, индикации, сбора и передачи данных'
-    ],
-    category: 'Авионика'
-  },
-  4: {
-    title: 'Модификация систем кондиционирования и жизнеобеспечения',
-    details: [
-      'Наддув и распределение воздуха',
-      'Регулирование давления',
-      'Обогрев и охлаждение',
-      'Регулирование температуры и влажности',
-      'Интегрированная система жизнеобеспечения'
-    ],
-    category: 'Кондиционирование'
-  },
-  5: {
-    title: 'Модификация систем электроснабжения и связи',
-    details: [
-      'Генераторы, подсистемы переменного и постоянного тока',
-      'Наземное питание и распределение',
-      'Контроль и защита, управление электроснабжением',
-      'Голосовая, спутниковая связь',
-      'Цифровой обмен данными',
-      'Оповещение пассажиров, внутренняя связь',
-      'Звуко- и видеозапись'
-    ],
-    category: 'Электрооборудование'
-  },
-  6: {
-    title: 'Модификация топливной, гидравлической и противообледенительной систем',
-    details: [
-      'Хранение, распределение, слив топлива',
-      'Управление заправкой и центровкой',
-      'Основная и резервная гидравлические системы',
-      'Защита аэродинамических поверхностей',
-      'Защита воздухозаборников, приёмников давления',
-      'Защита окон, антенн, винтов, водопроводов',
-      'Средства обнаружения и сигнализации обледенения'
-    ],
-    category: 'Системы'
-  },
-  7: {
-    title: 'Модификация систем управления воздушным судном',
-    details: [
-      'Поперечное, путевое, продольное управление',
-      'Управление стабилизатором',
-      'Управление закрылками, интерцепторами',
-      'Тормозные щитки, механизация крыла',
-      'Стояночные стопоры и демпферы'
-    ],
-    category: 'Управление'
-  },
-  8: {
-    title: 'Модификация систем обеспечения полёта',
-    details: [
-      'Кислородная система (экипаж, пассажиры, переносная)',
-      'Пневматическая система (распределение, сигнализация)',
-      'Вакуумная система (распределение, сигнализация)',
-      'Водоснабжение и утилизация отходов'
-    ],
-    category: 'Обеспечение полёта'
-  },
-  9: {
-    title: 'Модификация грузового оборудования и средств наземного обслуживания',
-    details: [
-      'Грузовые отсеки и системы погрузки',
-      'Крепление грузов',
-      'Воздушное десантирование',
-      'Наземное оборудование для загрузки, разгрузки, обработки грузов'
-    ],
-    category: 'Грузовое оборудование'
-  },
-  10: {
-    title: 'Модификация бытового, аварийно-спасательного, светотехнического оборудования и пассажирских систем',
-    details: [
-      'Кабина экипажа, пассажирский салон (кресла, буфет/кухня, туалеты)',
-      'Аварийно-спасательное оборудование',
-      'Изоляция, облицовка',
-      'Освещение (кабина, салоны, отсеки, наружное, аварийное)',
-      'Пассажирские электронные системы (развлечения, связь, накопители, мониторинг)'
-    ],
-    category: 'Интерьер'
-  },
-  11: {
-    title: 'Разработка документации для наземного обслуживания, нивелировки, взвешивания, информации для экипажа и маркировки',
-    details: [
-      'Буксировка, руление, подъём на подъёмниках',
-      'Крепление, аварийная эвакуация',
-      'Транспортирование, заправка/слив',
-      'Плановое и неплановое обслуживание',
-      'Нивелировка, взвешивание, контроль массы и центровки',
-      'Информация для экипажа',
-      'Внешние цветовые схемы, маркировки, трафареты, надписи'
-    ],
-    category: 'Документация'
-  },
-  12: {
-    title: 'Доказательство соответствия лётной годности и сертификация второстепенных изменений',
-    details: [
-      'Расчёт выработки ресурса',
-      'Прогнозирование усталости конструкции',
-      'Анализ эксплуатационных нагрузок (компоненты II и III класса)',
-      'Оформление изменений, не требующих масштабной сертификации',
-      'Выпуск технической документации для внедрения'
-    ],
-    category: 'Сертификация'
+/**
+ * Инициализация страницы услуг
+ * ООО "Волга-Днепр Инжиниринг"
+ */
+
+// ------------------------------------------------------------
+//  Галерея изображений для услуги (с поддержкой лайтбокса)
+// ------------------------------------------------------------
+function initServiceGallery(images) {
+  const container = document.getElementById('serviceModalImageContainer');
+  const mainImage = document.getElementById('serviceModalImage');
+  if (!container || !mainImage) return;
+
+  // Сначала скрываем контейнер
+  container.style.display = 'none';
+
+  if (!images || images.length === 0) {
+    mainImage.src = 'assets/images/placeholder.jpg';
+    mainImage.alt = 'Изображение услуги';
+    mainImage.style.cursor = 'default';
+    return;
   }
-};
 
-// Функция открытия модального окна с деталями услуги
-function openServiceModal(title, details, category) {
-  const modalTitle = document.getElementById('serviceModalTitle');
-  const modalContent = document.getElementById('serviceModalContent');
-  const modalCategory = document.getElementById('serviceModalCategory');
+  // Показываем контейнер, так как изображения есть
+  container.style.display = 'flex';
+  container.innerHTML = '';
+  container.appendChild(mainImage);
 
-  if (modalTitle && modalContent) {
-    const sanitizer = window.Utils?.Sanitizer;
-    modalTitle.textContent = sanitizer ? sanitizer.escapeHtml(title) : title;
-    modalCategory.textContent = sanitizer ? sanitizer.escapeHtml(category) : category;
-    
-    // Безопасное создание списка через DOM API
-    modalContent.replaceChildren();
-    const ul = document.createElement('ul');
-    ul.className = 'modal-list-ul';
-    details.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'modal-list-li';
-      li.textContent = sanitizer ? sanitizer.escapeHtml(item) : item;
-      ul.appendChild(li);
-    });
-    modalContent.appendChild(ul);
+  let currentIndex = 0;
 
-    if (typeof modalManager !== 'undefined') {
-      modalManager.open('service');
-    } else {
-      console.warn('ModalManager not available');
+  function updateMainImage(index) {
+    mainImage.src = images[index];
+    mainImage.alt = `Изображение ${index + 1} из ${images.length}`;
+  }
+
+  // ------------------------------------------------------------
+  //  Лайтбокс с навигацией
+  // ------------------------------------------------------------
+  let lightboxOpen = false;
+  let lightboxCurrentIndex = currentIndex;
+
+  function openLightbox() {
+    if (lightboxOpen) return;
+    const lightboxOverlay = document.getElementById('lightboxOverlay');
+    const lightboxImage = document.getElementById('lightboxImage');
+    if (!lightboxOverlay || !lightboxImage) return;
+
+    lightboxCurrentIndex = currentIndex;
+    updateLightboxImage(lightboxCurrentIndex);
+    lightboxOverlay.classList.add('active');
+    lightboxOpen = true;
+
+    // Блокируем скролл
+    if (window.ScrollManager) ScrollManager.lock();
+
+    // Обработчики навигации (удаляются при закрытии)
+    const closeLightbox = () => {
+      lightboxOverlay.classList.remove('active');
+      if (window.ScrollManager) ScrollManager.unlock();
+      lightboxOpen = false;
+      removeLightboxHandlers();
+    };
+
+    function updateLightboxImage(index) {
+      lightboxImage.src = images[index];
+      lightboxImage.alt = `Изображение ${index + 1} из ${images.length}`;
+      updateLightboxIndicators(index);
     }
+
+    function updateLightboxIndicators(index) {
+      const indicatorsContainer = document.getElementById('lightboxIndicators');
+      if (!indicatorsContainer) return;
+      const indicators = indicatorsContainer.querySelectorAll('.lightbox-indicator');
+      indicators.forEach((ind, i) => {
+        ind.classList.toggle('active', i === index);
+      });
+    }
+
+    function navigate(direction) {
+      lightboxCurrentIndex = (lightboxCurrentIndex + direction + images.length) % images.length;
+      updateLightboxImage(lightboxCurrentIndex);
+    }
+
+    // Создаём обработчики
+    const prevBtn = document.getElementById('lightboxPrevBtn');
+    const nextBtn = document.getElementById('lightboxNextBtn');
+    const closeBtn = document.getElementById('lightboxCloseBtn');
+
+    const prevHandler = () => navigate(-1);
+    const nextHandler = () => navigate(1);
+    const closeHandler = closeLightbox;
+    const overlayClickHandler = (e) => {
+      if (e.target === lightboxOverlay) closeLightbox();
+    };
+    const keydownHandler = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === 'ArrowRight') navigate(1);
+    };
+
+    // Применяем обработчики
+    if (prevBtn) prevBtn.addEventListener('click', prevHandler);
+    if (nextBtn) nextBtn.addEventListener('click', nextHandler);
+    if (closeBtn) closeBtn.addEventListener('click', closeHandler);
+    lightboxOverlay.addEventListener('click', overlayClickHandler);
+    document.addEventListener('keydown', keydownHandler);
+
+    // Функция удаления обработчиков
+    function removeLightboxHandlers() {
+      if (prevBtn) prevBtn.removeEventListener('click', prevHandler);
+      if (nextBtn) nextBtn.removeEventListener('click', nextHandler);
+      if (closeBtn) closeBtn.removeEventListener('click', closeHandler);
+      lightboxOverlay.removeEventListener('click', overlayClickHandler);
+      document.removeEventListener('keydown', keydownHandler);
+    }
+
+    // Сохраняем функцию удаления в свойство оверлея для возможной ручной очистки
+    lightboxOverlay._closeLightboxHandler = closeLightbox;
+    lightboxOverlay._removeHandlers = removeLightboxHandlers;
   }
+
+  // Открытие лайтбокса при клике на основное изображение
+  mainImage.style.cursor = 'zoom-in';
+  mainImage.onclick = openLightbox;
+
+  // ------------------------------------------------------------
+  //  Галерея внутри модального окна (если изображений несколько)
+  // ------------------------------------------------------------
+  if (images.length === 1) {
+    updateMainImage(0);
+    return;
+  }
+
+  // Кнопка "Предыдущее"
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'gallery-nav gallery-nav-prev';
+  prevBtn.setAttribute('aria-label', 'Предыдущее изображение');
+  prevBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>';
+  prevBtn.onclick = () => {
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    updateMainImage(currentIndex);
+    updateIndicators();
+  };
+
+  // Кнопка "Следующее"
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'gallery-nav gallery-nav-next';
+  nextBtn.setAttribute('aria-label', 'Следующее изображение');
+  nextBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>';
+  nextBtn.onclick = () => {
+    currentIndex = (currentIndex + 1) % images.length;
+    updateMainImage(currentIndex);
+    updateIndicators();
+  };
+
+  // Индикаторы (точки) внутри модалки
+  const indicatorsContainer = document.createElement('div');
+  indicatorsContainer.className = 'gallery-indicators';
+
+  function updateIndicators() {
+    const indicators = indicatorsContainer.querySelectorAll('.gallery-indicator');
+    indicators.forEach((ind, i) => {
+      ind.classList.toggle('active', i === currentIndex);
+    });
+  }
+
+  images.forEach((_, idx) => {
+    const indicator = document.createElement('button');
+    indicator.className = 'gallery-indicator' + (idx === 0 ? ' active' : '');
+    indicator.setAttribute('aria-label', `Изображение ${idx + 1}`);
+    indicator.onclick = () => {
+      currentIndex = idx;
+      updateMainImage(currentIndex);
+      updateIndicators();
+    };
+    indicatorsContainer.appendChild(indicator);
+  });
+
+  container.appendChild(prevBtn);
+  container.appendChild(nextBtn);
+  container.appendChild(indicatorsContainer);
+  updateMainImage(0);
 }
 
-function closeServiceModal() {
-  if (typeof modalManager !== 'undefined') {
-    modalManager.close('service');
+// ------------------------------------------------------------
+//  Инициализация страницы услуг (подстановка данных из servicesData)
+// ------------------------------------------------------------
+function initServicesPage() {
+  if (!window.servicesData) {
+    if (window.Logger) {
+      Logger.WARN('servicesData не найдена, карточки услуг не обновлены');
+    }
+    return;
+  }
+
+  const serviceCards = document.querySelectorAll('.service-card[data-service-id]');
+
+  serviceCards.forEach(card => {
+    const serviceId = card.getAttribute('data-service-id');
+    const data = window.servicesData[serviceId];
+    if (!data) return;
+
+    const titleEl = card.querySelector('.card-title');
+    if (titleEl && data.title) {
+      titleEl.textContent = data.title;
+    }
+
+    const descEl = card.querySelector('.card-desc');
+    if (descEl && data.shortDescription) {
+      descEl.textContent = data.shortDescription;
+    }
+  });
+
+  if (window.Logger) {
+    Logger.INFO('initServicesPage: данные подставлены в карточки услуг');
   }
 }
 
 // Экспортируем функции в глобальную область
-window.openServiceModal = openServiceModal;
-window.closeServiceModal = closeServiceModal;
-
-// Хранилище для обработчиков страницы услуг
-const _servicesPageHandlers = {
-  requestQuoteHandler: null
-};
-
-// Экспортируем функцию инициализации для module режима
-window.initServicesPage = function() {
-  const closeBtn = document.getElementById('serviceModalCloseBtn');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', closeServiceModal);
-  }
-
-  // Кнопка "Запросить КП" внутри страницы (если есть)
-  const requestQuoteBtn = document.getElementById('servicesRequestQuoteBtn');
-  if (requestQuoteBtn) {
-    _servicesPageHandlers.requestQuoteHandler = () => {
-      if (typeof window.openModal === 'function') {
-        window.openModal();
-      }
-    };
-    requestQuoteBtn.addEventListener('click', _servicesPageHandlers.requestQuoteHandler);
-  }
-};
-
-/**
- * Очистка ресурсов страницы услуг
- */
-window.destroyServicesPage = function() {
-  const closeBtn = document.getElementById('serviceModalCloseBtn');
-  if (closeBtn) {
-    closeBtn.removeEventListener('click', closeServiceModal);
-  }
-  
-  const requestQuoteBtn = document.getElementById('servicesRequestQuoteBtn');
-  if (requestQuoteBtn && _servicesPageHandlers.requestQuoteHandler) {
-    requestQuoteBtn.removeEventListener('click', _servicesPageHandlers.requestQuoteHandler);
-    _servicesPageHandlers.requestQuoteHandler = null;
-  }
-};
+window.initServiceGallery = initServiceGallery;
+window.initServicesPage = initServicesPage;

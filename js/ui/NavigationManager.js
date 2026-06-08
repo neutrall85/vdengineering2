@@ -230,7 +230,8 @@ class NavigationManager {
 
     // Resize handler for closing menu on desktop
     this.boundResizeHandler = () => {
-      if (window.innerWidth > 1048 && this.mobileMenu.classList.contains('active')) {
+      const breakpoint = window.CONFIG?.LAYOUT?.MOBILE_BREAKPOINT || 1048;
+      if (window.innerWidth > breakpoint && this.mobileMenu.classList.contains('active')) {
         this.closeMobileMenu();
       }
     };

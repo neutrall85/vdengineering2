@@ -24,6 +24,8 @@
   <script src="js/data/policyDocuments.js" defer></script>
   <script src="js/ui/ScrollManager.js" defer></script>
   <script src="js/ui/ModalManager.js" defer></script>
+  <script src="js/ui/templates/NavbarTemplate.js" defer></script>
+  <script src="js/ui/templates/FooterTemplate.js" defer></script>
   <script src="js/ui/templates/ComponentTemplates.js" defer></script>
   <script src="js/ui/templates/ModalTemplates.js" defer></script>
   <script src="js/ui/ComponentLoader.js" defer></script>
@@ -85,8 +87,8 @@
 <div id="appError" hidden></div>
 <div id="navbar"></div>
 <section class="page-header">
-  <h1 class="page-header-title">Новости и события</h1>
-  <p class="page-header-desc">Следите за последними достижениями и новостями компании</p>
+  <h1 class="page-header-title animate-on-scroll fade-in">Новости и события</h1>
+  <p class="page-header-desc animate-on-scroll fade-in">Следите за последними достижениями и новостями компании</p>
 </section>
 
 <section class="news-full">
@@ -96,10 +98,11 @@
     <button class="news-tab" data-year="2024">2024</button>
     <button class="news-tab" data-year="2023">2023</button>
     <button class="news-tab" data-year="2022">2022</button>
+    <button class="news-tab" data-tab="zozh">ЗОЖ и другие активности</button>
   </div>
 
   <div class="news-tab-content active" id="tab-2026">
-    <div class="year-divider">
+    <div class="year-divider animate-on-scroll fade-up">
       <div class="year-divider-line"></div>
       <div class="year-divider-content">
         <span class="year-divider-year">2026</span>
@@ -107,11 +110,11 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto" id="newsGrid-2026"></div>
+    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2026"></div>
   </div>
 
   <div class="news-tab-content" id="tab-2025">
-    <div class="year-divider">
+    <div class="year-divider animate-on-scroll fade-up">
       <div class="year-divider-line"></div>
       <div class="year-divider-content">
         <span class="year-divider-year">2025</span>
@@ -119,11 +122,11 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto" id="newsGrid-2025"></div>
+    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2025"></div>
   </div>
 
   <div class="news-tab-content" id="tab-2024">
-    <div class="year-divider">
+    <div class="year-divider animate-on-scroll fade-up">
       <div class="year-divider-line"></div>
       <div class="year-divider-content">
         <span class="year-divider-year">2024</span>
@@ -131,11 +134,11 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto" id="newsGrid-2024"></div>
+    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2024"></div>
   </div>
 
   <div class="news-tab-content" id="tab-2023">
-    <div class="year-divider">
+    <div class="year-divider animate-on-scroll fade-up">
       <div class="year-divider-line"></div>
       <div class="year-divider-content">
         <span class="year-divider-year">2023</span>
@@ -147,7 +150,7 @@
   </div>
 
   <div class="news-tab-content" id="tab-2022">
-    <div class="year-divider">
+    <div class="year-divider animate-on-scroll fade-up">
       <div class="year-divider-line"></div>
       <div class="year-divider-content">
         <span class="year-divider-year">2022</span>
@@ -155,7 +158,17 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto" id="newsGrid-2022"></div>
+    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2022"></div>
+  </div>
+  
+  <div class="news-tab-content" id="tab-zozh">
+    <div class="news-grid" id="newsGrid-zozh">
+      <div class="year-divider-content">
+        <span class="year-divider-year">
+          <h1>Раздел в разработке!</h1>
+        </span>
+      </div>
+    </div>
   </div>
 </section>
 

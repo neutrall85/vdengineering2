@@ -138,57 +138,47 @@ class NewsManager {
 
   _initTabs() {
     const tabs = document.querySelectorAll('.news-tab');
-    
-    if (tabs.length === 0) {
-      Logger.INFO('No news tabs found');
-      return;
-    }
-    
+    if (tabs.length === 0) return;
+
     tabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
-        const year = tab.dataset.year;
-        if (!year) return;
-        
+        // Определяем идентификатор: год или имя вкладки
+        let tabId = tab.dataset.year;
+        if (!tabId) tabId = tab.dataset.tab;
+        if (!tabId) return;
+
+        // Активируем таб
         tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        
+
+        // Показываем нужный контент
         document.querySelectorAll('.news-tab-content').forEach(content => {
           content.classList.remove('active');
         });
-        
-        const activeContent = document.getElementById(`tab-${year}`);
+        const activeContent = document.getElementById(`tab-${tabId}`);
         if (activeContent) {
           activeContent.classList.add('active');
         }
-        
-        this.activeYear = year;
-        const container = document.getElementById(`newsGrid-${year}`);
+
+        // Рендерим новости
+        const container = document.getElementById(`newsGrid-${tabId}`);
         if (container && this.renderer) {
-          this.renderer.render(year, container);
+          // Передаём ключ (год или 'zozh')
+          this.renderer.render(tabId, container);
         }
       });
     });
-    
-    // Активируем первый таб и загружаем новости
+
+    // Активируем первый таб (или тот, который уже имеет класс active)
     const activeTab = document.querySelector('.news-tab.active');
-    if (activeTab?.dataset.year) {
-      setTimeout(() => {
-        const year = activeTab.dataset.year;
-        const container = document.getElementById(`newsGrid-${year}`);
+    if (activeTab) {
+      let initialId = activeTab.dataset.year || activeTab.dataset.tab;
+      if (initialId) {
+        const container = document.getElementById(`newsGrid-${initialId}`);
         if (container && this.renderer) {
-          this.renderer.render(year, container);
+          this.renderer.render(initialId, container);
         }
-        this.activeYear = year;
-      }, 100);
-    } else if (tabs[0]) {
-      // Если нет активного таба, активируем первый
-      tabs[0].classList.add('active');
-      const year = tabs[0].dataset.year;
-      const container = document.getElementById(`newsGrid-${year}`);
-      if (container && this.renderer) {
-        this.renderer.render(year, container);
       }
-      this.activeYear = year;
     }
   }
 

@@ -12,7 +12,7 @@ class ModalManager {
   constructor() {
     this.modals = new Map();
     this.activeModal = null;
-    this.activeModalStack = []; // Стек для хранения родительских модалок
+    this.activeModalStack = [];
     this.cleanupHandlers = new Map();
     this._boundKeyHandler = null;
     this._boundFocusTrapHandler = null;
@@ -31,61 +31,39 @@ class ModalManager {
     return this;
   }
 
-  /**
-   * Настраивает клик по overlay для закрытия модалки
-   * Клик обрабатывается только если цель - сам overlay (а не контент внутри)
-   * Также добавляет кнопку закрытия в модалку если её нет
-   * РЕФАКТОРИНГ: убрано дублирование обработчиков через проверку флага
-   */
   _setupOverlayClick(key) {
     const config = this.modals.get(key);
     if (!config) return;
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return;
     
-    // Добавляем кнопку закрытия если её ещё нет
     this._ensureCloseButton(overlay);
     
-    // Проверяем, не был ли уже добавлен обработчик (защита от дублирования)
     if (overlay._clickHandlerAttached) return;
     
-    // Единый делегированный обработчик для всех overlay
     const clickHandler = (e) => {
-      // Защита от XSS: проверяем что e.target существует и является элементом
       if (!e.target || !e.target.nodeType) return;
-      
-      // Закрываем только если клик был по самому overlay (не по контенту)
       if (e.target === overlay) {
         this.close(key);
       }
     };
     
-    // Используем capture phase для более надёжного перехвата события
     overlay.addEventListener('click', clickHandler, { capture: false });
     overlay._clickHandlerAttached = true;
     overlay._clickHandler = clickHandler;
     
-    // Сохраняем ссылку на обработчик для последующего удаления
     this.cleanupHandlers.set(key, { overlay, clickHandler });
   }
 
-  /**
-   * Добавляет кнопку закрытия в модалку если она отсутствует
-   * DRY: единая точка создания кнопки для всех модалок
-   */
   _ensureCloseButton(overlay) {
     const container = overlay.querySelector('.modal-container, .modal-container-proposal, .details-modal-container');
     if (!container) return;
-    
-    // Проверяем, есть ли уже кнопка
     if (container.querySelector('.modal-close')) return;
     
-    // Создаём кнопку закрытия
     const closeBtn = document.createElement('button');
     closeBtn.className = 'modal-close';
     closeBtn.setAttribute('aria-label', 'Закрыть');
     
-    // Создаём SVG через DOM API вместо innerHTML для безопасности
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -93,33 +71,18 @@ class ModalManager {
     svg.appendChild(path);
     closeBtn.appendChild(svg);
     
-    // Вставляем кнопку в начало контейнера
     container.insertBefore(closeBtn, container.firstChild);
   }
 
-  /**
-   * Инициализирует глобальные обработчики событий:
-   * - KeyboardEvent (Escape) для закрытия активной модалки
-   * - ClickEvent для кнопок .modal-close
-   * Защита от повторной инициализации через флаг _handlersInitialized
-   */
   _initGlobalHandlers() {
-    // Защита от повторной инициализации обработчиков
-    if (this._handlersInitialized) {
-      return;
-    }
+    if (this._handlersInitialized) return;
     
-    // Обработчик нажатия клавиш (Escape)
     this._boundKeyHandler = (e) => {
       if (e.key !== 'Escape') return;
-      
-      // Закрываем активную модалку через ModalManager
       if (this.activeModal) {
         this.close(this.activeModal);
         return;
       }
-      
-      // Fallback для policy modal - используем централизованное закрытие
       const policyModal = document.getElementById('policyModalOverlay');
       if (policyModal && policyModal.classList.contains('active')) {
         this.close('policy');
@@ -127,14 +90,11 @@ class ModalManager {
     };
     document.addEventListener('keydown', this._boundKeyHandler);
 
-    // Делегированный обработчик кликов по кнопкам закрытия
     this._boundClickHandler = (e) => {
       const closeBtn = e.target.closest('.modal-close');
       if (!closeBtn) return;
-      
       const overlay = closeBtn.closest('.modal-overlay');
       if (!overlay) return;
-      
       const overlayId = overlay.id;
       const modalKeyMap = {
         'modalOverlay': 'form',
@@ -147,70 +107,50 @@ class ModalManager {
         'serviceModalOverlay': 'service',
         'policyModalOverlay': 'policy'
       };
-      
       const modalKey = modalKeyMap[overlayId];
-      
-      // Закрываем через ModalManager если модалка зарегистрирована
       if (modalKey && this.modals.has(modalKey)) {
         this.close(modalKey);
       } else {
-        // Fallback для незарегистрированных модалок
         overlay.classList.remove('active');
         ScrollManager.unlock();
       }
     };
     document.addEventListener('click', this._boundClickHandler, { capture: false });
     
-    // Глобальный делегированный обработчик для открытия модалок через data-modal-open
     this._boundOpenHandler = (e) => {
       const trigger = e.target.closest('[data-modal-open]');
       if (!trigger) return;
-      
       const modalType = trigger.getAttribute('data-modal-open');
       if (!modalType) return;
-      
       e.preventDefault();
       this._handleModalOpen(modalType, trigger);
     };
     document.addEventListener('click', this._boundOpenHandler, { capture: false });
     
-    // Устанавливаем флаг после успешной инициализации
     this._handlersInitialized = true;
   }
 
-  /**
-   * Централизованная обработка открытия модалок
-   * @param {string} modalType - тип модалки из data-modal-open
-   * @param {HTMLElement} trigger - элемент-триггер
-   */
   _handleModalOpen(modalType, trigger) {
     switch (modalType) {
       case 'proposal':
       case 'form':
         this.open('proposal');
         break;
-        
       case 'application':
       case 'universal':
         this._openUniversalApplication(trigger);
         break;
-        
       case 'project':
         this._openProject(trigger);
         break;
-        
       case 'service':
         this._openService(trigger);
         break;
-        
       default:
         Logger.WARN(`Unknown modal type: ${modalType}`);
     }
   }
 
-  /**
-   * Открывает универсальное модальное окно заявки
-   */
   _openUniversalApplication(trigger) {
     const vacancyId = trigger ? trigger.getAttribute('data-vacancy-id') : null;
     const mode = vacancyId ? 'vacancy' : 'application';
@@ -224,8 +164,8 @@ class ModalManager {
       if (modalTitle) modalTitle.textContent = 'Отправить заявку';
       if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
       if (successTitle) successTitle.textContent = 'Данные отправлены!';
+      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы свяжемся с вами';
     } else {
-      // Режим вакансии — ищем данные в карточке
       const vacancyCard = trigger?.closest('.vacancy-card');
       const vacancyTitle = vacancyCard?.querySelector('.vacancy-title')?.textContent || '';
       const vacancyDepartment = vacancyCard?.querySelector('.vacancy-department')?.textContent || '';
@@ -239,9 +179,6 @@ class ModalManager {
     this.open('universal');
   }
 
-  /**
-   * Открывает модальное окно проекта
-   */
   _openProject(trigger) {
     const projectId = trigger?.getAttribute('data-project-id');
     if (!projectId || !window.PROJECTS_DATA || !window.PROJECTS_DATA[projectId]) {
@@ -276,7 +213,6 @@ class ModalManager {
     });
     modalContent.appendChild(ul);
     
-    // Инициализация галереи
     if (typeof initProjectGallery === 'function') {
       initProjectGallery(project.images, modalImageContainer, modalImage);
     }
@@ -284,9 +220,6 @@ class ModalManager {
     this.open('project');
   }
 
-  /**
-   * Открывает модальное окно услуги
-   */
   _openService(trigger) {
     const serviceId = trigger?.getAttribute('data-service-id');
     if (!serviceId || !window.servicesData || !window.servicesData[serviceId]) {
@@ -319,6 +252,10 @@ class ModalManager {
     });
     modalContent.appendChild(ul);
     
+    if (typeof initServiceGallery === 'function') {
+      initServiceGallery(service.images);
+    }
+    
     this.open('service');
   }
 
@@ -329,28 +266,22 @@ class ModalManager {
       return false;
     }
 
-    // Синхронная проверка – предотвращает повторные вызовы
     if (this.activeModal === key) {
       return true;
     }
 
-    // Проверяем флаг keepParentModal - если true, не закрываем текущую модалку, а сохраняем в стек
     const keepParentModal = options.keepParentModal === true;
     
     if (this.activeModal && this.activeModal !== key && !keepParentModal) {
       this.close(this.activeModal);
     } else if (this.activeModal && this.activeModal !== key && keepParentModal) {
-      // Сохраняем текущую модалку в стек для последующего восстановления
       this.activeModalStack.push(this.activeModal);
     }
 
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return false;
 
-    // ✅ Устанавливаем активное окно синхронно
     this.activeModal = key;
-
-    // Блокируем скролл через централизованный ScrollManager
     ScrollManager.lock();
 
     setTimeout(() => {
@@ -370,7 +301,6 @@ class ModalManager {
         setTimeout(() => focusTarget.focus(), window.CONFIG?.PERFORMANCE?.MODAL_FOCUS_DELAY_MS || 100);
       }
 
-      // Инициализируем focus trap для доступности
       this._initFocusTrap(overlay);
 
       if (config.onOpen) config.onOpen(overlay);
@@ -385,48 +315,42 @@ class ModalManager {
   }
 
   close(key) {
-      const config = this.modals.get(key);
-      if (!config) return false;
+    const config = this.modals.get(key);
+    if (!config) return false;
 
-      if (this.activeModal !== key) return false;
+    if (this.activeModal !== key) return false;
 
-      const overlay = document.getElementById(config.overlayId);
-      if (!overlay) return false;
+    const overlay = document.getElementById(config.overlayId);
+    if (!overlay) return false;
 
-      // Удаляем focus trap перед закрытием
-      this._removeFocusTrap();
+    this._removeFocusTrap();
+    overlay.classList.remove('active');
+    
+    const previousModal = this.activeModalStack && this.activeModalStack.length > 0 
+      ? this.activeModalStack.pop() 
+      : null;
+    
+    if (!previousModal) {
+      ScrollManager.unlock();
+    } else {
+      ScrollManager.state.lockCount--;
+    }
+    
+    this.activeModal = previousModal;
 
-      overlay.classList.remove('active');
-      
-      // Проверяем, есть ли родительская модалка, которую нужно восстановить как активную
-      const previousModal = this.activeModalStack && this.activeModalStack.length > 0 
-        ? this.activeModalStack.pop() 
-        : null;
-      
-      // Разблокируем скролл только если нет родительской модалки
-      if (!previousModal) {
-          ScrollManager.unlock();
-      } else {
-          ScrollManager.state.lockCount--;
-      }
-      
-      this.activeModal = previousModal;
+    if (key === 'proposal' && !previousModal && typeof formManager !== 'undefined' && typeof formManager._resetForm === 'function') {
+      formManager._resetForm();
+    }
 
-      // Сброс формы КП после закрытия модалки (только если это не вложенная модалка)
-      if (key === 'proposal' && !previousModal && typeof formManager !== 'undefined' && typeof formManager._resetForm === 'function') {
-          formManager._resetForm();
-      }
+    if (key === 'universal' && !previousModal && typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.resetForm === 'function') {
+      UniversalApplicationModalManager.resetForm();
+    }
 
-      // Сброс формы вакансий
-      if (key === 'universal' && !previousModal && typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.resetForm === 'function') {
-          UniversalApplicationModalManager.resetForm();
-      }
-
-      if (config.onClose) config.onClose(overlay);
-      if (window.Services?.eventBus) {
-          window.Services.eventBus.emit('modal:closed', { key });
-      }
-      return true;
+    if (config.onClose) config.onClose(overlay);
+    if (window.Services?.eventBus) {
+      window.Services.eventBus.emit('modal:closed', { key });
+    }
+    return true;
   }
 
   isOpen(key = null) {
@@ -442,50 +366,31 @@ class ModalManager {
     });
   }
   
-  /**
-   * Инициализирует focus trap для модального окна
-   * Фокус циклически перемещается внутри модалки при навигации Tab
-   * ВАЖНО: Перед созданием нового обработчика обязательно удаляем старый (защита от утечек памяти)
-   */
   _initFocusTrap(overlay) {
     if (!overlay) return;
-    
-    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Удаляем существующий focus trap перед созданием нового
-    // Это предотвращает утечку памяти при повторном открытии модалки
     this._removeFocusTrap();
     
-    // Находим все фокусируемые элементы внутри модалки
     const focusableElements = overlay.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
     if (focusableElements.length === 0) return;
     
     const firstFocusable = focusableElements[0];
     const lastFocusable = focusableElements[focusableElements.length - 1];
     
-    // Обработчик для перехвата Tab - создаем один раз и сохраняем ссылку
     this._boundFocusTrapHandler = (e) => {
       if (e.key !== 'Tab') return;
-      
-      // Если Shift+Tab и мы на первом элементе, переходим к последнему
       if (e.shiftKey && document.activeElement === firstFocusable) {
         e.preventDefault();
         lastFocusable.focus();
-      }
-      // Если просто Tab и мы на последнем элементе, переходим к первому
-      else if (!e.shiftKey && document.activeElement === lastFocusable) {
+      } else if (!e.shiftKey && document.activeElement === lastFocusable) {
         e.preventDefault();
         firstFocusable.focus();
       }
     };
-    
     document.addEventListener('keydown', this._boundFocusTrapHandler);
   }
   
-  /**
-   * Удаляет focus trap
-   */
   _removeFocusTrap() {
     if (this._boundFocusTrapHandler) {
       document.removeEventListener('keydown', this._boundFocusTrapHandler);
@@ -493,9 +398,6 @@ class ModalManager {
     }
   }
   
-  /**
-   * Очистка ресурсов при уничтожении
-   */
   destroy() {
     if (this._boundKeyHandler) {
       document.removeEventListener('keydown', this._boundKeyHandler);
@@ -509,11 +411,7 @@ class ModalManager {
       document.removeEventListener('click', this._boundOpenHandler);
       this._boundOpenHandler = null;
     }
-    
-    // Удаляем focus trap если активен
     this._removeFocusTrap();
-    
-    // Удаляем обработчики кликов по overlay
     this.cleanupHandlers.forEach((handlerData, key) => {
       const { overlay, clickHandler } = handlerData;
       if (overlay && clickHandler) {
@@ -521,22 +419,15 @@ class ModalManager {
       }
     });
     this.cleanupHandlers.clear();
-    
     this.modals.clear();
     this.activeModal = null;
     this.activeModalStack = [];
-    
-    // Сбрасываем флаг инициализации для возможности повторной инициализации
     this._handlersInitialized = false;
   }
 }
 
 const modalManager = new ModalManager();
-
-// Делаем modalManager доступным глобально для всех скриптов
 window.modalManager = modalManager;
-
-// Экспорт через window.App.services.modalManager будет выполнен в Application
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ModalManager, modalManager };

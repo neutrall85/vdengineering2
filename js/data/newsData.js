@@ -1,4 +1,5 @@
 const NEWS_DATA = {
+  "zozh": [],
   "2022": [
     {
       id: 20220614,

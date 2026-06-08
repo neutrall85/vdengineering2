@@ -17,16 +17,20 @@ const CONFIG = {
     SCROLL_HEADER_THRESHOLD: 100,
     SCROLL_TOP_THRESHOLD: 500
   },
+  LAYOUT: {
+    MOBILE_BREAKPOINT: 1048
+  },
   FORM: {
     RATE_LIMIT_MS: 60000,
     MAX_FILE_SIZE: 10 * 1024 * 1024,
-    ALLOWED_FILE_TYPES: ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
+    ALLOWED_FILE_TYPES: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'],
     ALLOWED_MIME_TYPES: [
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip'
     ],
     WARNING_AUTO_HIDE_MS: 5000
   },
@@ -34,7 +38,7 @@ const CONFIG = {
     COUNTER_STEPS: 100,
     FADE_IN_THRESHOLD: 100,
     MODAL_CLOSE_DELAY_MS: 3000,
-    OBSERVER_THRESHOLD: 0.1,
+    OBSERVER_THRESHOLD: 0.5,
     ROOT_MARGIN: '50px',
     CARD_STAGGER_MS: 50
   },

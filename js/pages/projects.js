@@ -33,7 +33,15 @@ class ProjectRenderer {
 
     container.replaceChildren(fragment);
     this._lazyLoadImages(container);
-    this._animateCards(container);
+
+    // Регистрируем новые карточки в AnimationManager (однократная анимация)
+    if (typeof animationManager !== 'undefined' && animationManager.observeNewElements) {
+      animationManager.observeNewElements(container);
+    } else if (window.animationManager?.observeNewElements) {
+      window.animationManager.observeNewElements(container);
+    } else {
+      Logger?.WARN('AnimationManager не доступен, анимация скролла может не работать');
+    }
 
     this.loaded = true;
     Logger?.INFO(`ProjectRenderer: отрендерено ${projectsList.length} проектов`);
@@ -44,14 +52,13 @@ class ProjectRenderer {
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
     const safeCategory = sanitizer ? sanitizer.escapeHtml(project.category) : project.category;
     const previewImage = (project.images && project.images[0]) || 'assets/images/placeholder.jpg';
-    
-    // Дополнительная строка описания (shortDescription)
+
     const additionalDesc = project.shortDescription 
       ? (sanitizer ? sanitizer.escapeHtml(project.shortDescription) : project.shortDescription)
       : '';
 
     const article = document.createElement('article');
-    article.className = 'project-card card fade-in';
+    article.className = 'project-card card animate-on-scroll fade-up';
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
 
     // Контейнер изображения
@@ -78,11 +85,10 @@ class ProjectRenderer {
     title.className = 'card-title';
     title.textContent = safeTitle;
 
-    // Дополнительный параграф (только shortDescription)
     let additionalDescElem = null;
     if (additionalDesc) {
       additionalDescElem = document.createElement('p');
-      additionalDescElem.className = 'card-desc';   // ← используем существующий класс
+      additionalDescElem.className = 'card-desc';
       additionalDescElem.textContent = additionalDesc;
     }
 
@@ -123,15 +129,6 @@ class ProjectRenderer {
     }, { threshold: 0.1, rootMargin: '100px' });
 
     images.forEach(img => this.imageObserver.observe(img));
-  }
-
-  _animateCards(container) {
-    const cards = container.querySelectorAll('.project-card');
-    cards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.add('visible');
-      }, index * this.cardStaggerMs);
-    });
   }
 
   destroy() {
@@ -415,7 +412,7 @@ function destroyProjectsPage() {
     _projectsPageHandlers.renderer = null;
   }
   window._projectsPageInitialized = false;
-  
+
   // Удаляем глобальные функции для предотвращения утечек памяти
   delete window.openProjectModal;
   delete window.initProjectGallery;

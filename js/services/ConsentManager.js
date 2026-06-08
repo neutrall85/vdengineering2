@@ -43,7 +43,7 @@ const ConsentManager = {
    */
   init() {
     if (!window.Services?.eventBus) {
-      console.error('[ConsentManager] EventBus not available');
+      Logger.ERROR('ConsentManager: EventBus not available');
       return;
     }
 
@@ -69,7 +69,7 @@ const ConsentManager = {
     // Настройка наблюдения за удалением баннера (блокировщики рекламы)
     this._setupMutationObserver();
 
-    console.log('[ConsentManager] Initialized (lazy analytics mode)');
+    Logger.INFO('ConsentManager initialized (lazy analytics mode)');
   },
 
   /**
@@ -84,7 +84,7 @@ const ConsentManager = {
    * Сохранить согласия пользователя
    */
   saveConsent(consent, storage) {
-    console.log('[ConsentManager] saveConsent called with consent:', consent);
+    Logger.INFO('ConsentManager: saveConsent called with consent:', consent);
     const consentKey = 'user_preferences_v1';
     const consentData = {
       timestamp: new Date().toISOString(),
@@ -93,7 +93,7 @@ const ConsentManager = {
     };
 
     storage.set(consentKey, consentData);
-    console.log('[ConsentManager] Consent saved to storage:', consentData);
+    Logger.INFO('ConsentManager: Consent saved to storage:', consentData);
     this._applyConsent(consent, storage);
     this.state.eventBus.emit('preferences:saved', consentData);
     this.hide();
@@ -122,7 +122,7 @@ const ConsentManager = {
    * Применить настройки согласий (включить/выключить аналитику)
    */
   _applyConsent(categories, storage) {
-    console.log('[ConsentManager] _applyConsent called with categories:', categories);
+    Logger.INFO('ConsentManager: _applyConsent called with categories:', categories);
     const analyticsEnabled = categories && categories.analytics === true;
     if (analyticsEnabled) {
       this._enableAnalytics();
@@ -165,11 +165,11 @@ const ConsentManager = {
           webvisor: true,
           // Важно: параметр ut = "noindex" может использоваться, но не блокирует сбор
         });
-        console.log('[ConsentManager] Yandex Metrika script loaded and initialized');
+        Logger.INFO('ConsentManager: Yandex Metrika script loaded and initialized');
         resolve();
       };
       script.onerror = (err) => {
-        console.error('[ConsentManager] Failed to load Metrika script', err);
+        Logger.ERROR('ConsentManager: Failed to load Metrika script', err);
         reject(err);
       };
       document.head.appendChild(script);
@@ -181,7 +181,7 @@ const ConsentManager = {
    */
   _enableAnalytics() {
     if (this.state.analyticsInitialized) {
-      console.log('[ConsentManager] Analytics already enabled');
+      Logger.INFO('ConsentManager: Analytics already enabled');
       return;
     }
 
@@ -190,10 +190,10 @@ const ConsentManager = {
         // Устанавливаем флаг, что пользователь разрешил аналитику
         window.ym(this.state.ymCounterId, 'userParams', { analytics_enabled: true });
         this.state.analyticsInitialized = true;
-        console.log('[ConsentManager] Analytics enabled');
+        Logger.INFO('ConsentManager: Analytics enabled');
       })
       .catch(err => {
-        console.error('[ConsentManager] Could not enable analytics', err);
+        Logger.ERROR('ConsentManager: Could not enable analytics', err);
       });
   },
 
@@ -213,14 +213,14 @@ const ConsentManager = {
         window.ym(this.state.ymCounterId, 'userParams', { analytics_enabled: false });
       }
       this.state.analyticsInitialized = false;
-      console.log('[ConsentManager] Analytics disabled');
+      Logger.INFO('ConsentManager: Analytics disabled');
 
       if (clearCookies) {
         this._clearYandexCookies();
-        console.log('[ConsentManager] Yandex Metrika cookies cleared');
+        Logger.INFO('ConsentManager: Yandex Metrika cookies cleared');
       }
     } catch (e) {
-      console.warn('[ConsentManager] Error disabling analytics', e.message);
+      Logger.WARN('ConsentManager: Error disabling analytics', e.message);
     }
   },
 
@@ -335,7 +335,7 @@ const ConsentManager = {
     const storage = window.Services.storage;
 
     document.getElementById('user-accept-all')?.addEventListener('click', () => {
-      console.log('[ConsentManager] Accept all clicked');
+      Logger.INFO('ConsentManager: Accept all clicked');
       this.saveConsent({
         functional: true,
         analytics: true
@@ -343,7 +343,7 @@ const ConsentManager = {
     });
 
     document.getElementById('user-reject-all')?.addEventListener('click', () => {
-      console.log('[ConsentManager] Reject all clicked');
+      Logger.INFO('ConsentManager: Reject all clicked');
       this.saveConsent({
         functional: true,
         analytics: false
@@ -352,7 +352,7 @@ const ConsentManager = {
 
     document.getElementById('user-save-selection')?.addEventListener('click', () => {
       const consentAnalytics = document.getElementById('consent-analytics')?.checked || false;
-      console.log('[ConsentManager] Save selection clicked, analytics =', consentAnalytics);
+      Logger.INFO('ConsentManager: Save selection clicked, analytics =', consentAnalytics);
       this.saveConsent({
         functional: true,
         analytics: consentAnalytics
@@ -365,7 +365,7 @@ const ConsentManager = {
       if (typeof PolicyModalManager !== 'undefined') {
         PolicyModalManager.openPolicyModal('privacy');
       } else {
-        console.warn('[ConsentManager] PolicyModalManager not available');
+        Logger.WARN('ConsentManager: PolicyModalManager not available');
       }
     });
 
@@ -375,7 +375,7 @@ const ConsentManager = {
       if (typeof PolicyModalManager !== 'undefined') {
         PolicyModalManager.openPolicyModal('cookies');
       } else {
-        console.warn('[ConsentManager] PolicyModalManager not available');
+        Logger.WARN('ConsentManager: PolicyModalManager not available');
       }
     });
 
@@ -424,7 +424,7 @@ const ConsentManager = {
       mutations.forEach((mutation) => {
         mutation.removedNodes.forEach((node) => {
           if (node.nodeType === 1 && node.id === bannerId) {
-            console.log('[ConsentManager] Banner removed by external script, scheduling recovery...');
+            Logger.INFO('ConsentManager: Banner removed by external script, scheduling recovery...');
             this._scheduleRecovery();
           }
         });
@@ -450,7 +450,7 @@ const ConsentManager = {
       const consent = this.getConsent(storage);
       // Если согласия нет и баннер действительно отсутствует – восстанавливаем
       if (!consent && !document.getElementById('user-notice-banner')) {
-        console.log('[ConsentManager] Recovering banner...');
+        Logger.INFO('ConsentManager: Recovering banner...');
         this._render();
       }
     }, 2000);
