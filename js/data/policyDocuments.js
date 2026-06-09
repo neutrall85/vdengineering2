@@ -313,6 +313,34 @@ const POLICY_DOCUMENTS = {
         <li>Телефон: +7 (495) 755-90-46</li>
       </ul>
     `
+  },
+  laborAssessment: {
+    title: 'Оценка условий труда (СОУТ)',
+    content: `
+      <p><strong>2024 год</strong></p>
+      <p>
+        <ul>
+          <li><a href="" target="_blank">Сводная ведомость СОУТ, 2024 г.</a><br></li>
+          <li><a href="" target="_blank">Карты специальной оценки условий труда, 2024 г.</a></li>
+        </ul>
+      </p>
+
+      <p><strong>2025 год</strong></p>
+      <p>
+        <ul>
+          <li><a href="" target="_blank">Сводная ведомость СОУТ, 2025 г.</a><br></li>
+          <li><a href="" target="_blank">Карты специальной оценки условий труда, 2025 г.</a></li>
+        </ul>
+      </p>
+
+      <p><strong>2026 год</strong></p>
+      <p>
+        <ul>
+          <li><a href="" target="_blank">Сводная ведомость СОУТ, 2026 г.</a><br></li>
+          <li><a href="" target="_blank">Карты специальной оценки условий труда, 2026 г.</a></li>
+        </ul>
+      </p>
+    `
   }
 };
 

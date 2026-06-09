@@ -11,6 +11,7 @@ const FooterTemplate = `
       <li><a href="#" data-policy="privacy">Политика конфиденциальности</a></li>
       <li><a href="#" data-policy="personal-data">Политика обработки персональных данных</a></li>
       <li><a href="#" data-policy="cookies">Политика в отношении файлов cookie</a></li>
+      <li><a href="#" data-policy="laborAssessment">Оценка условий труда</a></li>
     </ul>
   </div>
   <div class="footer-bottom">

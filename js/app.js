@@ -284,9 +284,18 @@ class Application {
 
   _initFloatingCTA() {
     const floatingBtn = document.querySelector('.floating-cta-btn');
-
     if (!floatingBtn) return;
 
+    // Показываем кнопку только на главной странице
+    const isHomePage = window.location.pathname === '/' || 
+                       window.location.pathname.endsWith('index.html') ||
+                       window.location.pathname === '';
+    if (!isHomePage) {
+      floatingBtn.remove();  // удаляем кнопку с других страниц
+      return;
+    }
+
+    // Обработчик клика
     this._boundFloatingBtnClick = () => {
       if (typeof modalManager !== 'undefined') {
         modalManager.open('proposal');
@@ -298,23 +307,33 @@ class Application {
     };
     floatingBtn.addEventListener('click', this._boundFloatingBtnClick, { passive: true });
 
-    let heroExited = false;
+    const heroSection = document.querySelector('.hero');
     
-    const heroSection = document.querySelector('.hero, header');
     if (heroSection) {
+      // Отслеживаем, когда видимая часть hero становится меньше 50%
       this._heroObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          if (!entry.isIntersecting) {
-            heroExited = true;
+          if (entry.intersectionRatio < 0.5) {
             floatingBtn.classList.add('visible');
           } else {
-            heroExited = false;
             floatingBtn.classList.remove('visible');
           }
         });
-      }, { threshold: 0 });
+      }, { threshold: [0, 0.5, 1] });
       
       this._heroObserver.observe(heroSection);
+    } else {
+      // Fallback (на случай, если hero вдруг отсутствует)
+      const SCROLL_THRESHOLD = 150;
+      this._boundFloatingScrollHandler = () => {
+        if (window.scrollY > SCROLL_THRESHOLD) {
+          floatingBtn.classList.add('visible');
+        } else {
+          floatingBtn.classList.remove('visible');
+        }
+      };
+      window.addEventListener('scroll', this._boundFloatingScrollHandler);
+      this._boundFloatingScrollHandler();
     }
   }
 
@@ -508,6 +527,13 @@ class Application {
     // Отключаем IntersectionObserver для hero секции
     if (this._heroObserver) {
       this._heroObserver.disconnect();
+      this._heroObserver = null;
+    }
+    
+    // Удаляем fallback scroll-обработчик для кнопки (если использовался)
+    if (this._boundFloatingScrollHandler) {
+      window.removeEventListener('scroll', this._boundFloatingScrollHandler);
+      this._boundFloatingScrollHandler = null;
     }
     
     // Отключаем IntersectionObserver для ленивой загрузки изображений
