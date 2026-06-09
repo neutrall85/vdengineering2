@@ -4560,6 +4560,11 @@ img.loading + .image-placeholder {
     line-height: 1.5;
   }
 
+  .navbar {
+    position: sticky;
+    top: 0;
+  }
+
   /* Увеличиваем стандартные отступы для лучшей читаемости на мобильных */
   .section-header p,
   .service-card p,
