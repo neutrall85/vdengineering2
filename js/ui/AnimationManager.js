@@ -2,6 +2,9 @@
  * Управление анимациями при скролле (расширенная версия)
  * ООО "Волга-Днепр Инжиниринг"
  * Поддерживает повторные анимации, безопасная работа с памятью
+ * 
+ * Исправление: добавлен метод _forceVisibleCheck() для немедленного показа
+ * элементов, уже находящихся в видимой области при загрузке страницы.
  */
 class AnimationManager {
   constructor() {
@@ -15,13 +18,14 @@ class AnimationManager {
   init() {
     this._initScrollAnimations();
     this._initCounters();
+    // Принудительная проверка видимости уже загруженных элементов
+    this._forceVisibleCheck();
     Logger.INFO('AnimationManager initialized');
   }
 
   _initScrollAnimations() {
     const options = {
       threshold: window.CONFIG?.ANIMATION?.OBSERVER_THRESHOLD || 0.2,
-      // ИСПРАВЛЕНО: убираем отрицательный отступ, чтобы анимация срабатывала при появлении элемента
       rootMargin: window.CONFIG?.ANIMATION?.ROOT_MARGIN || '0px 0px 50px 0px'
     };
 
@@ -60,6 +64,24 @@ class AnimationManager {
       this.observedElements.add(el);
     });
     this.observers.push(this.scrollObserver);
+  }
+
+  /**
+   * Принудительная проверка видимости элементов (синхронно)
+   * Решает проблему задержки появления контента на мобильных устройствах
+   */
+  _forceVisibleCheck() {
+    const elements = document.querySelectorAll('.animate-on-scroll');
+    const windowHeight = window.innerHeight;
+    const offset = 50; // небольшой отступ для раннего срабатывания
+
+    elements.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      const isVisible = rect.top < windowHeight - offset && rect.bottom > offset;
+      if (isVisible && !el.classList.contains('visible')) {
+        el.classList.add('visible');
+      }
+    });
   }
 
   _processTextReveal(element) {
@@ -140,6 +162,8 @@ class AnimationManager {
       this.scrollObserver.observe(el);
       this.observedElements.add(el);
     });
+    // Проверяем видимость новых элементов (например, после загрузки через компоненты)
+    this._forceVisibleCheck();
   }
 
   destroy() {
