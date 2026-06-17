@@ -107,7 +107,8 @@ const Utils = (function() {
   const Sanitizer = {
     // Базовое экранирование HTML
     escapeHtml(str) {
-      if (!str) return '';
+      if (str == null) return '';
+      str = String(str);
       return str
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -314,7 +315,10 @@ const Utils = (function() {
 
     canProceed() {
       const lastSubmit = this.storage.get(this.key);
-      if (!lastSubmit) return true;
+      // Если нет записи, или это не число, или NaN – считаем, что лимита нет
+      if (!lastSubmit || typeof lastSubmit !== 'number' || isNaN(lastSubmit)) {
+        return true;
+      }
       return Date.now() - lastSubmit >= this.limitMs;
     }
 

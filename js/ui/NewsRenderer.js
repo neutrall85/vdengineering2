@@ -146,6 +146,7 @@ class NewsRenderer {
     const link = document.createElement('a');
     link.classList.add('news-card-link');
     link.setAttribute('href', '#');
+    link.setAttribute('data-modal-open', 'news');  // <-- добавить эту строку
     link.setAttribute('data-news-id', news.id);
     link.textContent = 'Подробнее';
 

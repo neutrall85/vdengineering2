@@ -1,17 +1,14 @@
 /**
- * Инициализация страницы услуг
+ * Инициализация страницы услуг – только подстановка данных и галерея
  * ООО "Волга-Днепр Инжиниринг"
  */
 
-// ------------------------------------------------------------
-//  Галерея изображений для услуги (с поддержкой лайтбокса)
-// ------------------------------------------------------------
+// Галерея изображений для услуги (с поддержкой лайтбокса)
 function initServiceGallery(images) {
   const container = document.getElementById('serviceModalImageContainer');
   const mainImage = document.getElementById('serviceModalImage');
   if (!container || !mainImage) return;
 
-  // Сначала скрываем контейнер
   container.style.display = 'none';
 
   if (!images || images.length === 0) {
@@ -21,7 +18,6 @@ function initServiceGallery(images) {
     return;
   }
 
-  // Показываем контейнер, так как изображения есть
   container.style.display = 'flex';
   container.innerHTML = '';
   container.appendChild(mainImage);
@@ -33,9 +29,7 @@ function initServiceGallery(images) {
     mainImage.alt = `Изображение ${index + 1} из ${images.length}`;
   }
 
-  // ------------------------------------------------------------
-  //  Лайтбокс с навигацией
-  // ------------------------------------------------------------
+  // Лайтбокс
   let lightboxOpen = false;
   let lightboxCurrentIndex = currentIndex;
 
@@ -50,10 +44,8 @@ function initServiceGallery(images) {
     lightboxOverlay.classList.add('active');
     lightboxOpen = true;
 
-    // Блокируем скролл
     if (window.ScrollManager) ScrollManager.lock();
 
-    // Обработчики навигации (удаляются при закрытии)
     const closeLightbox = () => {
       lightboxOverlay.classList.remove('active');
       if (window.ScrollManager) ScrollManager.unlock();
@@ -81,7 +73,6 @@ function initServiceGallery(images) {
       updateLightboxImage(lightboxCurrentIndex);
     }
 
-    // Создаём обработчики
     const prevBtn = document.getElementById('lightboxPrevBtn');
     const nextBtn = document.getElementById('lightboxNextBtn');
     const closeBtn = document.getElementById('lightboxCloseBtn');
@@ -98,14 +89,12 @@ function initServiceGallery(images) {
       if (e.key === 'ArrowRight') navigate(1);
     };
 
-    // Применяем обработчики
     if (prevBtn) prevBtn.addEventListener('click', prevHandler);
     if (nextBtn) nextBtn.addEventListener('click', nextHandler);
     if (closeBtn) closeBtn.addEventListener('click', closeHandler);
     lightboxOverlay.addEventListener('click', overlayClickHandler);
     document.addEventListener('keydown', keydownHandler);
 
-    // Функция удаления обработчиков
     function removeLightboxHandlers() {
       if (prevBtn) prevBtn.removeEventListener('click', prevHandler);
       if (nextBtn) nextBtn.removeEventListener('click', nextHandler);
@@ -114,24 +103,18 @@ function initServiceGallery(images) {
       document.removeEventListener('keydown', keydownHandler);
     }
 
-    // Сохраняем функцию удаления в свойство оверлея для возможной ручной очистки
     lightboxOverlay._closeLightboxHandler = closeLightbox;
     lightboxOverlay._removeHandlers = removeLightboxHandlers;
   }
 
-  // Открытие лайтбокса при клике на основное изображение
   mainImage.style.cursor = 'zoom-in';
   mainImage.onclick = openLightbox;
 
-  // ------------------------------------------------------------
-  //  Галерея внутри модального окна (если изображений несколько)
-  // ------------------------------------------------------------
   if (images.length === 1) {
     updateMainImage(0);
     return;
   }
 
-  // Кнопка "Предыдущее"
   const prevBtn = document.createElement('button');
   prevBtn.className = 'gallery-nav gallery-nav-prev';
   prevBtn.setAttribute('aria-label', 'Предыдущее изображение');
@@ -142,7 +125,6 @@ function initServiceGallery(images) {
     updateIndicators();
   };
 
-  // Кнопка "Следующее"
   const nextBtn = document.createElement('button');
   nextBtn.className = 'gallery-nav gallery-nav-next';
   nextBtn.setAttribute('aria-label', 'Следующее изображение');
@@ -153,7 +135,6 @@ function initServiceGallery(images) {
     updateIndicators();
   };
 
-  // Индикаторы (точки) внутри модалки
   const indicatorsContainer = document.createElement('div');
   indicatorsContainer.className = 'gallery-indicators';
 
@@ -182,9 +163,7 @@ function initServiceGallery(images) {
   updateMainImage(0);
 }
 
-// ------------------------------------------------------------
-//  Инициализация страницы услуг (подстановка данных из servicesData)
-// ------------------------------------------------------------
+// Инициализация страницы услуг (подстановка данных из servicesData)
 function initServicesPage() {
   if (!window.servicesData) {
     if (window.Logger) {
@@ -194,7 +173,6 @@ function initServicesPage() {
   }
 
   const serviceCards = document.querySelectorAll('.service-card[data-service-id]');
-
   serviceCards.forEach(card => {
     const serviceId = card.getAttribute('data-service-id');
     const data = window.servicesData[serviceId];
@@ -216,6 +194,5 @@ function initServicesPage() {
   }
 }
 
-// Экспортируем функции в глобальную область
 window.initServiceGallery = initServiceGallery;
 window.initServicesPage = initServicesPage;

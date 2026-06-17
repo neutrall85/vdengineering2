@@ -1,168 +1,95 @@
-/**
- * UniversalApplicationModalManager - менеджер универсального модального окна заявок
- * Отвечает за открытие/закрытие и валидацию формы отклика на вакансии
- * ООО "Волга-Днепр Инжиниринг"
- */
-
 const UniversalApplicationModalManager = {
-    formValidator: null,
+  form: null,
+  validatorInstance: null,
+  fileUpload: null,
+  successSelector: '#universalSuccessMessage',
 
-    /**
-     * Инициализация универсального модального окна
-     */
-    init() {
-        this._setupGlobalFunctions();
-        this._setupFormValidation();
-        this._setupPhoneInput();
-        this._setupFileUpload();
-    },
+  init() {
+    this.form = document.getElementById('universalApplicationForm');
+    if (!this.form) return;
 
-    /**
-     * Настройка глобальных функций открытия/закрытия модального окна
-     */
-    _setupGlobalFunctions() {
-        window.openApplicationModal = (triggerElement) => {
-            const overlay = document.getElementById('universalApplicationModalOverlay');
-            if (!overlay) return;
+    // Валидация
+    this.validatorInstance = FormUtils.initValidation(this.form, {
+      required: 'Это поле обязательно для заполнения',
+      email: 'Введите корректный email адрес',
+      phone: 'Введите корректный номер телефона',
+      fileRequired: 'Пожалуйста, прикрепите резюме'
+    });
 
-            let mode = 'vacancy';
-            const vacancyId = triggerElement ? triggerElement.getAttribute('data-vacancy-id') : null;
-            if (!vacancyId) mode = 'application';
+    // Файлы
+    this.fileUpload = FormUtils.initFileUpload(
+      this.form.querySelector('.form-file'),
+      null,
+      { maxFiles: 5, maxFileSize: 10 * 1024 * 1024 }
+    );
 
-            const modalTitle = document.getElementById('universalApplicationModalTitle');
-            const submitBtnText = document.getElementById('universalSubmitBtnText');
-            const successTitle = document.getElementById('universalSuccessTitle');
-            
-            if (mode === 'application') {
-                if (modalTitle) modalTitle.textContent = 'Отправить заявку';
-                if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
-                if (successTitle) successTitle.textContent = 'Данные отправлены!';
-            } else {
-                if (modalTitle) modalTitle.textContent = 'Отклик на вакансию';
-                if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
-                if (successTitle) successTitle.textContent = 'Отклик отправлен!';
-            }
-
-            // Открываем через ModalManager
-            if (typeof modalManager !== 'undefined') {
-                modalManager.open('universal');
-            } else {
-                Logger.WARN('ModalManager not available for universal application modal');
-            }
-        };
-
-        window.closeUniversalApplicationModal = () => {
-            if (typeof modalManager !== 'undefined') {
-                modalManager.close('universal');
-            } else {
-                Logger.WARN('ModalManager not available for universal application modal close');
-            }
-        };
-    },
-
-    /**
-     * Настройка валидации формы через FormValidation
-     */
-    _setupFormValidation() {
-        const universalForm = document.getElementById('universalApplicationForm');
-        
-        if (universalForm && typeof FormValidation !== 'undefined') {
-            this.formValidator = FormValidation.createValidator(universalForm, {
-                validateOnInput: true,
-                messages: {
-                    required: 'Это поле обязательно для заполнения',
-                    email: 'Введите корректный email адрес',
-                    phone: 'Введите корректный номер телефона',
-                    minLength: (min) => `Минимальная длина — ${min} символов`,
-                    consent: 'Необходимо согласие на обработку данных',
-                    fileRequired: 'Пожалуйста, прикрепите резюме'
-                }
-            });
-
-            // Обработчик успешной валидации
-            universalForm.addEventListener('form:valid', (e) => {
-                Logger.INFO('Форма валидна, отправка заявки...');
-                this._handleFormSuccess();
-            });
-        }
-    },
-
-    /**
-     * Обработка успешной отправки формы
-     */
-    _handleFormSuccess() {
-        const successMessage = document.getElementById('universalSuccessMessage');
-        const form = document.getElementById('universalApplicationForm');
-        
-        if (successMessage && form) {
-            form.classList.add('hidden-form');
-            successMessage.classList.add('show');
-            
-            setTimeout(() => {
-                window.closeUniversalApplicationModal();
-                form.reset();
-                form.classList.remove('hidden-form');
-                successMessage.classList.remove('show');
-                
-                if (typeof formManager !== 'undefined') {
-                    formManager.currentFiles = [];
-                    const fileList = document.getElementById('universalFileList');
-                    if (fileList) {
-                        // Очищаем через DOM API вместо innerHTML
-                        while (fileList.firstChild) {
-                            fileList.removeChild(fileList.firstChild);
-                        }
-                    }
-                    const fileText = document.querySelector('#universalFileDrop .form-file-text');
-                    if (fileText) fileText.textContent = 'Выбрать файл...';
-                }
-                
-                // Сброс валидатора
-                if (this.formValidator) this.formValidator.reset();
-            }, 3000);
-        }
-    },
-
-    /**
-     * Настройка автопрефикса для поля телефона
-     */
-    _setupPhoneInput() {
-        const phoneInput = document.getElementById('universalPhone');
-        if (phoneInput && Utils.PhoneUtils) {
-            Utils.PhoneUtils.setupAutoPrefix(phoneInput);
-        }
-    },
-
-    /**
-     * Инициализация загрузки файлов
-     */
-    _setupFileUpload() {
-        if (typeof formManager !== 'undefined') {
-            setTimeout(() => {
-                const universalFileDrop = document.getElementById('universalFileDrop');
-                if (universalFileDrop) {
-                    formManager._initFileUpload(document.getElementById('universalApplicationModalOverlay'));
-                }
-            }, 150);
-        }
-    },
-
-    /**
-     * Очистка ресурсов при уничтожении менеджера
-     */
-    destroy() {
-        // Удаляем глобальные функции для предотвращения утечек памяти
-        delete window.openApplicationModal;
-        delete window.closeUniversalApplicationModal;
-        
-        // Очищаем валидатор формы если он существует
-        if (this.formValidator && typeof this.formValidator.destroy === 'function') {
-            this.formValidator.destroy();
-        }
-        this.formValidator = null;
+    // Телефон
+    const phoneInput = document.getElementById('universalPhone');
+    if (phoneInput && Utils.PhoneUtils) {
+      Utils.PhoneUtils.setupAutoPrefix(phoneInput);
     }
+
+    // Обработка отправки
+    this.form.addEventListener('form:valid', (e) => {
+      this._handleSubmit(e);
+    });
+
+    Logger.INFO('UniversalApplicationModalManager инициализирован');
+  },
+
+  async _handleSubmit(e) {
+    await FormUtils.submitForm(this.form, {
+        apiClient: window.Services.apiClient,
+        onSuccess: (result) => {
+        this.form.classList.add('hidden-form');
+        const success = document.querySelector(this.successSelector);
+        if (success) success.classList.add('show');
+        setTimeout(() => {
+            if (typeof modalManager !== 'undefined') modalManager.close('universal');
+            this.resetForm();
+        }, 3000);
+        },
+        onError: (msg) => {
+        const warning = this.form.querySelector('.rate-limit-warning');
+        if (warning) {
+            warning.replaceChildren();
+            const p = document.createElement('p');
+            p.textContent = `⚠️ ${msg}`;
+            warning.appendChild(p);
+            warning.classList.add('show');
+            setTimeout(() => warning.classList.remove('show'), 5000);
+        } else {
+            alert(msg);
+        }
+        }
+    }, this.fileUpload?.currentFiles || []);
+  },
+
+  resetForm() {
+    FormUtils.resetForm(
+      this.form,
+      this.successSelector,
+      this.fileUpload,
+      this.validatorInstance
+    );
+  },
+
+  destroy() {
+    if (this.fileUpload?.fileDrop?._handlers) {
+      const { fileDrop, fileInput, changeHandler, dragOverHandler, dragLeaveHandler, dropHandler } = this.fileUpload.fileDrop._handlers;
+      if (fileInput) fileInput.removeEventListener('change', changeHandler);
+      if (fileDrop) {
+        fileDrop.removeEventListener('dragover', dragOverHandler);
+        fileDrop.removeEventListener('dragleave', dragLeaveHandler);
+        fileDrop.removeEventListener('drop', dropHandler);
+      }
+    }
+    this.fileUpload = null;
+    this.validatorInstance = null;
+    this.form = null;
+  }
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = UniversalApplicationModalManager;
+  module.exports = UniversalApplicationModalManager;
 }

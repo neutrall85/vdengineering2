@@ -1,9 +1,8 @@
-// ------------------------------------------------------------
-//  ProjectRenderer – рендеринг карточек проектов
-// ------------------------------------------------------------
+/**
+ * ProjectRenderer – рендеринг карточек проектов
+ */
 class ProjectRenderer {
   constructor(PROJECTS_DATA) {
-    // Нормализация: добавляем id из ключа объекта
     this.PROJECTS_DATA = {};
     Object.entries(PROJECTS_DATA).forEach(([id, project]) => {
       this.PROJECTS_DATA[id] = { ...project, id: parseInt(id, 10) };
@@ -34,13 +33,10 @@ class ProjectRenderer {
     container.replaceChildren(fragment);
     this._lazyLoadImages(container);
 
-    // Регистрируем новые карточки в AnimationManager (однократная анимация)
     if (typeof animationManager !== 'undefined' && animationManager.observeNewElements) {
       animationManager.observeNewElements(container);
     } else if (window.animationManager?.observeNewElements) {
       window.animationManager.observeNewElements(container);
-    } else {
-      Logger?.WARN('AnimationManager не доступен, анимация скролла может не работать');
     }
 
     this.loaded = true;
@@ -52,8 +48,7 @@ class ProjectRenderer {
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
     const safeCategory = sanitizer ? sanitizer.escapeHtml(project.category) : project.category;
     const previewImage = (project.images && project.images[0]) || 'assets/images/placeholder.jpg';
-
-    const additionalDesc = project.shortDescription 
+    const additionalDesc = project.shortDescription
       ? (sanitizer ? sanitizer.escapeHtml(project.shortDescription) : project.shortDescription)
       : '';
 
@@ -61,7 +56,6 @@ class ProjectRenderer {
     article.className = 'project-card card animate-on-scroll fade-up';
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
 
-    // Контейнер изображения
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';
     const img = document.createElement('img');
@@ -73,7 +67,6 @@ class ProjectRenderer {
     });
     imgContainer.appendChild(img);
 
-    // Блок контента
     const contentDiv = document.createElement('div');
     contentDiv.className = 'project-content-padding';
 
@@ -140,9 +133,7 @@ class ProjectRenderer {
   }
 }
 
-// ------------------------------------------------------------
-//  Инициализация и очистка страницы проектов
-// ------------------------------------------------------------
+// Инициализация страницы проектов
 const _projectsPageHandlers = {
   requestQuoteHandler: null,
   renderer: null
@@ -158,9 +149,7 @@ function initProjectsPage() {
     return;
   }
 
-  // Очищаем статический HTML
   gridContainer.innerHTML = '';
-
   if (window.PROJECTS_DATA) {
     _projectsPageHandlers.renderer = new ProjectRenderer(window.PROJECTS_DATA);
     _projectsPageHandlers.renderer.render(gridContainer);
@@ -170,57 +159,20 @@ function initProjectsPage() {
 
   const requestQuoteBtn = document.getElementById('projectsRequestQuoteBtn');
   if (requestQuoteBtn) {
-    _projectsPageHandlers.requestQuoteHandler = handleRequestQuote;
+    _projectsPageHandlers.requestQuoteHandler = () => {
+      const fakeTrigger = document.createElement('button');
+      fakeTrigger.setAttribute('data-modal-open', 'application');
+      document.body.appendChild(fakeTrigger);
+      fakeTrigger.click();
+      document.body.removeChild(fakeTrigger);
+    };
     requestQuoteBtn.addEventListener('click', _projectsPageHandlers.requestQuoteHandler);
   }
 
-  Logger?.INFO('ProjectsPage инициализирована (динамический рендеринг)');
+  Logger.INFO('ProjectsPage инициализирована (динамический рендеринг)');
 }
 
-function handleRequestQuote() {
-  const fakeTrigger = document.createElement('button');
-  fakeTrigger.setAttribute('data-modal-open', 'application');
-  document.body.appendChild(fakeTrigger);
-  fakeTrigger.click();
-  document.body.removeChild(fakeTrigger);
-}
-
-function openProjectModal(title, details, images, category) {
-  const modalTitle = document.getElementById('projectModalTitle');
-  const modalContent = document.getElementById('projectModalContent');
-  const modalCategory = document.getElementById('projectModalCategory');
-  const modalImageContainer = document.getElementById('projectModalImageContainer');
-  const modalImage = document.getElementById('projectModalImage');
-
-  if (!modalTitle || !modalContent || !modalCategory) {
-    Logger.WARN('Элементы модального окна проекта не найдены');
-    return;
-  }
-
-  const sanitizer = window.Utils?.Sanitizer;
-  modalTitle.textContent = sanitizer ? sanitizer.escapeHtml(title) : title;
-  modalCategory.textContent = sanitizer ? sanitizer.escapeHtml(category) : category;
-
-  modalContent.replaceChildren();
-  const ul = document.createElement('ul');
-  ul.className = 'modal-list-ul';
-  details.forEach(item => {
-    const li = document.createElement('li');
-    li.className = 'modal-list-li';
-    li.textContent = sanitizer ? sanitizer.escapeHtml(item) : item;
-    ul.appendChild(li);
-  });
-  modalContent.appendChild(ul);
-
-  initProjectGallery(images, modalImageContainer, modalImage);
-
-  if (typeof modalManager !== 'undefined') {
-    modalManager.open('project');
-  } else {
-    Logger.ERROR('ModalManager не доступен');
-  }
-}
-
+// Галерея проекта (вызывается из ModalManager)
 function initProjectGallery(images, container, mainImage) {
   const sanitizer = window.Utils?.Sanitizer;
   if (container) container.replaceChildren();
@@ -413,12 +365,10 @@ function destroyProjectsPage() {
   }
   window._projectsPageInitialized = false;
 
-  // Удаляем глобальные функции для предотвращения утечек памяти
-  delete window.openProjectModal;
-  delete window.initProjectGallery;
+  // Удаляем только те глобальные функции, которые могли быть созданы
+  delete window.initProjectGallery; // оставляем, если используется в других местах
 }
 
 window.initProjectsPage = initProjectsPage;
 window.destroyProjectsPage = destroyProjectsPage;
-window.openProjectModal = openProjectModal;
 window.initProjectGallery = initProjectGallery;
