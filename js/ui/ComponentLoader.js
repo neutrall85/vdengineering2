@@ -16,7 +16,8 @@ const ComponentLoader = {
         navbar: typeof ComponentTemplates !== 'undefined' ? ComponentTemplates.navbar : '',
         footer: typeof ComponentTemplates !== 'undefined' ? ComponentTemplates.footer : '',
         proposalModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.proposalModal : '',
-        universalApplicationModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.universalApplicationModal : ''
+        universalApplicationModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.universalApplicationModal : '',
+        successModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.successModal : ''
     },
 
     /**
@@ -58,7 +59,6 @@ const ComponentLoader = {
 
     _loadNavbar(activePage) {
         const navContainer = document.getElementById('navbar');
-        // Используем DOMParser для безопасного парсинга статических шаблонов
         const parser = new DOMParser();
         
         if (navContainer && !navContainer.hasChildNodes()) {
@@ -118,13 +118,19 @@ const ComponentLoader = {
                 universalModalContainer.appendChild(node.cloneNode(true));
             });
             document.body.appendChild(universalModalContainer.firstElementChild);
-            setTimeout(() => {
-                if (typeof UniversalApplicationModalManager !== 'undefined') {
-                    UniversalApplicationModalManager.init();
-                } else {
-                    Logger.WARN('UniversalApplicationModalManager not available');
-                }
-            }, 100);
+            // УДАЛЁН дублирующий вызов UniversalApplicationModalManager.init()
+        }
+
+        // Загрузка модалки успеха
+        const existingSuccessModal = document.getElementById('successModalOverlay');
+        if (!existingSuccessModal) {
+            const successModalContainer = document.createElement('div');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(this.templates.successModal, 'text/html');
+            Array.from(doc.body.childNodes).forEach(node => {
+                successModalContainer.appendChild(node.cloneNode(true));
+            });
+            document.body.appendChild(successModalContainer.firstElementChild);
         }
     },
 
@@ -140,7 +146,6 @@ const ComponentLoader = {
             });
             document.body.appendChild(footerContainer.firstElementChild);
         } else {
-            // Безопасная замена через DOM API и DOMParser
             const doc = parser.parseFromString(this.templates.footer, 'text/html');
             const newFooter = doc.body.firstElementChild;
             if (newFooter) {
@@ -150,7 +155,6 @@ const ComponentLoader = {
         
         this.updateYear();
         
-        // Инициализация менеджера политик
         if (typeof PolicyModalManager !== 'undefined') {
             PolicyModalManager.init();
         } else {

@@ -30,6 +30,7 @@ const Services = (function() {
           try {
             callback(data);
           } catch (error) {
+            // ignore
           }
         });
       }
@@ -83,26 +84,28 @@ const Services = (function() {
     }
   }
 
-  // ========== API Клиент ==========
+  // ========== API Клиент (исправленный) ==========
   class ApiClient {
     constructor(baseUrl = '') {
       this.baseUrl = baseUrl;
     }
 
-    async post(endpoint, data, options = {}) {
+    /**
+     * Реальная отправка данных на сервер через FormData
+     * @param {FormData} formData - данные формы
+     * @param {Object} options - дополнительные опции (не используются)
+     * @returns {Promise<Object>} ответ сервера
+     */
+    async submitForm(formData, options = {}) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 сек таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       try {
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        const response = await fetch(`${this.baseUrl}/api/submit.php`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...options.headers
-          },
-          body: JSON.stringify(data),
-          ...options,
-          signal: controller.signal
+          body: formData,
+          signal: controller.signal,
+          // НЕ устанавливаем Content-Type – браузер сам добавит multipart/form-data с boundary
         });
 
         clearTimeout(timeoutId);
@@ -122,18 +125,23 @@ const Services = (function() {
       }
     }
 
-    async submitForm(data, options = {}) {
-      // Имитация отправки на сервер
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Проверяем наличие CSRF токена в заголовках
-      if (options.headers && options.headers['X-CSRF-Token']) {
-        const csrfToken = options.headers['X-CSRF-Token'];
-        // В реальном приложении здесь была бы проверка токена на сервере
-        Logger.DEBUG('CSRF Token received:', csrfToken);
+    /**
+     * Получает CSRF-токен с сервера
+     * @returns {Promise<string>}
+     */
+    async getCsrfToken() {
+      console.log('[ApiClient] getCsrfToken called');
+      const response = await fetch(`${this.baseUrl}/api/csrf_token.php`, {
+        method: 'GET',
+        credentials: 'same-origin'
+      });
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Не удалось получить CSRF-токен: ${response.status} ${errorText}`);
       }
-      
-      return { success: true, message: 'Заявка успешно отправлена' };
+      const data = await response.json();
+      console.log('[ApiClient] CSRF token received:', data.csrf_token);
+      return data.csrf_token;
     }
   }
 
@@ -146,5 +154,4 @@ const Services = (function() {
 })();
 
 // Экспортируем только основной объект Services
-// Доступ к отдельным сервисам через window.Services.eventBus, window.Services.storage, window.Services.apiClient
 window.Services = Services;

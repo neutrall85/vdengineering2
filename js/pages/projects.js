@@ -1,11 +1,12 @@
 /**
  * ProjectRenderer – рендеринг карточек проектов
+ * ООО "Волга-Днепр Инжиниринг"
  */
 class ProjectRenderer {
   constructor(PROJECTS_DATA) {
     this.PROJECTS_DATA = {};
     Object.entries(PROJECTS_DATA).forEach(([id, project]) => {
-      this.PROJECTS_DATA[id] = { ...project, id: parseInt(id, 10) };
+      this.PROJECTS_DATA[id] = { ...project, id: id };
     });
     this.loaded = false;
     this.cardStaggerMs = window.CONFIG?.ANIMATION?.CARD_STAGGER_MS || 50;
@@ -55,6 +56,8 @@ class ProjectRenderer {
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
+    article.dataset.modalOpen = 'project';
+    article.dataset.projectId = project.id;
 
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';
@@ -133,7 +136,7 @@ class ProjectRenderer {
   }
 }
 
-// Инициализация страницы проектов
+// ========== Инициализация страницы проектов ==========
 const _projectsPageHandlers = {
   requestQuoteHandler: null,
   renderer: null
@@ -172,7 +175,7 @@ function initProjectsPage() {
   Logger.INFO('ProjectsPage инициализирована (динамический рендеринг)');
 }
 
-// Галерея проекта (вызывается из ModalManager)
+// ========== ГАЛЕРЕЯ ПРОЕКТОВ (с поддержкой свайпа) ==========
 function initProjectGallery(images, container, mainImage) {
   const sanitizer = window.Utils?.Sanitizer;
   if (container) container.replaceChildren();
@@ -192,7 +195,11 @@ function initProjectGallery(images, container, mainImage) {
   }
 
   let currentIndex = 0;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let isSwiping = false;
 
+  // ---------- Основная галерея (модалка) ----------
   function updateMainImage(index) {
     const safeUrl = sanitizer && sanitizer.isValidUrl
       ? (sanitizer.isValidUrl(images[index]) ? images[index] : 'assets/images/placeholder.jpg')
@@ -201,12 +208,16 @@ function initProjectGallery(images, container, mainImage) {
     newMainImage.alt = `Изображение ${index + 1} из ${images.length}`;
   }
 
+  // ---------- Лайтбокс ----------
   function openLightbox() {
     const lightboxOverlay = document.getElementById('lightboxOverlay');
     const lightboxImage = document.getElementById('lightboxImage');
     if (!lightboxOverlay || !lightboxImage) return;
 
-    let currentIndexLocal = currentIndex;
+    let lightboxCurrentIndex = currentIndex;
+    let lbTouchStartX = 0;
+    let lbTouchStartY = 0;
+    let lbIsSwiping = false;
 
     function updateLightboxImage(index) {
       const safeUrl = sanitizer && sanitizer.isValidUrl
@@ -214,85 +225,230 @@ function initProjectGallery(images, container, mainImage) {
         : images[index];
       lightboxImage.src = safeUrl;
       lightboxImage.alt = `Изображение ${index + 1} из ${images.length}`;
-
-      const lightboxIndicators = document.getElementById('lightboxIndicators');
-      if (lightboxIndicators) {
-        lightboxIndicators.querySelectorAll('.lightbox-indicator').forEach((ind, i) => {
-          ind.classList.toggle('active', i === index);
+      // Обновляем индикаторы
+      const indicators = document.getElementById('lightboxIndicators');
+      if (indicators) {
+        indicators.querySelectorAll('.lightbox-indicator').forEach((el, i) => {
+          el.classList.toggle('active', i === index);
         });
       }
     }
 
-    const lightboxIndicators = document.getElementById('lightboxIndicators');
-    if (lightboxIndicators) {
-      lightboxIndicators.replaceChildren();
-      if (images.length > 1) {
-        images.forEach((_, index) => {
-          const indicator = document.createElement('button');
-          indicator.className = 'lightbox-indicator' + (index === currentIndexLocal ? ' active' : '');
-          indicator.setAttribute('aria-label', `Изображение ${index + 1}`);
-          indicator.addEventListener('click', () => {
-            currentIndexLocal = index;
-            updateLightboxImage(currentIndexLocal);
-          });
-          lightboxIndicators.appendChild(indicator);
+    function navigateLightbox(direction) {
+      lightboxCurrentIndex = (lightboxCurrentIndex + direction + images.length) % images.length;
+      updateLightboxImage(lightboxCurrentIndex);
+    }
+
+    // Создаём индикаторы, если их нет
+    let indicatorsContainer = document.getElementById('lightboxIndicators');
+    if (!indicatorsContainer) {
+      indicatorsContainer = document.createElement('div');
+      indicatorsContainer.className = 'lightbox-indicators';
+      indicatorsContainer.id = 'lightboxIndicators';
+      lightboxOverlay.querySelector('.lightbox-content').appendChild(indicatorsContainer);
+    }
+    indicatorsContainer.replaceChildren();
+    if (images.length > 1) {
+      images.forEach((_, idx) => {
+        const dot = document.createElement('button');
+        dot.className = 'lightbox-indicator' + (idx === lightboxCurrentIndex ? ' active' : '');
+        dot.setAttribute('aria-label', `Изображение ${idx + 1}`);
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          lightboxCurrentIndex = idx;
+          updateLightboxImage(lightboxCurrentIndex);
         });
+        indicatorsContainer.appendChild(dot);
+      });
+    }
+
+    // Навигационные кнопки (для десктопа)
+    let prevBtn = document.getElementById('lightboxPrevBtn');
+    let nextBtn = document.getElementById('lightboxNextBtn');
+    if (!prevBtn) {
+      prevBtn = createNavButton('lightbox-nav lightbox-prev', 'Предыдущее', 'M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z');
+      prevBtn.id = 'lightboxPrevBtn';
+      lightboxOverlay.querySelector('.lightbox-content').appendChild(prevBtn);
+    }
+    if (!nextBtn) {
+      nextBtn = createNavButton('lightbox-nav lightbox-next', 'Следующее', 'M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z');
+      nextBtn.id = 'lightboxNextBtn';
+      lightboxOverlay.querySelector('.lightbox-content').appendChild(nextBtn);
+    }
+    // Обновляем видимость кнопок
+    const showNav = images.length > 1;
+    prevBtn.style.display = showNav ? 'flex' : 'none';
+    nextBtn.style.display = showNav ? 'flex' : 'none';
+
+    // Обработчики кликов по кнопкам
+    const prevHandler = () => navigateLightbox(-1);
+    const nextHandler = () => navigateLightbox(1);
+    prevBtn.onclick = prevHandler;
+    nextBtn.onclick = nextHandler;
+
+    // ---------- СВАЙП В ЛАЙТБОКСЕ (исправлено passive) ----------
+    function lbHandleTouchStart(e) {
+      const touch = e.touches[0];
+      lbTouchStartX = touch.clientX;
+      lbTouchStartY = touch.clientY;
+      lbIsSwiping = false;
+    }
+
+    function lbHandleTouchMove(e) {
+      if (!lbTouchStartX) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - lbTouchStartX;
+      const deltaY = touch.clientY - lbTouchStartY;
+      if (Math.abs(deltaX) > 10) {
+        lbIsSwiping = true;
+        e.preventDefault(); // предотвращаем скролл страницы
       }
     }
 
-    function navigate(direction) {
-      currentIndexLocal = (currentIndexLocal + direction + images.length) % images.length;
-      updateLightboxImage(currentIndexLocal);
+    function lbHandleTouchEnd(e) {
+      if (!lbTouchStartX) return;
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - lbTouchStartX;
+      const deltaY = touch.clientY - lbTouchStartY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+
+      if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
+        e.preventDefault();
+        if (deltaX > 0) {
+          navigateLightbox(-1);
+        } else {
+          navigateLightbox(1);
+        }
+        lbIsSwiping = true;
+      }
+
+      lbTouchStartX = 0;
+      lbTouchStartY = 0;
     }
 
-    const prevBtn = document.getElementById('lightboxPrevBtn');
-    const nextBtn = document.getElementById('lightboxNextBtn');
+    // Удаляем старые обработчики, если есть
+    const lbContent = lightboxOverlay.querySelector('.lightbox-content');
+    lbContent.removeEventListener('touchstart', lbHandleTouchStart);
+    lbContent.removeEventListener('touchmove', lbHandleTouchMove);
+    lbContent.removeEventListener('touchend', lbHandleTouchEnd);
+    // touchstart – passive: true (нет preventDefault), touchmove и touchend – passive: false
+    lbContent.addEventListener('touchstart', lbHandleTouchStart, { passive: true });
+    lbContent.addEventListener('touchmove', lbHandleTouchMove, { passive: false });
+    lbContent.addEventListener('touchend', lbHandleTouchEnd, { passive: false });
 
-    if (prevBtn) {
-      prevBtn.style.display = images.length > 1 ? 'flex' : 'none';
-      prevBtn.onclick = () => navigate(-1);
-    }
-    if (nextBtn) {
-      nextBtn.style.display = images.length > 1 ? 'flex' : 'none';
-      nextBtn.onclick = () => navigate(1);
-    }
-
-    updateLightboxImage(currentIndexLocal);
+    // Открытие лайтбокса
+    updateLightboxImage(lightboxCurrentIndex);
     lightboxOverlay.classList.add('active');
-
     if (window.ScrollManager && !ScrollManager.isLocked()) {
       ScrollManager.lock();
     }
 
+    // Закрытие
     const closeBtn = document.getElementById('lightboxCloseBtn');
     const closeHandler = () => {
       lightboxOverlay.classList.remove('active');
       if (window.ScrollManager) ScrollManager.unlock();
       setTimeout(() => {
         lightboxImage.src = '';
+        // Удаляем обработчики при закрытии
+        lbContent.removeEventListener('touchstart', lbHandleTouchStart);
+        lbContent.removeEventListener('touchmove', lbHandleTouchMove);
+        lbContent.removeEventListener('touchend', lbHandleTouchEnd);
+        // Сбрасываем onclick, чтобы не было утечек
+        prevBtn.onclick = null;
+        nextBtn.onclick = null;
+        lightboxOverlay.onclick = null;
+        document.removeEventListener('keydown', escapeHandler);
       }, 300);
-      if (prevBtn) prevBtn.onclick = null;
-      if (nextBtn) nextBtn.onclick = null;
-      if (closeBtn) closeBtn.onclick = null;
-      lightboxOverlay.onclick = null;
     };
 
     if (closeBtn) closeBtn.onclick = closeHandler;
     lightboxOverlay.onclick = (e) => {
-      if (e.target === lightboxOverlay) closeHandler();
+      if (e.target === lightboxOverlay && !lbIsSwiping) {
+        closeHandler();
+      }
     };
 
-    document.addEventListener('keydown', function escapeHandler(e) {
-      if (e.key === 'Escape') {
-        closeHandler();
-        document.removeEventListener('keydown', escapeHandler);
-      }
-    });
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') closeHandler();
+    };
+    document.addEventListener('keydown', escapeHandler);
   }
 
-  newMainImage.style.cursor = 'zoom-in';
-  newMainImage.addEventListener('click', openLightbox);
+  // ---------- Обработчики для основной галереи (свайп в модалке, исправлено passive) ----------
+  function handleTouchStart(e) {
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    isSwiping = false;
+  }
 
+  function handleTouchMove(e) {
+    if (!touchStartX) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    if (Math.abs(deltaX) > 10) {
+      isSwiping = true;
+      e.preventDefault();
+    }
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchStartX) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
+      e.preventDefault();
+      if (deltaX > 0) {
+        currentIndex = (currentIndex - 1 + images.length) % images.length;
+      } else {
+        currentIndex = (currentIndex + 1) % images.length;
+      }
+      updateMainImage(currentIndex);
+      const indicators = newContainer.querySelectorAll('.gallery-indicator');
+      indicators.forEach((ind, i) => ind.classList.toggle('active', i === currentIndex));
+      isSwiping = true;
+    }
+
+    touchStartX = 0;
+    touchStartY = 0;
+  }
+
+  // Клик по изображению для открытия лайтбокса (игнорируем, если был свайп)
+  newMainImage.addEventListener('click', function(e) {
+    if (isSwiping) {
+      isSwiping = false;
+      return;
+    }
+    openLightbox();
+  });
+
+  // Создаём обёртку для изображения, если её нет
+  let wrapper = newContainer.querySelector('.gallery-image-wrapper');
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.className = 'gallery-image-wrapper';
+    newContainer.appendChild(wrapper);
+  }
+  if (!wrapper.contains(newMainImage)) {
+    wrapper.appendChild(newMainImage);
+  }
+
+  // Обработчики свайпа для основной галереи
+  wrapper.removeEventListener('touchstart', handleTouchStart);
+  wrapper.removeEventListener('touchmove', handleTouchMove);
+  wrapper.removeEventListener('touchend', handleTouchEnd);
+  wrapper.addEventListener('touchstart', handleTouchStart, { passive: true });
+  wrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
+  wrapper.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+  // ---------- Кнопки и индикаторы для основной галереи ----------
   if (images.length === 1) {
     updateMainImage(0);
     return;
@@ -306,11 +462,6 @@ function initProjectGallery(images, container, mainImage) {
     indicators.forEach((ind, i) => ind.classList.toggle('active', i === currentIndex));
   });
   newContainer.appendChild(prevBtn);
-
-  const imageWrapper = document.createElement('div');
-  imageWrapper.className = 'gallery-image-wrapper';
-  newContainer.appendChild(imageWrapper);
-  imageWrapper.appendChild(newMainImage);
 
   const nextBtn = createNavButton('gallery-nav gallery-nav-next', 'Следующее изображение', 'M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z');
   nextBtn.addEventListener('click', () => {
@@ -364,9 +515,6 @@ function destroyProjectsPage() {
     _projectsPageHandlers.renderer = null;
   }
   window._projectsPageInitialized = false;
-
-  // Удаляем только те глобальные функции, которые могли быть созданы
-  delete window.initProjectGallery; // оставляем, если используется в других местах
 }
 
 window.initProjectsPage = initProjectsPage;

@@ -46,7 +46,7 @@ class NewsRenderer {
 
     this._lazyLoadImages(container);
     this._animateCards(container);
-    this._checkVisibilityAndAddVisibleClass(container); // принудительная проверка видимости
+    this._checkVisibilityAndAddVisibleClass(container);
 
     if (window.animationManager) {
       window.animationManager.observeNewElements(container);
@@ -88,7 +88,7 @@ class NewsRenderer {
 
     this._lazyLoadImages(container);
     this._animateCards(container);
-    this._checkVisibilityAndAddVisibleClass(container); // принудительная проверка видимости
+    this._checkVisibilityAndAddVisibleClass(container);
 
     if (window.animationManager) {
       window.animationManager.observeNewElements(container);
@@ -99,6 +99,9 @@ class NewsRenderer {
     const article = document.createElement('article');
     article.classList.add('news-card', 'animate-on-scroll', 'fade-up');
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
+    // Централизованное открытие через ModalManager
+    article.dataset.modalOpen = 'news';
+    article.dataset.newsId = news.id;
 
     const imageContainer = document.createElement('div');
     imageContainer.classList.add('news-card-image');
@@ -146,7 +149,7 @@ class NewsRenderer {
     const link = document.createElement('a');
     link.classList.add('news-card-link');
     link.setAttribute('href', '#');
-    link.setAttribute('data-modal-open', 'news');  // <-- добавить эту строку
+    link.setAttribute('data-modal-open', 'news');
     link.setAttribute('data-news-id', news.id);
     link.textContent = 'Подробнее';
 
@@ -192,16 +195,12 @@ class NewsRenderer {
       const hiddenNews = container.querySelectorAll('.news-card.hidden-news');
 
       if (!expanded) {
-        // Раскрываем – убираем класс hidden-news
         hiddenNews.forEach(card => card.classList.remove('hidden-news'));
         button.firstChild.textContent = `Свернуть`;
         button.classList.add('expanded');
         expanded = true;
-
-        // Принудительно проверяем видимость после раскрытия
         setTimeout(() => this._checkVisibilityAndAddVisibleClass(container), 50);
       } else {
-        // Сворачиваем – добавляем класс hidden-news карточкам, начиная с defaultVisible
         const allCards = container.querySelectorAll('.news-card');
         allCards.forEach((card, idx) => {
           if (idx >= defaultVisible) {
@@ -218,14 +217,10 @@ class NewsRenderer {
     container.appendChild(wrapper);
   }
 
-  /**
-   * Принудительная проверка видимости карточек и добавление класса visible
-   * @param {HTMLElement} container
-   */
   _checkVisibilityAndAddVisibleClass(container) {
     const cards = container.querySelectorAll('.news-card:not(.hidden-news)');
     const windowHeight = window.innerHeight;
-    const offset = 100; // отступ для срабатывания анимации
+    const offset = 100;
     cards.forEach(card => {
       const rect = card.getBoundingClientRect();
       const isVisible = rect.top < windowHeight - offset && rect.bottom > offset;

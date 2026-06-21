@@ -1,5 +1,5 @@
 /**
- * Управление новостями – только рендеринг и лайтбокс
+ * Управление новостями – только табы и лайтбокс
  * ООО "Волга-Днепр Инжиниринг"
  */
 class NewsManager {
@@ -14,14 +14,12 @@ class NewsManager {
     this._lightboxOverlayClickHandler = null;
     this._lightboxKeydownHandler = null;
     this._lightboxImageClickHandler = null;
-    this._boundLoadHandler = null;
   }
 
   init() {
     Logger.INFO('NewsManager initializing...');
     this._initTabs();
     this._initLightbox();
-    // Удалён вызов _initCardClickHandler
   }
 
   _initLightbox() {
@@ -34,7 +32,6 @@ class NewsManager {
       return;
     }
 
-    // Клик по изображению в модалке новостей открывает лайтбокс
     const modalImage = document.getElementById('newsModalImage');
     if (modalImage) {
       this._lightboxModalClickHandler = () => {
@@ -154,11 +151,6 @@ class NewsManager {
   }
 
   destroy() {
-    if (this._boundLoadHandler) {
-      window.removeEventListener('load', this._boundLoadHandler);
-      this._boundLoadHandler = null;
-    }
-
     if (this._lightboxModalClickHandler) {
       const modalImage = document.getElementById('newsModalImage');
       if (modalImage) {

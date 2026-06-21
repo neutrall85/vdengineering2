@@ -1,6 +1,8 @@
 /**
  * Главный файл инициализации приложения
  * ООО "Волга-Днепр Инжиниринг"
+ * 
+ * Добавлена поддержка глубоких ссылок (hash) для проектов и новостей.
  */
 class Application {
   constructor() {
@@ -11,6 +13,7 @@ class Application {
     this.scrollProgressElements = null;
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
+    this._boundHashChangeHandler = null; // для hashchange
   }
 
   async init() {
@@ -19,30 +22,36 @@ class Application {
         throw new Error('ConsentManager is not loaded - critical security module missing');
       }
 
-      if (typeof ComponentLoader !== 'undefined') {
-        const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
-        const componentsLoadedPromise = new Promise((resolve) => {
-          const onComponentsLoaded = () => {
-            document.removeEventListener('components:loaded', onComponentsLoaded);
-            resolve();
-          };
-          document.addEventListener('components:loaded', onComponentsLoaded);
+      // Загрузка компонентов через ComponentLoader (синхронно, но с ожиданием события)
+      const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      const componentsLoadedPromise = new Promise((resolve) => {
+        const onComponentsLoaded = () => {
+          document.removeEventListener('components:loaded', onComponentsLoaded);
+          resolve();
+        };
+        document.addEventListener('components:loaded', onComponentsLoaded);
+        
+        if (typeof ComponentLoader !== 'undefined') {
           ComponentLoader.init({
             loadNavbar: true,
             loadFooter: true,
             loadModal: true,
             activePage: currentPage === 'index' ? '' : currentPage
           });
-        });
-        await componentsLoadedPromise;
-      }
+        } else {
+          // Если ComponentLoader нет, всё равно разрешаем
+          resolve();
+        }
+      });
+      await componentsLoadedPromise;
 
       this._hidePageLoader();
       this._initGlobalHelpers();
       this._setCurrentYear();
       this._registerModules();
-      this._registerModals(); // все модалки регистрируются здесь
+      this._registerModals(); // регистрируем модалки в ModalManager
 
+      // Инициализация модулей (которые не зависят от DOM)
       for (const module of this.modules) {
         try {
           if (module && typeof module.init === 'function') {
@@ -53,7 +62,11 @@ class Application {
         }
       }
 
-      const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      // Теперь после загрузки компонентов можно инициализировать FormManager
+      // и UniversalApplicationModalManager (они зависят от наличия форм в DOM)
+      this._initFormManagers();
+
+      // Инициализация страниц
       const pageInitMap = {
         'projects': 'initProjectsPage',
         'services': 'initServicesPage',
@@ -72,6 +85,13 @@ class Application {
       this._handleHashScroll();
       this._initScrollProgressBar();
 
+      // === НОВОЕ: инициализация обработки глубоких ссылок ===
+      this._initHashListener();
+      // Открываем модалку по хешу, если он есть (с небольшой задержкой для загрузки данных)
+      setTimeout(() => {
+        this._openModalFromHash();
+      }, 300);
+
       this.initialized = true;
       if (this.errors.length > 0) {
         Logger.WARN('Application initialized with errors:', this.errors);
@@ -84,6 +104,31 @@ class Application {
     }
   }
 
+  _initFormManagers() {
+    // Проверяем, что форма существует, иначе не создаём FormManager
+    const proposalForm = document.getElementById('proposalForm');
+    if (proposalForm) {
+      if (typeof FormManager !== 'undefined' && window.Services?.apiClient) {
+        const rateLimiter = new Utils.RateLimiter(window.Services.storage);
+        window.formManager = new FormManager(window.Services.apiClient, rateLimiter);
+        // Сохраняем ссылку в сервисы
+        this.services.formManager = window.formManager;
+      } else {
+        Logger.WARN('FormManager or apiClient not available');
+      }
+    } else {
+      Logger.WARN('Form #proposalForm not found, FormManager not created');
+    }
+
+    // Универсальная модалка
+    if (typeof UniversalApplicationModalManager !== 'undefined') {
+      UniversalApplicationModalManager.init();
+      this.services.universalModalManager = UniversalApplicationModalManager;
+    } else {
+      Logger.WARN('UniversalApplicationModalManager not available');
+    }
+  }
+
   _registerModules() {
     const modulesToRegister = [];
     if (typeof navigationManager !== 'undefined') {
@@ -93,10 +138,6 @@ class Application {
     if (typeof animationManager !== 'undefined') {
       this.services.animationManager = animationManager;
       modulesToRegister.push(animationManager);
-    }
-    if (typeof formManager !== 'undefined') {
-      this.services.formManager = formManager;
-      modulesToRegister.push(formManager);
     }
     if (typeof newsManager !== 'undefined') {
       this.services.newsManager = newsManager;
@@ -119,11 +160,37 @@ class Application {
       { key: 'about', overlayId: 'aboutModalOverlay', required: false },
       { key: 'details', overlayId: 'detailsModalOverlay', required: false },
       { key: 'news', overlayId: 'newsModalOverlay', required: false },
-      { key: 'proposal', overlayId: 'proposalModalOverlay', required: false, focusSelector: '#companyName' },
-      { key: 'universal', overlayId: 'universalApplicationModalOverlay', required: false, focusSelector: 'input[type="text"], input[type="email"], textarea' },
+      {
+        key: 'proposal',
+        overlayId: 'proposalModalOverlay',
+        required: false,
+        focusSelector: '#companyName',
+        onClose: () => {
+          if (window.formManager) {
+            window.formManager.resetForm();
+          } else {
+            Logger.WARN('formManager not available on proposal close');
+          }
+        }
+      },
+      {
+        key: 'universal',
+        overlayId: 'universalApplicationModalOverlay',
+        required: false,
+        focusSelector: 'input[type="text"], input[type="email"], textarea',
+        onClose: () => {
+          if (typeof UniversalApplicationModalManager !== 'undefined') {
+            UniversalApplicationModalManager.resetForm();
+          } else {
+            Logger.WARN('UniversalApplicationModalManager not available on universal close');
+          }
+        }
+      },
       { key: 'project', overlayId: 'projectModalOverlay', required: false },
       { key: 'service', overlayId: 'serviceModalOverlay', required: false },
-      { key: 'policy', overlayId: 'policyModalOverlay', required: false }
+      { key: 'policy', overlayId: 'policyModalOverlay', required: false },
+      // 👇 ДОБАВИТЬ ЭТУ СТРОКУ
+      { key: 'success', overlayId: 'successModalOverlay', required: false }
     ];
 
     modalsToRegister.forEach(({ key, overlayId, required, onClose, onOpen, focusSelector }) => {
@@ -139,7 +206,6 @@ class Application {
   }
 
   _initGlobalHelpers() {
-    // Оставляем только необходимые глобальные функции
     window.scrollToTop = () => {
       if (navigationManager) navigationManager.scrollToTop();
     };
@@ -154,8 +220,10 @@ class Application {
         event.stopPropagation();
         event.preventDefault();
       }
-      if (formManager && typeof formManager.removeFile === 'function') {
-        formManager.removeFile(index);
+      if (window.formManager && typeof window.formManager.removeFile === 'function') {
+        window.formManager.removeFile(index);
+      } else if (typeof UniversalApplicationModalManager !== 'undefined' && UniversalApplicationModalManager.removeFile) {
+        UniversalApplicationModalManager.removeFile(index);
       }
     };
     window.toggleWidget = (header) => {
@@ -207,8 +275,6 @@ class Application {
       return;
     }
 
-    // Кнопка уже имеет data-modal-open="proposal" – дополнительный обработчик не нужен
-    // Оставляем только логику показа/скрытия при скролле
     const heroSection = document.querySelector('.hero');
     if (heroSection) {
       this._heroObserver = new IntersectionObserver((entries) => {
@@ -352,6 +418,41 @@ class Application {
     }
   }
 
+  // ========== НОВЫЕ МЕТОДЫ ДЛЯ ГЛУБОКИХ ССЫЛОК ==========
+  _initHashListener() {
+    this._boundHashChangeHandler = () => {
+      this._openModalFromHash();
+    };
+    window.addEventListener('hashchange', this._boundHashChangeHandler);
+  }
+
+  _openModalFromHash() {
+    const hash = window.location.hash.slice(1); // убираем '#'
+    if (!hash) return;
+    const [type, id] = hash.split('=');
+    if (!type || !id) return;
+
+    const modalManager = this.services.modalManager;
+    if (!modalManager) {
+      Logger.WARN('ModalManager not available for hash handling');
+      return;
+    }
+
+    // Если модалка уже открыта и это тот же ключ, не открываем повторно
+    if (modalManager.activeModal === type && modalManager.currentModalId === id) {
+      return;
+    }
+
+    if (type === 'project') {
+      modalManager.openProjectById(id);
+    } else if (type === 'news') {
+      modalManager.openNewsById(id);
+    } else {
+      // другие типы не обрабатываем
+    }
+  }
+  // ===================================================
+
   _showError(error) {
     const errorContainer = document.getElementById('appError');
     if (errorContainer) {
@@ -418,7 +519,11 @@ class Application {
     }
     this._destroyScrollProgressBar();
 
-    // Очистка модулей
+    if (this._boundHashChangeHandler) {
+      window.removeEventListener('hashchange', this._boundHashChangeHandler);
+      this._boundHashChangeHandler = null;
+    }
+
     if (this.services.navigationManager && typeof this.services.navigationManager.destroy === 'function') {
       this.services.navigationManager.destroy();
     }
@@ -479,20 +584,7 @@ class Application {
 
 window.Application = Application;
 
-if (typeof Utils !== 'undefined' && Utils.DOM && !Utils.DOM.escapeHtml) {
-  Utils.DOM.escapeHtml = function(str) {
-    if (!str) return '';
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  };
-}
-
-let newsRenderer, newsManager, formManager;
-
+// Определяем функцию initApp как глобальную
 function initApp() {
   const hasConfig = typeof window.CONFIG !== 'undefined';
   const hasServices = typeof window.Services !== 'undefined';
@@ -503,12 +595,13 @@ function initApp() {
     return;
   }
 
+  // Инициализация менеджеров новостей (если есть данные)
   if (typeof NEWS_DATA !== 'undefined') {
     try {
       if (typeof NewsRenderer !== 'undefined' && typeof NewsManager !== 'undefined') {
-        newsRenderer = new NewsRenderer(NEWS_DATA);
-        newsManager = new NewsManager(NEWS_DATA, newsRenderer);
-        newsManager.init();
+        window.newsRenderer = new NewsRenderer(NEWS_DATA);
+        window.newsManager = new NewsManager(NEWS_DATA, window.newsRenderer);
+        window.newsManager.init();
       } else {
         Logger.ERROR('NewsRenderer или NewsManager не определен');
       }
@@ -517,29 +610,16 @@ function initApp() {
     }
   }
 
-  if (hasServices && hasUtils) {
-    try {
-      const formRateLimiter = new Utils.RateLimiter(window.Services.storage);
-      formManager = new FormManager(
-        window.Services.apiClient,
-        formRateLimiter,
-        Utils.Validator
-      );
-      formManager.init();
-    } catch (err) {
-      Logger.ERROR('Failed to initialize FormManager:', err);
-    }
-  } else {
-    Logger.WARN('Required services or utils are not available for FormManager initialization');
-  }
-
+  // Инициализация предпросмотра документов
   if (typeof initDocPreviews === 'function') {
     initDocPreviews();
   }
 
+  // Создаём экземпляр приложения
   const app = new Application();
   window.App = app;
 
+  // Инициализируем ConsentManager
   if (typeof ConsentManager !== 'undefined') {
     try {
       ConsentManager.init();
@@ -549,6 +629,7 @@ function initApp() {
     }
   }
 
+  // Запуск приложения (внутри дождётся components:loaded и создаст FormManager)
   app.init();
 }
 

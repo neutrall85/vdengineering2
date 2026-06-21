@@ -307,36 +307,56 @@ const Utils = (function() {
 
   // ========== Лимитирование запросов ==========
   class RateLimiter {
-    constructor(storage, key = 'lastFormSubmit', limitMs = window.CONFIG?.FORM?.RATE_LIMIT_MS || 60000) {
+    constructor(storage, key = 'requestTimestamps', max = 5, windowMs = 60000) {
       this.storage = storage;
       this.key = key;
-      this.limitMs = limitMs;
+      this.max = max;
+      this.windowMs = windowMs;
+    }
+
+    _getTimestamps() {
+      const data = this.storage.get(this.key);
+      return Array.isArray(data) ? data : [];
+    }
+
+    _saveTimestamps(timestamps) {
+      this.storage.set(this.key, timestamps);
     }
 
     canProceed() {
-      const lastSubmit = this.storage.get(this.key);
-      // Если нет записи, или это не число, или NaN – считаем, что лимита нет
-      if (!lastSubmit || typeof lastSubmit !== 'number' || isNaN(lastSubmit)) {
+      const now = Date.now();
+      const timestamps = this._getTimestamps();
+      // Оставляем только те, что внутри окна
+      const valid = timestamps.filter(ts => now - ts < this.windowMs);
+      if (valid.length < this.max) {
         return true;
       }
-      return Date.now() - lastSubmit >= this.limitMs;
+      return false;
     }
 
     record() {
-      this.storage.set(this.key, Date.now());
-      return this;
+      const now = Date.now();
+      const timestamps = this._getTimestamps();
+      // Удаляем старые
+      const valid = timestamps.filter(ts => now - ts < this.windowMs);
+      valid.push(now);
+      this._saveTimestamps(valid);
+    }
+
+    getRemainingTime() {
+      const now = Date.now();
+      const timestamps = this._getTimestamps();
+      const valid = timestamps.filter(ts => now - ts < this.windowMs);
+      if (valid.length < this.max) {
+        return 0;
+      }
+      // Самая старая метка из окна
+      const oldest = Math.min(...valid);
+      return Math.max(0, this.windowMs - (now - oldest));
     }
 
     reset() {
       this.storage.remove(this.key);
-      return this;
-    }
-
-    getRemainingTime() {
-      const lastSubmit = this.storage.get(this.key);
-      if (!lastSubmit) return 0;
-      const elapsed = Date.now() - lastSubmit;
-      return Math.max(0, this.limitMs - elapsed);
     }
   }
 

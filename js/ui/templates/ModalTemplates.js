@@ -9,6 +9,9 @@ const ModalTemplates = {
 <!-- Commercial Proposal Modal -->
 <div class="modal-overlay modal-overlay-proposal" id="proposalModalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-container modal-container-proposal">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
     <div class="modal-header">
       <h2 class="modal-title" id="modalTitle">Запрос коммерческого предложения</h2>
       <p class="modal-subtitle">Заполните форму ниже, и мы свяжемся с вами в течение 24 часов</p>
@@ -18,13 +21,7 @@ const ModalTemplates = {
         <p>⚠️ Слишком много запросов. Пожалуйста, подождите 60 секунд перед следующей отправкой.</p>
       </div>
 
-      <div class="success-message" id="successMessage">
-        <div class="success-icon">
-          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-        </div>
-        <h3 class="success-title">Заявка отправлена!</h3>
-        <p class="success-text">Спасибо за ваш запрос. Наш специалист свяжется с вами в течение 24 часов.</p>
-      </div>
+      <!-- Блок успеха УДАЛЁН – теперь используется отдельная модалка successModal -->
 
       <input type="hidden" id="csrfToken" name="csrf_token" value="">
 
@@ -53,9 +50,9 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label">Телефон <span class="required">*</span></label>
+          <label class="form-label" for="phone-proposal">Телефон <span class="required">*</span></label>
           <div class="form-phone-group">
-            <input type="tel" class="form-input" id="phone" name="phone" placeholder="+7 (999) 000-00-00" required minlength="10" maxlength="20" autocomplete="tel" class="form-input-phone">
+            <input type="tel" class="form-input" id="phone-proposal" name="phone" placeholder="+7 (999) 000-00-00" required minlength="10" maxlength="20" autocomplete="tel" class="form-input-phone">
             <input type="text" class="form-input" id="extension" name="extension" placeholder="доб." maxlength="6" autocomplete="off" class="form-input-extension">
           </div>
           <p class="error-message" id="phoneError">Пожалуйста, введите корректный номер телефона</p>
@@ -82,7 +79,7 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label">Вложение (опционально)</label>
           <div class="form-file" id="fileDrop">
-            <input type="file" id="fileAttachment" name="fileAttachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip" aria-label="Загрузить файл" multiple>
+            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -121,6 +118,9 @@ const ModalTemplates = {
 <!-- Universal Application Modal -->
 <div class="modal-overlay modal-overlay-universal" id="universalApplicationModalOverlay" role="dialog" aria-modal="true" aria-labelledby="universalApplicationModalTitle">
   <div class="modal-container">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
     <div class="modal-header">
       <h2 class="modal-title" id="universalApplicationModalTitle">Отклик на вакансию</h2>
       <p class="modal-subtitle" id="universalApplicationModalSubtitle">Заполните форму ниже, и мы рассмотрим вашу кандидатуру</p>
@@ -130,13 +130,7 @@ const ModalTemplates = {
         <p>⚠️ Слишком много запросов. Пожалуйста, подождите 60 секунд перед следующей отправкой.</p>
       </div>
 
-      <div class="success-message" id="universalSuccessMessage">
-        <div class="success-icon">
-          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-        </div>
-        <h3 class="success-title" id="universalSuccessTitle">Отклик отправлен!</h3>
-        <p class="success-text">Спасибо за ваш интерес. Мы рассмотрим резюме и свяжемся с вами в ближайшее время.</p>
-      </div>
+      <!-- Блок успеха УДАЛЁН – теперь используется отдельная модалка successModal -->
 
       <form id="universalApplicationForm" novalidate>
         <div class="form-group">
@@ -146,8 +140,8 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="phone">Номер телефона <span class="required">*</span></label>
-          <input type="tel" class="form-input" id="phone" name="phone" placeholder="+7 (999) 000-00-00" required minlength="10" maxlength="20" autocomplete="tel">
+          <label class="form-label" for="phone-universal">Номер телефона <span class="required">*</span></label>
+          <input type="tel" class="form-input" id="phone-universal" name="phone" placeholder="+7 (999) 000-00-00" required minlength="10" maxlength="20" autocomplete="tel">
           <p class="error-message" id="phoneError">Пожалуйста, введите корректный номер телефона</p>
         </div>
 
@@ -166,7 +160,7 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label">Резюме (файл) <span class="required">*</span></label>
           <div class="form-file" id="universalFileDrop">
-            <input type="file" id="fileAttachment" name="fileAttachment" accept=".pdf,.doc,.docx,.xls,.xlsx" aria-label="Загрузить резюме" required multiple>
+            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx" aria-label="Загрузить резюме" required multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -192,7 +186,26 @@ const ModalTemplates = {
       </form>
     </div>
   </div>
-</div>`
+</div>`,
+
+    // НОВАЯ МОДАЛКА УСПЕХА (без крестика, использует существующие стили)
+    successModal: `
+<!-- Success Modal -->
+<div class="modal-overlay modal-overlay-success" id="successModalOverlay" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+  <div class="modal-container modal-container-success">
+    <!-- Крестик удалён по требованию -->
+    <div class="modal-body success-modal-body">
+      <div class="success-message show" style="display: block; text-align: center; padding: 1rem 0;">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h3 class="success-title" id="successModalTitle">Заявка отправлена!</h3>
+        <p class="success-text" id="successModalText">Спасибо за ваш запрос. Мы свяжемся с вами в ближайшее время.</p>
+      </div>
+    </div>
+  </div>
+</div>
+`
 };
 
 if (typeof module !== 'undefined' && module.exports) {

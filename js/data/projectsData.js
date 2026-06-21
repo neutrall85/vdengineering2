@@ -5,7 +5,7 @@
  */
 
 const PROJECTS_DATA = {
-  1: {
+  "ads-b-out": {
     title: 'Реализация функции ADS-B Out v.2 (CNS/ATM)',
     category: 'Модернизация',
     shortDescription: 'Внедрение современной системы наблюдения и связи для повышения безопасности полётов.',
@@ -22,7 +22,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/ADS-B_Out/Display.png'
     ]
   },
-  2: {
+  "d18t-support": {
     title: 'Поддержание летной годности двигателей Д-18Т',
     category: 'Модификация, ремонт, продление',
     shortDescription: 'Выполненные работы по двигателям Д-18Т',
@@ -38,7 +38,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/engines/engine4.jpg'
     ]
   },
-  3: {
+  "paint-update": {
     title: 'Уточнение схемы окраски самолёта Ан-124-100',
     category: 'Модификация',
     shortDescription: 'Замена импортных ЛКМ на российские аналоги с полным инженерным сопровождением.',
@@ -54,7 +54,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/An-124-100_paint/dwg2.jpg'
     ]
   },
-  4: {
+  "foreign-mods": {
     title: 'Модификации самолетов иностранного производства',
     category: 'Модификация',
     shortDescription: 'Комплекс второстепенных изменений для Boeing 737, RRJ-95, A330, Embraer и ATR 72, обеспечивающих дальнейшую эксплуатацию.',
@@ -74,7 +74,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/mods/wheel.png'
     ]
   },
-  5: {
+  "foreign-repairs": {
     title: 'Ремонты самолётов иностранного производства',
     category: 'Ремонт',
     shortDescription: 'Выполнение широкого спектра ремонтов различных узлов и агрегатов самолётов Airbus, Boeing, RRJ и Embraer.',
@@ -120,7 +120,7 @@ const PROJECTS_DATA = {
   //     'assets/images/Projects/frame/frame4.png'
   //   ]
   // },
-  6: {
+  "nose-repair": {
     title: 'Ремонт носовой откидной части (НОЧ) фюзеляжа',
     category: 'Ремонт',
     shortDescription: 'Ремонт носовой откидной части (НОЧ) фюзеляжа самолёта Ан-124-100 после повреждения в результате приседания ПОШ',
@@ -136,7 +136,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/nose_landing_gear_fairing/nose3.jpg'
     ]
   },
-  7: {
+  "landing-gear": {
     title: 'Перенос РК ООШ в обогреваемую зону',
     category: 'Модификация',
     shortDescription: 'Исключение проблемы нештатной работы основной опоры шасси (ООШ) при низких температурах. Выполнен перенос релейной коробки управления уборкой / выпуском ООШ в обогреваемую и герметичную зону фюзеляжа (подполье).',
@@ -155,7 +155,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/main_landing_gear/main_landing_gear2.jpg'
     ]
   },
-  8: {
+  "remote-control": {
     title: 'Система дистанционного управления бортовыми погрузочными кранами самолёта Ан-124-100',
     category: 'Модернизация',
     shortDescription: 'Замена проводных пультов управления БПК на систему дистанционного управления',
@@ -178,7 +178,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/onboard_valve_control/onboard_valve_control3.png'
     ]
   },
-  9: {
+  "antenna-replacement": {
     title: 'Замена антенны АШС-УД',
     category: 'Модернизация',
     shortDescription: 'В рамках работ по поддержанию летной годности самолета Ан-124-100 и в целях повышения качества и надежности радиосвязи в МВ-диапазоне в ВДИ была проведена работа по замене антенны АШС-УД из состава МВ-радиостанции Орлан-85СТ на импортный аналог.',
@@ -193,7 +193,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/change_antenna/change_antenna3.jpg'
     ]
   },
-  10: {
+  "cargo-equipment": {
     title: 'Разработка оборудования для перевозки генеральных грузов',
     category: 'Модификация',
     shortDescription: 'Создание специализированного оборудования для перевозки генеральных грузов на самолёте Ан-124-100',
@@ -207,7 +207,7 @@ const PROJECTS_DATA = {
       'assets/images/Projects/loading_equipment/loading_equipment4.png'
     ]
   },
-  11: {
+  "ground-equipment": {
     title: 'Разработка средств наземного обслуживания и погрузочного оборудования',
     category: 'Модификация',
     shortDescription: 'Разработка средств наземного обслуживания (СНО) и оборудования для загрузки уникальных негабаритных грузов',

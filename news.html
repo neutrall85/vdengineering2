@@ -39,6 +39,7 @@
   <script src="js/ui/NewsManager.js" defer></script>
   <script src="js/data/newsData.js" defer></script>
   <script src="js/app.js" defer></script>
+  <script src="js/form-handler.js" defer></script>
 </head>
 <body>
 
@@ -179,6 +180,9 @@
 <!-- News Modal (уникальный для страницы новостей) -->
 <div class="modal-overlay" id="newsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
   <div class="modal-container">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
     <div class="modal-header">
       <span class="modal-category" id="newsModalCategory"></span>
       <div class="modal-date" id="newsModalDate"></div>

@@ -16,6 +16,9 @@
 
     modalOverlay.innerHTML = `
       <div class="modal-container">
+        <button class="modal-close" aria-label="Закрыть">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
         <div class="modal-image-container" id="projectModalImageContainer">
           <img class="modal-image" id="projectModalImage" src="" alt="" loading="lazy">
         </div>
@@ -67,7 +70,6 @@
 
     const renderer = new NewsRenderer(NEWS_DATA);
     renderer.renderPreview(container, 3);
-    // Обработчик клика удалён – всё через data-modal-open
   }
 
   // Рендер превью проектов (4 штуки)
@@ -84,7 +86,7 @@
       .slice(0, 4)
       .map(([id, project]) => ({
         ...project,
-        id: parseInt(id, 10)
+        id: id
       }));
 
     if (projectsList.length === 0) {
@@ -155,6 +157,9 @@
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
     article.style.animationDelay = `${index * 50}ms`;
+    // Централизованное открытие через ModalManager
+    article.dataset.modalOpen = 'project';
+    article.dataset.projectId = project.id;
 
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';

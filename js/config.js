@@ -21,7 +21,8 @@ const CONFIG = {
     MOBILE_BREAKPOINT: 1048
   },
   FORM: {
-    RATE_LIMIT_MS: 60000,
+    RATE_LIMIT_MAX: 5,
+    RATE_LIMIT_WINDOW_MS: 60000,
     MAX_FILE_SIZE: 10 * 1024 * 1024,
     ALLOWED_FILE_TYPES: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'],
     ALLOWED_MIME_TYPES: [
@@ -62,19 +63,19 @@ const CONFIG = {
 };
 
 // Генерация CSRF токена
-function generateCSRFToken() {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-}
+// function generateCSRFToken() {
+//   const array = new Uint8Array(32);
+//   crypto.getRandomValues(array);
+//   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+// }
 
-// Сохранение CSRF токена в sessionStorage
-if (typeof window !== 'undefined') {
-  if (!sessionStorage.getItem(CONFIG.SECURITY.CSRF_TOKEN_KEY)) {
-    sessionStorage.setItem(CONFIG.SECURITY.CSRF_TOKEN_KEY, generateCSRFToken());
-  }
-  CONFIG.CSRF_TOKEN = sessionStorage.getItem(CONFIG.SECURITY.CSRF_TOKEN_KEY);
-}
+// // Сохранение CSRF токена в sessionStorage
+// if (typeof window !== 'undefined') {
+//   if (!sessionStorage.getItem(CONFIG.SECURITY.CSRF_TOKEN_KEY)) {
+//     sessionStorage.setItem(CONFIG.SECURITY.CSRF_TOKEN_KEY, generateCSRFToken());
+//   }
+//   CONFIG.CSRF_TOKEN = sessionStorage.getItem(CONFIG.SECURITY.CSRF_TOKEN_KEY);
+// }
 
 // Экспортируем в глобальную область
 window.CONFIG = CONFIG;

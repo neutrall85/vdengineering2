@@ -1,6 +1,8 @@
 /**
  * Управление модальными окнами – единая точка входа
  * ООО "Волга-Днепр Инжиниринг"
+ * 
+ * Добавлена поддержка глубоких ссылок (hash) для проектов и новостей.
  */
 class ModalManager {
   constructor() {
@@ -13,10 +15,12 @@ class ModalManager {
     this._boundOpenHandler = null;
     this._boundFocusTrapHandler = null;
     this._handlersInitialized = false;
+    this.currentModalId = null; // id текущего открытого объекта (проекта или новости)
     this._initGlobalHandlers();
   }
 
   register(key, config) {
+    console.log('[ModalManager] register:', key, config);
     this.modals.set(key, {
       overlayId: config.overlayId,
       onOpen: config.onOpen || null,
@@ -34,10 +38,9 @@ class ModalManager {
     if (!overlay) return;
     if (overlay._clickHandlerAttached) return;
 
-    this._ensureCloseButton(overlay);
-
     const clickHandler = (e) => {
       if (e.target === overlay) {
+        console.log('[ModalManager] overlay clicked, closing modal:', key);
         this.close(key);
       }
     };
@@ -47,36 +50,19 @@ class ModalManager {
     this.cleanupHandlers.set(key, { overlay, clickHandler });
   }
 
-  _ensureCloseButton(overlay) {
-    const container = overlay.querySelector('.modal-container, .modal-container-proposal, .details-modal-container');
-    if (!container) return;
-    if (container.querySelector('.modal-close')) return;
-
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'modal-close';
-    closeBtn.setAttribute('aria-label', 'Закрыть');
-
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z');
-    svg.appendChild(path);
-    closeBtn.appendChild(svg);
-
-    container.insertBefore(closeBtn, container.firstChild);
-  }
-
   _initGlobalHandlers() {
     if (this._handlersInitialized) return;
 
     this._boundKeyHandler = (e) => {
       if (e.key !== 'Escape') return;
       if (this.activeModal) {
+        console.log('[ModalManager] Escape pressed, closing active modal:', this.activeModal);
         this.close(this.activeModal);
         return;
       }
       const policyModal = document.getElementById('policyModalOverlay');
       if (policyModal && policyModal.classList.contains('active')) {
+        console.log('[ModalManager] Escape pressed, closing policy modal');
         this.close('policy');
       }
     };
@@ -88,7 +74,6 @@ class ModalManager {
       const overlay = closeBtn.closest('.modal-overlay');
       if (!overlay) return;
 
-      // ✅ Ищем ключ по id overlay (гарантирует нахождение)
       let modalKey = null;
       for (const [key, config] of this.modals) {
         if (config.overlayId === overlay.id) {
@@ -98,9 +83,9 @@ class ModalManager {
       }
 
       if (modalKey) {
+        console.log('[ModalManager] close button clicked for:', modalKey);
         this.close(modalKey);
       } else {
-        // Если ключ не найден – закрываем вручную и сбрасываем состояние
         overlay.classList.remove('active');
         ScrollManager.unlock();
         this.activeModal = null;
@@ -115,6 +100,7 @@ class ModalManager {
       const modalType = trigger.getAttribute('data-modal-open');
       if (!modalType) return;
       e.preventDefault();
+      console.log('[ModalManager] open trigger for:', modalType);
       this._handleModalOpen(modalType, trigger);
     };
     document.addEventListener('click', this._boundOpenHandler, { capture: false });
@@ -123,6 +109,7 @@ class ModalManager {
   }
 
   _handleModalOpen(modalType, trigger) {
+    console.log('[ModalManager] _handleModalOpen:', modalType);
     switch (modalType) {
       case 'proposal':
         this.open('proposal');
@@ -142,6 +129,7 @@ class ModalManager {
         break;
       default:
         Logger.WARN(`Неизвестный тип модалки: ${modalType}`);
+        console.warn('[ModalManager] Unknown modal type:', modalType);
     }
   }
 
@@ -149,42 +137,45 @@ class ModalManager {
     const projectId = trigger?.getAttribute('data-project-id');
     if (!projectId || !window.PROJECTS_DATA || !window.PROJECTS_DATA[projectId]) {
       Logger.WARN(`Проект с id ${projectId} не найден`);
+      console.warn('[ModalManager] Project not found:', projectId);
       return;
     }
     const project = window.PROJECTS_DATA[projectId];
     this._populateProjectModal(project);
-    this.open('project');
+    this.currentModalId = projectId;
+    this.open('project', { id: projectId });
   }
 
   _populateProjectModal(project) {
-    const sanitizer = window.Utils?.Sanitizer;
-    const modalTitle = document.getElementById('projectModalTitle');
-    const modalContent = document.getElementById('projectModalContent');
-    const modalCategory = document.getElementById('projectModalCategory');
-    const modalImageContainer = document.getElementById('projectModalImageContainer');
-    const modalImage = document.getElementById('projectModalImage');
+    const titleEl = document.getElementById('projectModalTitle');
+    const categoryEl = document.getElementById('projectModalCategory');
+    const contentEl = document.getElementById('projectModalContent');
+    const imageEl = document.getElementById('projectModalImage');
+    const container = document.getElementById('projectModalImageContainer');
 
-    if (!modalTitle || !modalContent || !modalCategory) {
-      Logger.WARN('Элементы модального окна проекта не найдены');
-      return;
+    if (titleEl) titleEl.textContent = project.title;
+    if (categoryEl) categoryEl.textContent = project.category;
+    if (contentEl) {
+      const list = document.createElement('ul');
+      list.className = 'modal-list';
+      project.details.forEach(detail => {
+        const li = document.createElement('li');
+        li.textContent = detail;
+        list.appendChild(li);
+      });
+      contentEl.replaceChildren(list);
     }
-
-    modalTitle.textContent = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
-    modalCategory.textContent = sanitizer ? sanitizer.escapeHtml(project.category) : project.category;
-
-    modalContent.replaceChildren();
-    const ul = document.createElement('ul');
-    ul.className = 'modal-list-ul';
-    project.details.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'modal-list-li';
-      li.textContent = sanitizer ? sanitizer.escapeHtml(item) : item;
-      ul.appendChild(li);
-    });
-    modalContent.appendChild(ul);
-
-    if (typeof initProjectGallery === 'function') {
-      initProjectGallery(project.images, modalImageContainer, modalImage);
+    if (container && imageEl) {
+      const images = project.images || [];
+      // Используем существующую функцию инициализации галереи
+      if (typeof window.initProjectGallery === 'function') {
+        window.initProjectGallery(images, container, imageEl);
+      } else {
+        // fallback: просто показать первое изображение
+        const img = images[0] || 'assets/images/placeholder.jpg';
+        imageEl.src = img;
+        imageEl.alt = project.title;
+      }
     }
   }
 
@@ -192,6 +183,7 @@ class ModalManager {
     const serviceId = trigger?.getAttribute('data-service-id');
     if (!serviceId || !window.servicesData || !window.servicesData[serviceId]) {
       Logger.WARN(`Услуга с id ${serviceId} не найдена`);
+      console.warn('[ModalManager] Service not found:', serviceId);
       return;
     }
     const service = window.servicesData[serviceId];
@@ -200,32 +192,33 @@ class ModalManager {
   }
 
   _populateServiceModal(service) {
-    const sanitizer = window.Utils?.Sanitizer;
-    const modalTitle = document.getElementById('serviceModalTitle');
-    const modalContent = document.getElementById('serviceModalContent');
-    const modalCategory = document.getElementById('serviceModalCategory');
+    const titleEl = document.getElementById('serviceModalTitle');
+    const categoryEl = document.getElementById('serviceModalCategory');
+    const contentEl = document.getElementById('serviceModalContent');
+    const imageEl = document.getElementById('serviceModalImage');
+    const container = document.getElementById('serviceModalImageContainer');
 
-    if (!modalTitle || !modalContent) {
-      Logger.WARN('Элементы модального окна услуги не найдены');
-      return;
+    if (titleEl) titleEl.textContent = service.title;
+    if (categoryEl) categoryEl.textContent = service.category || 'Услуга';
+    if (contentEl) {
+      const list = document.createElement('ul');
+      list.className = 'modal-list';
+      (service.details || []).forEach(detail => {
+        const li = document.createElement('li');
+        li.textContent = detail;
+        list.appendChild(li);
+      });
+      contentEl.replaceChildren(list);
     }
-
-    modalTitle.textContent = sanitizer ? sanitizer.escapeHtml(service.title) : service.title;
-    modalCategory.textContent = sanitizer ? sanitizer.escapeHtml(service.category) : service.category;
-
-    modalContent.replaceChildren();
-    const ul = document.createElement('ul');
-    ul.className = 'modal-list-ul';
-    service.details.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'modal-list-li';
-      li.textContent = sanitizer ? sanitizer.escapeHtml(item) : item;
-      ul.appendChild(li);
-    });
-    modalContent.appendChild(ul);
-
-    if (typeof initServiceGallery === 'function') {
-      initServiceGallery(service.images);
+    if (container && imageEl) {
+      const images = service.images || [];
+      if (typeof window.initServiceGallery === 'function') {
+        window.initServiceGallery(images);
+      } else {
+        const img = images[0] || 'assets/images/placeholder.jpg';
+        imageEl.src = img;
+        imageEl.alt = service.title;
+      }
     }
   }
 
@@ -236,47 +229,40 @@ class ModalManager {
     const news = allNews.find(n => String(n.id) === String(newsId));
     if (!news) {
       Logger.WARN(`Новость с id ${newsId} не найдена`);
+      console.warn('[ModalManager] News not found:', newsId);
       return;
     }
     this._populateNewsModal(news);
-    this.open('news');
+    this.currentModalId = newsId;
+    this.open('news', { id: newsId });
   }
 
   _populateNewsModal(news) {
-    const sanitizer = window.Utils?.Sanitizer;
-    const title = document.getElementById('newsModalTitle');
-    const date = document.getElementById('newsModalDate');
-    const category = document.getElementById('newsModalCategory');
-    const image = document.getElementById('newsModalImage');
-    const content = document.getElementById('newsModalContent');
+    const titleEl = document.getElementById('newsModalTitle');
+    const categoryEl = document.getElementById('newsModalCategory');
+    const dateEl = document.getElementById('newsModalDate');
+    const contentEl = document.getElementById('newsModalContent');
+    const imageEl = document.getElementById('newsModalImage');
 
-    if (!title || !content) {
-      Logger.WARN('Элементы модального окна новости не найдены');
-      return;
+    if (titleEl) titleEl.textContent = news.title;
+    if (categoryEl) categoryEl.textContent = news.category;
+    if (dateEl) dateEl.textContent = news.date;
+    if (contentEl) {
+      const div = document.createElement('div');
+      div.className = 'news-full-content';
+      div.innerHTML = Utils.Sanitizer.sanitizeHtml(news.content);
+      contentEl.replaceChildren(div);
     }
-
-    title.textContent = sanitizer ? sanitizer.escapeHtml(news.title) : news.title;
-    if (date) date.textContent = sanitizer ? sanitizer.escapeHtml(news.date) : news.date;
-    if (category) category.textContent = sanitizer ? sanitizer.escapeHtml(news.category) : news.category;
-    if (image) {
-      image.src = sanitizer?.isValidUrl ? (sanitizer.isValidUrl(news.image) ? news.image : 'assets/images/placeholder.jpg') : news.image;
-      image.alt = sanitizer ? sanitizer.escapeHtml(news.title) : news.title;
+    if (imageEl) {
+      imageEl.src = news.image || 'assets/images/placeholder.jpg';
+      imageEl.alt = news.title;
     }
-
-    content.replaceChildren();
-    const safeContent = sanitizer ? sanitizer.sanitizeHtml(news.content, {
-      allowedTags: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a', 'span', 'div']
-    }) : news.content;
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(safeContent, 'text/html');
-    Array.from(doc.body.childNodes).forEach(node => {
-      content.appendChild(node.cloneNode(true));
-    });
   }
 
   _openUniversalApplication(trigger) {
     const vacancyId = trigger?.getAttribute('data-vacancy-id') || null;
     const mode = vacancyId ? 'vacancy' : 'application';
+    console.log('[ModalManager] _openUniversalApplication, mode:', mode);
 
     const modalTitle = document.getElementById('universalApplicationModalTitle');
     const modalSubtitle = document.getElementById('universalApplicationModalSubtitle');
@@ -300,10 +286,39 @@ class ModalManager {
     this.open('universal');
   }
 
+  // ========== Публичные методы для глубоких ссылок ==========
+  openProjectById(id) {
+    if (!window.PROJECTS_DATA || !window.PROJECTS_DATA[id]) {
+      Logger.WARN(`Проект с id ${id} не найден`);
+      return false;
+    }
+    const project = window.PROJECTS_DATA[id];
+    this._populateProjectModal(project);
+    this.currentModalId = id;
+    this.open('project', { id: id });
+    return true;
+  }
+
+  openNewsById(id) {
+    const allNews = Object.values(window.NEWS_DATA || {}).flat();
+    const news = allNews.find(n => String(n.id) === String(id));
+    if (!news) {
+      Logger.WARN(`Новость с id ${id} не найдена`);
+      return false;
+    }
+    this._populateNewsModal(news);
+    this.currentModalId = id;
+    this.open('news', { id: id });
+    return true;
+  }
+  // ===================================================
+
   open(key, options = {}) {
+    console.log('[ModalManager] open called for key:', key, 'options:', options);
     const config = this.modals.get(key);
     if (!config) {
       Logger.WARN(`Модалка "${key}" не зарегистрирована`);
+      console.warn('[ModalManager] Modal not registered:', key);
       return false;
     }
 
@@ -311,9 +326,11 @@ class ModalManager {
 
     const keepParentModal = options.keepParentModal === true;
     if (this.activeModal && this.activeModal !== key && !keepParentModal) {
+      console.log('[ModalManager] Closing active modal before opening new:', this.activeModal);
       this.close(this.activeModal);
     } else if (this.activeModal && this.activeModal !== key && keepParentModal) {
       this.activeModalStack.push(this.activeModal);
+      console.log('[ModalManager] Keeping parent modal, stack:', this.activeModalStack);
     }
 
     const overlay = document.getElementById(config.overlayId);
@@ -325,14 +342,14 @@ class ModalManager {
     setTimeout(() => {
       overlay.classList.add('active');
 
-      const focusTarget = options.focusSelector
-        ? document.querySelector(options.focusSelector)
-        : config.focusSelector
-          ? overlay.querySelector(config.focusSelector)
-          : overlay.querySelector('.modal-close, button, [href], input, select, textarea');
-      if (focusTarget) {
-        setTimeout(() => focusTarget.focus(), 100);
-      }
+      // const focusTarget = options.focusSelector
+      //   ? document.querySelector(options.focusSelector)
+      //   : config.focusSelector
+      //     ? overlay.querySelector(config.focusSelector)
+      //     : overlay.querySelector('.modal-close, button, [href], input, select, textarea');
+      // if (focusTarget) {
+      //   setTimeout(() => focusTarget.focus(), 100);
+      // }
 
       this._initFocusTrap(overlay);
       if (config.onOpen) config.onOpen(overlay);
@@ -340,21 +357,42 @@ class ModalManager {
       if (window.Services?.eventBus) {
         window.Services.eventBus.emit('modal:opened', { key, overlay });
       }
+
+      // === Обновление хеша для проектов и новостей ===
+      if (key === 'project' || key === 'news') {
+        const id = options.id || this.currentModalId;
+        if (id) {
+          this._updateHash(key, id);
+        }
+      }
     }, 50);
 
     return true;
   }
 
   close(key) {
+    console.log('[ModalManager] close called for key:', key);
     const config = this.modals.get(key);
-    if (!config) return false;
-    if (this.activeModal !== key) return false;
+    if (!config) {
+      console.warn('[ModalManager] Modal not registered, cannot close:', key);
+      return false;
+    }
+    if (this.activeModal !== key) {
+      console.warn('[ModalManager] Attempt to close non-active modal:', key, 'active:', this.activeModal);
+      return false;
+    }
 
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return false;
 
     this._removeFocusTrap();
     overlay.classList.remove('active');
+
+    // === Очистка хеша при закрытии проекта/новости ===
+    if (key === 'project' || key === 'news') {
+      this._clearHash();
+      this.currentModalId = null;
+    }
 
     const previousModal = this.activeModalStack.length > 0 ? this.activeModalStack.pop() : null;
     if (!previousModal) {
@@ -364,16 +402,13 @@ class ModalManager {
     }
 
     this.activeModal = previousModal;
+    console.log('[ModalManager] Modal closed, new active modal:', this.activeModal);
 
-    // Сброс форм
-    if (key === 'proposal' && !previousModal && typeof formManager?._resetForm === 'function') {
-      formManager._resetForm();
-    }
-    if (key === 'universal' && !previousModal && typeof UniversalApplicationModalManager?.resetForm === 'function') {
-      UniversalApplicationModalManager.resetForm();
+    if (config.onClose) {
+      console.log('[ModalManager] Calling onClose for:', key);
+      config.onClose(overlay);
     }
 
-    if (config.onClose) config.onClose(overlay);
     if (window.Services?.eventBus) {
       window.Services.eventBus.emit('modal:closed', { key });
     }
@@ -387,6 +422,22 @@ class ModalManager {
   closeAll() {
     this.modals.forEach((_, key) => this.close(key));
   }
+
+  // ========== Вспомогательные методы для хеша ==========
+  _updateHash(key, id) {
+    const hash = `${key}=${id}`;
+    const currentHash = window.location.hash.slice(1);
+    if (currentHash !== hash) {
+      history.pushState(null, '', '#' + hash);
+    }
+  }
+
+  _clearHash() {
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+  // ===================================================
 
   _initFocusTrap(overlay) {
     if (!overlay) return;
@@ -418,6 +469,7 @@ class ModalManager {
   }
 
   destroy() {
+    console.log('[ModalManager] destroy called');
     if (this._boundKeyHandler) {
       document.removeEventListener('keydown', this._boundKeyHandler);
       this._boundKeyHandler = null;
@@ -441,6 +493,7 @@ class ModalManager {
     this.activeModal = null;
     this.activeModalStack = [];
     this._handlersInitialized = false;
+    this.currentModalId = null;
   }
 }
 

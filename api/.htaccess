@@ -1,0 +1,12 @@
+# Запрет прямого доступа к php-файлам (кроме handler.php)
+<FilesMatch "\.(php|ini)$">
+    Require all denied
+</FilesMatch>
+
+# Разрешаем только handler.php
+<Files "handler.php">
+    Require all granted
+</Files>
+
+# Отключение листинга
+Options -Indexes

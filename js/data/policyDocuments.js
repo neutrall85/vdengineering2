@@ -320,24 +320,7 @@ const POLICY_DOCUMENTS = {
       <p><strong>2024 год</strong></p>
       <p>
         <ul>
-          <li><a href="" target="_blank">Сводная ведомость СОУТ, 2024 г.</a><br></li>
-          <li><a href="" target="_blank">Карты специальной оценки условий труда, 2024 г.</a></li>
-        </ul>
-      </p>
-
-      <p><strong>2025 год</strong></p>
-      <p>
-        <ul>
-          <li><a href="" target="_blank">Сводная ведомость СОУТ, 2025 г.</a><br></li>
-          <li><a href="" target="_blank">Карты специальной оценки условий труда, 2025 г.</a></li>
-        </ul>
-      </p>
-
-      <p><strong>2026 год</strong></p>
-      <p>
-        <ul>
-          <li><a href="" target="_blank">Сводная ведомость СОУТ, 2026 г.</a><br></li>
-          <li><a href="" target="_blank">Карты специальной оценки условий труда, 2026 г.</a></li>
+          <li><a href="/assets/docs/Special_assessment_of_working_conditions.pdf" target="_blank">Отчет о проведении СУОТ, 05.02.2024 г.</a><br></li>
         </ul>
       </p>
     `

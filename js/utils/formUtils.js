@@ -2,17 +2,16 @@
  * formUtils – утилиты для работы с формами (без состояния)
  * ООО "Волга-Днепр Инжиниринг"
  */
+
+// Кэш для загрузчиков файлов (ключ – DOM-элемент)
+const fileUploadCache = new WeakMap();
+
 const FormUtils = {
-  /**
-   * Инициализация валидации формы через FormValidation
-   * @param {HTMLFormElement} form
-   * @param {Object} messages – кастомные сообщения
-   * @param {boolean} validateOnInput
-   * @returns {Object} validator – экземпляр FormValidator
-   */
   initValidation(form, messages = {}, validateOnInput = true) {
+    console.log('[FormUtils] initValidation called');
     if (!form || typeof FormValidation === 'undefined') {
       Logger?.WARN('FormValidation не доступен');
+      console.warn('[FormUtils] FormValidation not available');
       return null;
     }
     const defaultMessages = {
@@ -28,39 +27,51 @@ const FormUtils = {
     });
   },
 
-  /**
-   * Инициализация загрузки файлов
-   * @param {string|HTMLElement} dropSelector – селектор или элемент .form-file
-   * @param {Function} onFilesChange – коллбэк при изменении списка файлов
-   * @param {Object} options – { maxFiles, maxFileSize }
-   * @returns {Object} { currentFiles, removeFile, renderFileList, fileDrop }
-   */
   initFileUpload(dropSelector, onFilesChange, options = {}) {
+    console.log('[FormUtils] initFileUpload called with dropSelector:', dropSelector);
     const fileDrop = typeof dropSelector === 'string'
       ? document.querySelector(dropSelector)
       : dropSelector;
     if (!fileDrop) {
       Logger?.WARN('Контейнер файлов не найден');
+      console.warn('[FormUtils] fileDrop not found');
       return { currentFiles: [], removeFile: () => {}, renderFileList: () => {}, fileDrop: null };
     }
 
+    if (fileUploadCache.has(fileDrop)) {
+      console.log('[FormUtils] Returning cached fileUpload for', fileDrop);
+      return fileUploadCache.get(fileDrop);
+    }
+
     const maxFiles = options.maxFiles || 10;
-    const maxFileSize = options.maxFileSize || 10 * 1024 * 1024; // 10MB
-    let currentFiles = [];
-    let uploadWarningTimeout = null;
+    const maxFileSize = options.maxFileSize || 10 * 1024 * 1024;
+    const state = { currentFiles: [] };
 
     const fileInput = fileDrop.querySelector('input[type="file"]');
     if (!fileInput) {
       Logger?.WARN('Поле input[type="file"] не найдено');
-      return { currentFiles: [], removeFile: () => {}, renderFileList: () => {}, fileDrop };
+      console.warn('[FormUtils] fileInput not found');
+      return { currentFiles: state.currentFiles, removeFile: () => {}, renderFileList: () => {}, fileDrop };
     }
 
-    // Обработчики
+    if (fileDrop._handlers) {
+      const { fileInput: oldInput, changeHandler, dragOverHandler, dragLeaveHandler, dropHandler } = fileDrop._handlers;
+      if (oldInput) oldInput.removeEventListener('change', changeHandler);
+      if (fileDrop) {
+        fileDrop.removeEventListener('dragover', dragOverHandler);
+        fileDrop.removeEventListener('dragleave', dragLeaveHandler);
+        fileDrop.removeEventListener('drop', dropHandler);
+      }
+      console.log('[FormUtils] Removed old handlers');
+    }
+
     const changeHandler = (e) => {
-      _handleFileSelect(e.target.files, fileDrop, currentFiles, maxFiles, maxFileSize, (newFiles) => {
-        currentFiles = newFiles;
-        _renderFileList(fileDrop, currentFiles, (index) => removeFile(index));
-        if (onFilesChange) onFilesChange(currentFiles);
+      console.log('[FormUtils] file input change event, files:', e.target.files);
+      _handleFileSelect(e.target.files, fileDrop, state.currentFiles, maxFiles, maxFileSize, (newFiles) => {
+        state.currentFiles = newFiles;
+        console.log('[FormUtils] currentFiles updated, count:', state.currentFiles.length);
+        _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
+        if (onFilesChange) onFilesChange(state.currentFiles);
       });
     };
 
@@ -77,10 +88,12 @@ const FormUtils = {
       e.preventDefault();
       fileDrop.style.borderColor = '';
       fileDrop.style.background = '';
-      _handleFileSelect(e.dataTransfer.files, fileDrop, currentFiles, maxFiles, maxFileSize, (newFiles) => {
-        currentFiles = newFiles;
-        _renderFileList(fileDrop, currentFiles, (index) => removeFile(index));
-        if (onFilesChange) onFilesChange(currentFiles);
+      console.log('[FormUtils] drop event, files:', e.dataTransfer.files);
+      _handleFileSelect(e.dataTransfer.files, fileDrop, state.currentFiles, maxFiles, maxFileSize, (newFiles) => {
+        state.currentFiles = newFiles;
+        console.log('[FormUtils] currentFiles updated (drop), count:', state.currentFiles.length);
+        _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
+        if (onFilesChange) onFilesChange(state.currentFiles);
       });
     };
 
@@ -89,160 +102,232 @@ const FormUtils = {
     fileDrop.addEventListener('dragleave', dragLeaveHandler);
     fileDrop.addEventListener('drop', dropHandler);
 
-    // Функция удаления файла
     const removeFile = (index) => {
+      console.log('[FormUtils] removeFile called with index:', index);
       const idx = parseInt(index, 10);
-      if (!isNaN(idx) && idx >= 0 && idx < currentFiles.length) {
-        currentFiles.splice(idx, 1);
+      if (!isNaN(idx) && idx >= 0 && idx < state.currentFiles.length) {
+        state.currentFiles.splice(idx, 1);
         if (fileInput) fileInput.value = '';
-        _renderFileList(fileDrop, currentFiles, removeFile);
-        if (onFilesChange) onFilesChange(currentFiles);
+        _renderFileList(fileDrop, state.currentFiles, removeFile);
+        if (onFilesChange) onFilesChange(state.currentFiles);
       }
     };
 
-    // Рендеринг списка
     const renderFileList = () => {
-      _renderFileList(fileDrop, currentFiles, removeFile);
+      console.log('[FormUtils] renderFileList called, current files count:', state.currentFiles.length);
+      _renderFileList(fileDrop, state.currentFiles, removeFile);
     };
 
-    // Первоначальный рендеринг
     renderFileList();
 
-    // Сохраняем обработчики для очистки
-    fileDrop._handlers = { changeHandler, dragOverHandler, dragLeaveHandler, dropHandler };
+    fileDrop._handlers = { fileInput, changeHandler, dragOverHandler, dragLeaveHandler, dropHandler };
 
-    return {
-      currentFiles,
+    const result = {
+      get currentFiles() { return state.currentFiles; },
       removeFile,
       renderFileList,
       fileDrop,
       fileInput
     };
+
+    fileUploadCache.set(fileDrop, result);
+    return result;
   },
 
-  /**
-   * Отправка формы с обработкой состояния и rate limit
-   * @param {HTMLFormElement} form
-   * @param {Object} options – { apiClient, rateLimiter, onSuccess, onError, onFinally }
-   * @param {Array} files – список файлов
-   * @returns {Promise<void>}
-   */
-  async submitForm(form, options = {}, files = []) {
-    const { apiClient, onSuccess, onError, onFinally } = options;
-    if (!apiClient) {
-        Logger?.ERROR('apiClient не передан');
-        return;
-    }
-
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn?.textContent || 'Отправить';
-    let isSubmitting = true;
-    let timeoutId = null;
-
+  // ================================================================
+  // ПОЛУЧЕНИЕ CSRF-ТОКЕНА
+  // ================================================================
+  async fetchCsrfToken() {
     try {
-        if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.replaceChildren();
-        const spinner = document.createElement('div');
-        spinner.classList.add('spinner');
-        const loadingText = document.createElement('span');
-        loadingText.textContent = 'Отправка...';
-        submitBtn.appendChild(spinner);
-        submitBtn.appendChild(loadingText);
-        }
+      const response = await fetch('api/csrf_token.php');
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const data = await response.json();
+      return data.csrf_token;
+    } catch (err) {
+      console.error('Ошибка получения CSRF:', err);
+      return null;
+    }
+  },
 
+  // ================================================================
+  // ОТПРАВКА ФОРМЫ (ВЗЯТО ИЗ FORM-HANDLER.JS – РАБОТАЕТ)
+  // ================================================================
+  async submitForm(form, options = {}, files = []) {
+      console.log('[FormUtils] submitForm called, files count:', files.length);
+      const { onSuccess, onError, onFinally } = options;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn?.textContent || 'Отправить';
+      let isSubmitting = true;
+      let timeoutId = null;
+    
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = 'Отправка... <span class="spinner"></span>';
+        }
+    
         timeoutId = setTimeout(() => {
-        if (isSubmitting) {
+          if (isSubmitting) {
             Logger.ERROR('Form submission timeout');
             if (onError) onError('Превышено время ожидания ответа сервера. Попробуйте позже.');
             _resetSubmitState(submitBtn, originalText);
             isSubmitting = false;
-        }
+          }
         }, 30000);
-
-        // Сбор данных
-        const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {
-        if (value instanceof File) return;
-        if (typeof value === 'string') {
-            data[key] = Utils.Sanitizer.escapeHtml(value.trim());
-        } else {
-            data[key] = value;
-        }
+    
+        const formData = new FormData();
+    
+        // Поля (кроме файлов)
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+          if (input.type === 'file') return;
+          if (input.type === 'checkbox' || input.type === 'radio') {
+            if (input.checked) formData.append(input.name, input.value);
+          } else {
+            formData.append(input.name, input.value);
+          }
         });
-        data.files = files.map(file => ({ name: file.name, size: file.size, type: file.type }));
-
-        const csrfToken = form.querySelector('input[name="csrf_token"]')?.value || window.CONFIG?.CSRF_TOKEN || '';
-        const result = await apiClient.submitForm(data, { 'X-CSRF-Token': csrfToken });
-
-        if (result.success) {
-        if (onSuccess) onSuccess(result);
-        } else {
-        if (onError) onError(result.error || 'Ошибка при отправке');
+    
+        // ----- ИСПРАВЛЕНО: файлы добавляются с ключом 'fileAttachment[]' -----
+        files.forEach(file => {
+          formData.append('fileAttachment[]', file);
+        });
+    
+        // CSRF
+        let csrfToken = await FormUtils.fetchCsrfToken();
+        if (!csrfToken) {
+          if (onError) onError('Ошибка безопасности. Обновите страницу.');
+          return;
         }
-    } catch (error) {
+        formData.append('csrf_token', csrfToken);
+    
+        const response = await fetch('/api/submit.php', {
+          method: 'POST',
+          body: formData
+        });
+    
+        const text = await response.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          console.error('Сервер вернул не JSON:', text.substring(0, 200));
+          if (onError) onError('Ошибка на сервере. Проверьте логи.');
+          return;
+        }
+    
+        if (!response.ok) {
+          const msg = result.error || result.errors?.join(', ') || 'Ошибка сервера';
+          if (onError) onError(msg);
+          return;
+        }
+    
+        if (result.success) {
+          console.log('[FormUtils] Submission success:', result);
+          if (onSuccess) onSuccess(result);
+        } else {
+          console.warn('[FormUtils] Submission failed:', result);
+          if (onError) onError(result.error || 'Ошибка при отправке');
+        }
+      } catch (error) {
         Logger.ERROR('Form submission error:', error);
+        console.error('[FormUtils] Submission error:', error);
         if (onError) onError(error.message || 'Произошла ошибка. Попробуйте позже.');
-    } finally {
+      } finally {
         clearTimeout(timeoutId);
         _resetSubmitState(submitBtn, originalText);
         isSubmitting = false;
         if (onFinally) onFinally();
-    }
+      }
     },
 
-  /**
-   * Сброс формы: скрыть сообщение об успехе, сбросить поля, ошибки, файлы
-   * @param {HTMLFormElement} form
-   * @param {string} successSelector
-   * @param {Object} fileUpload – объект, возвращённый initFileUpload
-   * @param {Object} validator – экземпляр FormValidator
-   */
   resetForm(form, successSelector, fileUpload, validator) {
-    if (!form) return;
-
-    // Сброс полей
+    console.log('[FormUtils] resetForm called');
+    if (!form) {
+      console.warn('[FormUtils] resetForm: form is null');
+      return;
+    }
     form.reset();
 
-    // Скрыть сообщение об успехе
     const successMsg = document.querySelector(successSelector);
     if (successMsg) successMsg.classList.remove('show');
 
-    // Сброс файлов
     if (fileUpload) {
-      fileUpload.currentFiles = [];
-      if (fileUpload.fileInput) fileUpload.fileInput.value = '';
-      fileUpload.renderFileList();
+      console.log('[FormUtils] resetForm: resetting fileUpload, before clear count:', fileUpload.currentFiles?.length || 0);
+      if (Array.isArray(fileUpload.currentFiles)) {
+        fileUpload.currentFiles.length = 0;
+      }
+      if (fileUpload.fileInput) {
+        fileUpload.fileInput.value = '';
+      }
+      const listContainer = fileUpload.fileDrop?.querySelector('.form-file-list');
+      if (listContainer) {
+        listContainer.replaceChildren();
+      }
+      const textEl = fileUpload.fileDrop?.querySelector('.form-file-text');
+      if (textEl) {
+        textEl.textContent = 'Выбрать файл...';
+      }
+      const warning = fileUpload.fileDrop?.querySelector('.upload-warning-container');
+      if (warning) {
+        warning.classList.add('form-file-limit-hidden');
+        warning.replaceChildren();
+      }
+      console.log('[FormUtils] resetForm: after clear count:', fileUpload.currentFiles?.length || 0);
+      if (typeof fileUpload.renderFileList === 'function') {
+        fileUpload.renderFileList();
+      }
+    } else {
+      console.warn('[FormUtils] resetForm: fileUpload is null');
+      if (form) {
+        const fileInput = form.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
+        const fileList = form.querySelector('.form-file-list');
+        if (fileList) fileList.replaceChildren();
+        const fileText = form.querySelector('.form-file-text');
+        if (fileText) fileText.textContent = 'Выбрать файл...';
+        const warning = form.querySelector('.upload-warning-container');
+        if (warning) {
+          warning.classList.add('form-file-limit-hidden');
+          warning.replaceChildren();
+        }
+      }
     }
 
-    // Сброс ошибок валидации
     if (validator && typeof validator.reset === 'function') {
+      console.log('[FormUtils] resetForm: resetting validator');
       validator.reset();
     }
 
-    // Удалить класс hidden-form
     form.classList.remove('hidden-form');
 
-    // Сброс чекбоксов согласия (если есть)
     form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
     });
 
-    // Сброс предупреждения о лимите
     const rateWarning = form.querySelector('.rate-limit-warning');
     if (rateWarning) rateWarning.classList.remove('show');
+
+    form.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], textarea').forEach(el => {
+      el.value = '';
+      el.classList.remove('error');
+      el.removeAttribute('aria-invalid');
+    });
+
+    form.querySelectorAll('select').forEach(el => {
+      el.selectedIndex = 0;
+      el.classList.remove('error');
+      el.removeAttribute('aria-invalid');
+    });
   }
 };
 
-// ----- Вспомогательные внутренние функции -----
-
+// ----- Вспомогательные функции (без изменений) -----
 function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxFileSize, onUpdate) {
+  console.log('[_handleFileSelect] Processing files:', files.length);
   if (!files || files.length === 0) return;
-
   const errors = [];
   const validNewFiles = [];
-
   for (const file of Array.from(files)) {
     if (file.size > maxFileSize) {
       errors.push(`Файл "${file.name}" превышает ${maxFileSize / 1024 / 1024}MB`);
@@ -276,24 +361,25 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxFileSize,
   }
 
   if (errors.length > 0) {
+    console.warn('[handleFileSelect] Errors:', errors);
     _showUploadWarning(fileDrop, errors.join('; '));
   }
-
   const newFiles = [...currentFiles, ...filesToAdd];
+  console.log('[handleFileSelect] newFiles count:', newFiles.length);
   onUpdate(newFiles);
 }
 
 function _renderFileList(fileDrop, currentFiles, removeFileFn) {
+  console.log('[_renderFileList] called, files count:', currentFiles.length);
   if (!fileDrop) return;
   let container = fileDrop.querySelector('.form-file-list');
   if (!container) {
     container = document.createElement('div');
     container.className = 'form-file-list';
     fileDrop.appendChild(container);
+    console.log('[_renderFileList] created new list container');
   }
-
   container.replaceChildren();
-
   if (currentFiles.length === 0) {
     const text = fileDrop.querySelector('.form-file-text');
     if (text) text.textContent = 'Выбрать файл...';
@@ -335,7 +421,6 @@ function _renderFileList(fileDrop, currentFiles, removeFileFn) {
       itemDiv.appendChild(removeBtn);
       container.appendChild(itemDiv);
     });
-
     const text = fileDrop.querySelector('.form-file-text');
     if (text) text.textContent = `Выбрано файлов: ${currentFiles.length}`;
   }
@@ -350,6 +435,7 @@ function _formatFileSize(bytes) {
 }
 
 function _showUploadWarning(fileDrop, message) {
+  console.warn('[showUploadWarning]', message);
   if (!fileDrop) return;
   let warningContainer = fileDrop.querySelector('.upload-warning-container');
   if (!warningContainer) {
@@ -378,14 +464,214 @@ function _showUploadWarning(fileDrop, message) {
 function _resetSubmitState(btn, originalText) {
   if (!btn) return;
   btn.disabled = false;
-  btn.replaceChildren();
-  btn.textContent = originalText;
+  btn.innerHTML = originalText;
+}
+
+// ============================================================
+// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ФОРМ В МОДАЛКАХ
+// ============================================================
+class ModalFormHandler {
+  constructor(options) {
+    console.log('[ModalFormHandler] Constructor called with options:', options);
+    const {
+      formId,
+      successSelector,
+      fileDropSelector,
+      apiClient,
+      rateLimiter,
+      modalKey,
+      validator = window.Utils?.Validator,
+      fileOptions = {},
+      messages = {},
+      onSuccess = null,
+      onError = null,
+      onFinally = null,
+    } = options;
+
+    this.form = document.getElementById(formId);
+    if (!this.form) {
+      Logger?.WARN(`ModalFormHandler: форма с id "${formId}" не найдена`);
+      console.warn('[ModalFormHandler] Form not found:', formId);
+      return;
+    }
+
+    this.successSelector = successSelector;
+    this.fileDropSelector = fileDropSelector;
+    this.apiClient = apiClient;
+    this.rateLimiter = rateLimiter;
+    this.modalKey = modalKey;
+    this.validator = validator;
+    this.fileOptions = fileOptions;
+    this.messages = messages;
+    this.onSuccess = onSuccess || null;
+    this.onError = onError || this._defaultError.bind(this);
+    this.onFinally = onFinally || (() => {});
+
+    this.validatorInstance = null;
+    this.fileUpload = null;
+    this.isSubmitting = false;
+    this._boundSubmitHandler = null;
+    this._initialized = false;
+
+    console.log('[ModalFormHandler] Instance created for modal:', modalKey);
+  }
+
+  init() {
+    console.log('[ModalFormHandler] init() called');
+    if (this._initialized) {
+      console.log('[ModalFormHandler] Already initialized, skipping');
+      return;
+    }
+    if (!this.form) {
+      console.warn('[ModalFormHandler] init: form is null');
+      return;
+    }
+
+    this.validatorInstance = FormUtils.initValidation(this.form, this.messages);
+    const fileDrop = this.form.querySelector(this.fileDropSelector);
+    console.log('[ModalFormHandler] fileDrop element:', fileDrop);
+    if (fileDrop) {
+      this.fileUpload = FormUtils.initFileUpload(fileDrop, null, this.fileOptions);
+      console.log('[ModalFormHandler] fileUpload created:', this.fileUpload);
+      if (this.fileUpload && typeof this.fileUpload.renderFileList === 'function') {
+        this.fileUpload.renderFileList();
+      }
+    } else {
+      console.warn('[ModalFormHandler] fileDrop not found');
+    }
+    this._boundSubmitHandler = (e) => this._handleSubmit(e);
+    this.form.addEventListener('form:valid', this._boundSubmitHandler);
+    const phoneInput = this.form.querySelector('input[type="tel"]');
+    if (phoneInput && window.Utils?.PhoneUtils) {
+      window.Utils.PhoneUtils.setupAutoPrefix(phoneInput);
+    }
+    const csrfInput = this.form.querySelector('input[name="csrf_token"]');
+    if (csrfInput && window.CONFIG?.CSRF_TOKEN) {
+      csrfInput.value = window.CONFIG.CSRF_TOKEN;
+    }
+    this._initConsentCheckboxes();
+
+    this._initialized = true;
+  }
+
+  _initConsentCheckboxes() {
+    const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
+    const submitBtn = this.form.querySelector('button[type="submit"]');
+    if (!submitBtn) return;
+    const update = () => {
+      submitBtn.disabled = !Array.from(requiredCheckboxes).every(cb => cb.checked);
+    };
+    requiredCheckboxes.forEach(cb => cb.addEventListener('change', update));
+    update();
+  }
+
+  async _handleSubmit(e) {
+    console.log('[ModalFormHandler] _handleSubmit called');
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
+
+    // Проверка rate limit
+    if (this.rateLimiter && !this.rateLimiter.canProceed()) {
+      const remaining = Math.ceil(this.rateLimiter.getRemainingTime() / 1000);
+      this._defaultError(`Пожалуйста, подождите ${remaining} секунд перед следующей отправкой.`);
+      this.isSubmitting = false;
+      return;
+    }
+
+    const files = this.fileUpload ? this.fileUpload.currentFiles : [];
+    console.log('[ModalFormHandler] Files attached:', files.length);
+
+    // Вызываем submitForm, все ошибки обрабатываются через onError
+    await FormUtils.submitForm(this.form, {
+      onSuccess: (result) => {
+        this._defaultSuccess(result);
+      },
+      onError: (msg) => {
+        this._defaultError(msg);
+      },
+      onFinally: () => {
+        this.isSubmitting = false;
+        this.onFinally();
+      }
+    }, files);
+
+    if (this.rateLimiter) this.rateLimiter.record();
+  }
+
+  _defaultSuccess(result) {
+    console.log('[ModalFormHandler] _defaultSuccess called');
+    this.form.classList.add('hidden-form');
+    const success = document.querySelector(this.successSelector);
+    if (success) success.classList.remove('show');
+    
+    if (this.modalKey && typeof modalManager !== 'undefined') {
+      modalManager.close(this.modalKey);
+    }
+    
+    if (typeof modalManager !== 'undefined') {
+      modalManager.open('success');
+      setTimeout(() => {
+        if (typeof modalManager !== 'undefined') {
+          modalManager.close('success');
+        }
+      }, 3000);
+    } else {
+      console.warn('[ModalFormHandler] modalManager not available');
+    }
+    
+    if (typeof this.onSuccess === 'function') {
+      this.onSuccess(result);
+    }
+  }
+
+  _defaultError(msg) {
+    console.warn('[ModalFormHandler] _defaultError:', msg);
+    const warning = this.form.querySelector('.rate-limit-warning');
+    if (warning) {
+      // Если предупреждение уже висит – не дублируем
+      if (warning.classList.contains('show')) return;
+      warning.replaceChildren();
+      const p = document.createElement('p');
+      p.textContent = `⚠️ ${msg}`;
+      warning.appendChild(p);
+      warning.classList.add('show');
+      setTimeout(() => {
+        warning.classList.remove('show');
+      }, 5000);
+    } else {
+      alert(msg);
+    }
+  }
+
+  resetForm() {
+    console.log('[ModalFormHandler] resetForm called for modal:', this.modalKey);
+    FormUtils.resetForm(this.form, this.successSelector, this.fileUpload, this.validatorInstance);
+  }
+
+  destroy() {
+    console.log('[ModalFormHandler] destroy called');
+    if (this._boundSubmitHandler) {
+      this.form?.removeEventListener('form:valid', this._boundSubmitHandler);
+      this._boundSubmitHandler = null;
+    }
+    if (this.fileUpload) {
+      this.fileUpload = null;
+    }
+    if (this.validatorInstance) {
+      this.validatorInstance.destroy?.();
+      this.validatorInstance = null;
+    }
+    this.form = null;
+    this._initialized = false;
+  }
 }
 
 // Экспорт
 if (typeof window !== 'undefined') {
   window.FormUtils = FormUtils;
+  window.ModalFormHandler = ModalFormHandler;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FormUtils;
+  module.exports.ModalFormHandler = ModalFormHandler;
 }
