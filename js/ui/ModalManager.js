@@ -269,22 +269,52 @@ class ModalManager {
     const submitBtnText = document.getElementById('universalSubmitBtnText');
     const successTitle = document.getElementById('universalSuccessTitle');
 
+    // [FIX] Находим форму для заполнения скрытых полей
+    const form = document.getElementById('universalApplicationForm');
+
     if (mode === 'application') {
-      if (modalTitle) modalTitle.textContent = 'Отправить заявку';
-      if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
-      if (successTitle) successTitle.textContent = 'Данные отправлены!';
-      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы свяжемся с вами';
+        if (modalTitle) modalTitle.textContent = 'Отправить заявку';
+        if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
+        if (successTitle) successTitle.textContent = 'Данные отправлены!';
+        if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы свяжемся с вами';
+        
+        // [FIX] Очищаем поля вакансии для режима "просто заявка"
+        if (form) {
+            this._setHiddenField(form, 'vacancy_id', '');
+            this._setHiddenField(form, 'vacancy_title', '');
+        }
     } else {
-      const vacancyCard = trigger?.closest('.vacancy-card');
-      const vacancyTitle = vacancyCard?.querySelector('.vacancy-title')?.textContent || '';
-      if (modalTitle) modalTitle.textContent = `Отклик на вакансию: ${vacancyTitle}`;
-      if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
-      if (successTitle) successTitle.textContent = 'Отклик отправлен!';
-      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы рассмотрим вашу кандидатуру';
+        const vacancyCard = trigger?.closest('.vacancy-card');
+        const vacancyTitle = vacancyCard?.querySelector('.vacancy-title')?.textContent || '';
+        if (modalTitle) modalTitle.textContent = `Отклик на вакансию: ${vacancyTitle}`;
+        if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
+        if (successTitle) successTitle.textContent = 'Отклик отправлен!';
+        if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы рассмотрим вашу кандидатуру';
+        
+        // [FIX] Заполняем скрытые поля формы данными вакансии
+        if (form) {
+            this._setHiddenField(form, 'vacancy_id', vacancyId);
+            this._setHiddenField(form, 'vacancy_title', vacancyTitle);
+            console.log('[ModalManager] Поля вакансии заполнены:', { vacancyId, vacancyTitle });
+        }
     }
 
     this.open('universal');
-  }
+}
+
+/**
+ * [FIX] Создаёт или обновляет скрытое поле в форме
+ */
+_setHiddenField(form, name, value) {
+    let input = form.querySelector(`input[name="${name}"]`);
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        form.appendChild(input);
+    }
+    input.value = value;
+}
 
   // ========== Публичные методы для глубоких ссылок ==========
   openProjectById(id) {
