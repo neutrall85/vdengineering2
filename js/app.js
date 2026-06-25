@@ -625,7 +625,7 @@ function initApp() {
       ConsentManager.init();
       app.services.consentManager = ConsentManager;
     } catch (err) {
-      console.error('Failed to initialize ConsentManager:', err);
+      'Failed to initialize ConsentManager:', err);
     }
   }
 

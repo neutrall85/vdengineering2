@@ -20,7 +20,7 @@ class ModalManager {
   }
 
   register(key, config) {
-    console.log('[ModalManager] register:', key, config);
+    '[ModalManager] register:', key, config);
     this.modals.set(key, {
       overlayId: config.overlayId,
       onOpen: config.onOpen || null,
@@ -40,7 +40,7 @@ class ModalManager {
 
     const clickHandler = (e) => {
       if (e.target === overlay) {
-        console.log('[ModalManager] overlay clicked, closing modal:', key);
+        '[ModalManager] overlay clicked, closing modal:', key);
         this.close(key);
       }
     };
@@ -56,13 +56,13 @@ class ModalManager {
     this._boundKeyHandler = (e) => {
       if (e.key !== 'Escape') return;
       if (this.activeModal) {
-        console.log('[ModalManager] Escape pressed, closing active modal:', this.activeModal);
+        '[ModalManager] Escape pressed, closing active modal:', this.activeModal);
         this.close(this.activeModal);
         return;
       }
       const policyModal = document.getElementById('policyModalOverlay');
       if (policyModal && policyModal.classList.contains('active')) {
-        console.log('[ModalManager] Escape pressed, closing policy modal');
+        '[ModalManager] Escape pressed, closing policy modal');
         this.close('policy');
       }
     };
@@ -83,7 +83,7 @@ class ModalManager {
       }
 
       if (modalKey) {
-        console.log('[ModalManager] close button clicked for:', modalKey);
+        '[ModalManager] close button clicked for:', modalKey);
         this.close(modalKey);
       } else {
         overlay.classList.remove('active');
@@ -100,7 +100,7 @@ class ModalManager {
       const modalType = trigger.getAttribute('data-modal-open');
       if (!modalType) return;
       e.preventDefault();
-      console.log('[ModalManager] open trigger for:', modalType);
+      '[ModalManager] open trigger for:', modalType);
       this._handleModalOpen(modalType, trigger);
     };
     document.addEventListener('click', this._boundOpenHandler, { capture: false });
@@ -109,7 +109,7 @@ class ModalManager {
   }
 
   _handleModalOpen(modalType, trigger) {
-    console.log('[ModalManager] _handleModalOpen:', modalType);
+    '[ModalManager] _handleModalOpen:', modalType);
     switch (modalType) {
       case 'proposal':
         this.open('proposal');
@@ -129,7 +129,7 @@ class ModalManager {
         break;
       default:
         Logger.WARN(`Неизвестный тип модалки: ${modalType}`);
-        console.warn('[ModalManager] Unknown modal type:', modalType);
+        '[ModalManager] Unknown modal type:', modalType);
     }
   }
 
@@ -137,7 +137,7 @@ class ModalManager {
     const projectId = trigger?.getAttribute('data-project-id');
     if (!projectId || !window.PROJECTS_DATA || !window.PROJECTS_DATA[projectId]) {
       Logger.WARN(`Проект с id ${projectId} не найден`);
-      console.warn('[ModalManager] Project not found:', projectId);
+      '[ModalManager] Project not found:', projectId);
       return;
     }
     const project = window.PROJECTS_DATA[projectId];
@@ -183,7 +183,7 @@ class ModalManager {
     const serviceId = trigger?.getAttribute('data-service-id');
     if (!serviceId || !window.servicesData || !window.servicesData[serviceId]) {
       Logger.WARN(`Услуга с id ${serviceId} не найдена`);
-      console.warn('[ModalManager] Service not found:', serviceId);
+      '[ModalManager] Service not found:', serviceId);
       return;
     }
     const service = window.servicesData[serviceId];
@@ -229,7 +229,7 @@ class ModalManager {
     const news = allNews.find(n => String(n.id) === String(newsId));
     if (!news) {
       Logger.WARN(`Новость с id ${newsId} не найдена`);
-      console.warn('[ModalManager] News not found:', newsId);
+      '[ModalManager] News not found:', newsId);
       return;
     }
     this._populateNewsModal(news);
@@ -262,7 +262,7 @@ class ModalManager {
   _openUniversalApplication(trigger) {
     const vacancyId = trigger?.getAttribute('data-vacancy-id') || null;
     const mode = vacancyId ? 'vacancy' : 'application';
-    console.log('[ModalManager] _openUniversalApplication, mode:', mode);
+    '[ModalManager] _openUniversalApplication, mode:', mode);
 
     const modalTitle = document.getElementById('universalApplicationModalTitle');
     const modalSubtitle = document.getElementById('universalApplicationModalSubtitle');
@@ -295,7 +295,7 @@ class ModalManager {
         if (form) {
             this._setHiddenField(form, 'vacancy_id', vacancyId);
             this._setHiddenField(form, 'vacancy_title', vacancyTitle);
-            console.log('[ModalManager] Поля вакансии заполнены:', { vacancyId, vacancyTitle });
+            '[ModalManager] Поля вакансии заполнены:', { vacancyId, vacancyTitle });
         }
     }
 
@@ -344,11 +344,11 @@ _setHiddenField(form, name, value) {
   // ===================================================
 
   open(key, options = {}) {
-    console.log('[ModalManager] open called for key:', key, 'options:', options);
+    '[ModalManager] open called for key:', key, 'options:', options);
     const config = this.modals.get(key);
     if (!config) {
       Logger.WARN(`Модалка "${key}" не зарегистрирована`);
-      console.warn('[ModalManager] Modal not registered:', key);
+      '[ModalManager] Modal not registered:', key);
       return false;
     }
 
@@ -356,11 +356,11 @@ _setHiddenField(form, name, value) {
 
     const keepParentModal = options.keepParentModal === true;
     if (this.activeModal && this.activeModal !== key && !keepParentModal) {
-      console.log('[ModalManager] Closing active modal before opening new:', this.activeModal);
+      '[ModalManager] Closing active modal before opening new:', this.activeModal);
       this.close(this.activeModal);
     } else if (this.activeModal && this.activeModal !== key && keepParentModal) {
       this.activeModalStack.push(this.activeModal);
-      console.log('[ModalManager] Keeping parent modal, stack:', this.activeModalStack);
+      '[ModalManager] Keeping parent modal, stack:', this.activeModalStack);
     }
 
     const overlay = document.getElementById(config.overlayId);
@@ -401,14 +401,14 @@ _setHiddenField(form, name, value) {
   }
 
   close(key) {
-    console.log('[ModalManager] close called for key:', key);
+    '[ModalManager] close called for key:', key);
     const config = this.modals.get(key);
     if (!config) {
-      console.warn('[ModalManager] Modal not registered, cannot close:', key);
+      '[ModalManager] Modal not registered, cannot close:', key);
       return false;
     }
     if (this.activeModal !== key) {
-      console.warn('[ModalManager] Attempt to close non-active modal:', key, 'active:', this.activeModal);
+      '[ModalManager] Attempt to close non-active modal:', key, 'active:', this.activeModal);
       return false;
     }
 
@@ -432,10 +432,10 @@ _setHiddenField(form, name, value) {
     }
 
     this.activeModal = previousModal;
-    console.log('[ModalManager] Modal closed, new active modal:', this.activeModal);
+    '[ModalManager] Modal closed, new active modal:', this.activeModal);
 
     if (config.onClose) {
-      console.log('[ModalManager] Calling onClose for:', key);
+      '[ModalManager] Calling onClose for:', key);
       config.onClose(overlay);
     }
 
@@ -499,7 +499,7 @@ _setHiddenField(form, name, value) {
   }
 
   destroy() {
-    console.log('[ModalManager] destroy called');
+    '[ModalManager] destroy called');
     if (this._boundKeyHandler) {
       document.removeEventListener('keydown', this._boundKeyHandler);
       this._boundKeyHandler = null;

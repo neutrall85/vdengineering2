@@ -5,10 +5,10 @@ const fileUploadCache = new WeakMap();
 
 const FormUtils = {
   initValidation(form, messages = {}, validateOnInput = true) {
-    console.log('[FormUtils] initValidation called');
+    '[FormUtils] initValidation called');
     if (!form || typeof FormValidation === 'undefined') {
       Logger?.WARN('FormValidation не доступен');
-      console.warn('[FormUtils] FormValidation not available');
+      '[FormUtils] FormValidation not available');
       return null;
     }
     const defaultMessages = {
@@ -25,18 +25,18 @@ const FormUtils = {
   },
 
   initFileUpload(dropSelector, onFilesChange, options = {}) {
-    console.log('[FormUtils] initFileUpload called with dropSelector:', dropSelector);
+    '[FormUtils] initFileUpload called with dropSelector:', dropSelector);
     const fileDrop = typeof dropSelector === 'string'
       ? document.querySelector(dropSelector)
       : dropSelector;
     if (!fileDrop) {
       Logger?.WARN('Контейнер файлов не найден');
-      console.warn('[FormUtils] fileDrop not found');
+      '[FormUtils] fileDrop not found');
       return { currentFiles: [], removeFile: () => {}, renderFileList: () => {}, fileDrop: null };
     }
 
     if (fileUploadCache.has(fileDrop)) {
-      console.log('[FormUtils] Returning cached fileUpload for', fileDrop);
+      '[FormUtils] Returning cached fileUpload for', fileDrop);
       return fileUploadCache.get(fileDrop);
     }
 
@@ -47,7 +47,7 @@ const FormUtils = {
     const fileInput = fileDrop.querySelector('input[type="file"]');
     if (!fileInput) {
       Logger?.WARN('Поле input[type="file"] не найдено');
-      console.warn('[FormUtils] fileInput not found');
+      '[FormUtils] fileInput not found');
       return { currentFiles: state.currentFiles, removeFile: () => {}, renderFileList: () => {}, fileDrop };
     }
 
@@ -59,14 +59,14 @@ const FormUtils = {
         fileDrop.removeEventListener('dragleave', dragLeaveHandler);
         fileDrop.removeEventListener('drop', dropHandler);
       }
-      console.log('[FormUtils] Removed old handlers');
+      '[FormUtils] Removed old handlers');
     }
 
     const changeHandler = (e) => {
-      console.log('[FormUtils] file input change event, files:', e.target.files);
+      '[FormUtils] file input change event, files:', e.target.files);
       _handleFileSelect(e.target.files, fileDrop, state.currentFiles, maxFiles, maxTotalSize, (newFiles) => {
         state.currentFiles = newFiles;
-        console.log('[FormUtils] currentFiles updated, count:', state.currentFiles.length);
+        '[FormUtils] currentFiles updated, count:', state.currentFiles.length);
         _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
         if (onFilesChange) onFilesChange(state.currentFiles);
       });
@@ -82,10 +82,10 @@ const FormUtils = {
     const dropHandler = (e) => {
       e.preventDefault();
       fileDrop.classList.remove('drag-over');
-      console.log('[FormUtils] drop event, files:', e.dataTransfer.files);
+      '[FormUtils] drop event, files:', e.dataTransfer.files);
       _handleFileSelect(e.dataTransfer.files, fileDrop, state.currentFiles, maxFiles, maxTotalSize, (newFiles) => {
         state.currentFiles = newFiles;
-        console.log('[FormUtils] currentFiles updated (drop), count:', state.currentFiles.length);
+        '[FormUtils] currentFiles updated (drop), count:', state.currentFiles.length);
         _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
         if (onFilesChange) onFilesChange(state.currentFiles);
       });
@@ -97,7 +97,7 @@ const FormUtils = {
     fileDrop.addEventListener('drop', dropHandler);
 
     const removeFile = (index) => {
-      console.log('[FormUtils] removeFile called with index:', index);
+      '[FormUtils] removeFile called with index:', index);
       const idx = parseInt(index, 10);
       if (!isNaN(idx) && idx >= 0 && idx < state.currentFiles.length) {
         state.currentFiles.splice(idx, 1);
@@ -108,7 +108,7 @@ const FormUtils = {
     };
 
     const renderFileList = () => {
-      console.log('[FormUtils] renderFileList called, current files count:', state.currentFiles.length);
+      '[FormUtils] renderFileList called, current files count:', state.currentFiles.length);
       _renderFileList(fileDrop, state.currentFiles, removeFile);
     };
 
@@ -135,13 +135,13 @@ const FormUtils = {
       const data = await response.json();
       return data.csrf_token;
     } catch (err) {
-      console.error('Ошибка получения CSRF:', err);
+      'Ошибка получения CSRF:', err);
       return null;
     }
   },
 
   async submitForm(form, options = {}, files = []) {
-      console.log('[FormUtils] submitForm called, files count:', files.length);
+      '[FormUtils] submitForm called, files count:', files.length);
       const { onSuccess, onError, onFinally } = options;
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalText = submitBtn?.textContent || 'Отправить';
@@ -196,7 +196,7 @@ const FormUtils = {
         try {
           result = JSON.parse(text);
         } catch (e) {
-          console.error('Сервер вернул не JSON:', text.substring(0, 200));
+          'Сервер вернул не JSON:', text.substring(0, 200));
           if (onError) onError('Ошибка на сервере. Проверьте логи.');
           return;
         }
@@ -208,15 +208,15 @@ const FormUtils = {
         }
     
         if (result.success) {
-          console.log('[FormUtils] Submission success:', result);
+          '[FormUtils] Submission success:', result);
           if (onSuccess) onSuccess(result);
         } else {
-          console.warn('[FormUtils] Submission failed:', result);
+          '[FormUtils] Submission failed:', result);
           if (onError) onError(result.error || 'Ошибка при отправке');
         }
       } catch (error) {
         Logger.ERROR('Form submission error:', error);
-        console.error('[FormUtils] Submission error:', error);
+        '[FormUtils] Submission error:', error);
         if (onError) onError(error.message || 'Произошла ошибка. Попробуйте позже.');
       } finally {
         clearTimeout(timeoutId);
@@ -227,9 +227,9 @@ const FormUtils = {
     },
 
   resetForm(form, successSelector, fileUpload, validator) {
-    console.log('[FormUtils] resetForm called');
+    '[FormUtils] resetForm called');
     if (!form) {
-      console.warn('[FormUtils] resetForm: form is null');
+      '[FormUtils] resetForm: form is null');
       return;
     }
     form.reset();
@@ -238,7 +238,7 @@ const FormUtils = {
     if (successMsg) successMsg.classList.remove('show');
 
     if (fileUpload) {
-      console.log('[FormUtils] resetForm: resetting fileUpload, before clear count:', fileUpload.currentFiles?.length || 0);
+      '[FormUtils] resetForm: resetting fileUpload, before clear count:', fileUpload.currentFiles?.length || 0);
       if (Array.isArray(fileUpload.currentFiles)) {
         fileUpload.currentFiles.length = 0;
       }
@@ -258,12 +258,12 @@ const FormUtils = {
         warning.classList.add('form-file-limit-hidden');
         warning.replaceChildren();
       }
-      console.log('[FormUtils] resetForm: after clear count:', fileUpload.currentFiles?.length || 0);
+      '[FormUtils] resetForm: after clear count:', fileUpload.currentFiles?.length || 0);
       if (typeof fileUpload.renderFileList === 'function') {
         fileUpload.renderFileList();
       }
     } else {
-      console.warn('[FormUtils] resetForm: fileUpload is null');
+      '[FormUtils] resetForm: fileUpload is null');
       if (form) {
         const fileInput = form.querySelector('input[type="file"]');
         if (fileInput) fileInput.value = '';
@@ -280,7 +280,7 @@ const FormUtils = {
     }
 
     if (validator && typeof validator.reset === 'function') {
-      console.log('[FormUtils] resetForm: resetting validator');
+      '[FormUtils] resetForm: resetting validator');
       validator.reset();
     }
 
@@ -308,7 +308,7 @@ const FormUtils = {
 };
 
 function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize, onUpdate) {
-  console.log('[_handleFileSelect] Processing files:', files.length);
+  '[_handleFileSelect] Processing files:', files.length);
   if (!files || files.length === 0) return;
   const errors = [];
   const validNewFiles = [];
@@ -370,23 +370,23 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize
   }
 
   if (errors.length > 0) {
-    console.warn('[handleFileSelect] Errors:', errors);
+    '[handleFileSelect] Errors:', errors);
     _showUploadWarning(fileDrop, errors.join('; '));
   }
   const newFiles = [...currentFiles, ...filesToAdd];
-  console.log('[handleFileSelect] newFiles count:', newFiles.length);
+  '[handleFileSelect] newFiles count:', newFiles.length);
   onUpdate(newFiles);
 }
 
 function _renderFileList(fileDrop, currentFiles, removeFileFn) {
-  console.log('[_renderFileList] called, files count:', currentFiles.length);
+  '[_renderFileList] called, files count:', currentFiles.length);
   if (!fileDrop) return;
   let container = fileDrop.querySelector('.form-file-list');
   if (!container) {
     container = document.createElement('div');
     container.className = 'form-file-list';
     fileDrop.appendChild(container);
-    console.log('[_renderFileList] created new list container');
+    '[_renderFileList] created new list container');
   }
   container.replaceChildren();
   if (currentFiles.length === 0) {
@@ -444,7 +444,7 @@ function _formatFileSize(bytes) {
 }
 
 function _showUploadWarning(fileDrop, message) {
-  console.warn('[showUploadWarning]', message);
+  '[showUploadWarning]', message);
   if (!fileDrop) return;
   let warningContainer = fileDrop.querySelector('.upload-warning-container');
   if (!warningContainer) {
@@ -481,7 +481,7 @@ function _resetSubmitState(btn, originalText) {
 // ============================================================
 class ModalFormHandler {
   constructor(options) {
-    console.log('[ModalFormHandler] Constructor called with options:', options);
+    '[ModalFormHandler] Constructor called with options:', options);
     const {
       formId,
       successSelector,
@@ -500,7 +500,7 @@ class ModalFormHandler {
     this.form = document.getElementById(formId);
     if (!this.form) {
       Logger?.WARN(`ModalFormHandler: форма с id "${formId}" не найдена`);
-      console.warn('[ModalFormHandler] Form not found:', formId);
+      '[ModalFormHandler] Form not found:', formId);
       return;
     }
 
@@ -522,34 +522,34 @@ class ModalFormHandler {
     this._boundSubmitHandler = null;
     this._initialized = false;
 
-    console.log('[ModalFormHandler] Instance created for modal:', modalKey);
+    '[ModalFormHandler] Instance created for modal:', modalKey);
   }
 
   init() {
-    console.log('[ModalFormHandler] init() called');
+    '[ModalFormHandler] init() called');
     if (this._initialized) {
-      console.log('[ModalFormHandler] Already initialized, skipping');
+      '[ModalFormHandler] Already initialized, skipping');
       return;
     }
     if (!this.form) {
-      console.warn('[ModalFormHandler] init: form is null');
+      '[ModalFormHandler] init: form is null');
       return;
     }
 
     this.validatorInstance = FormUtils.initValidation(this.form, this.messages);
     const fileDrop = this.form.querySelector(this.fileDropSelector);
-    console.log('[ModalFormHandler] fileDrop element:', fileDrop);
+    '[ModalFormHandler] fileDrop element:', fileDrop);
     if (fileDrop) {
       this.fileUpload = FormUtils.initFileUpload(fileDrop, null, {
         maxFiles: this.fileOptions.maxFiles || 10,
         maxTotalSize: this.fileOptions.maxTotalSize || 24 * 1024 * 1024
       });
-      console.log('[ModalFormHandler] fileUpload created:', this.fileUpload);
+      '[ModalFormHandler] fileUpload created:', this.fileUpload);
       if (this.fileUpload && typeof this.fileUpload.renderFileList === 'function') {
         this.fileUpload.renderFileList();
       }
     } else {
-      console.warn('[ModalFormHandler] fileDrop not found');
+      '[ModalFormHandler] fileDrop not found');
     }
     this._boundSubmitHandler = (e) => this._handleSubmit(e);
     this.form.addEventListener('form:valid', this._boundSubmitHandler);
@@ -578,7 +578,7 @@ class ModalFormHandler {
   }
 
   async _handleSubmit(e) {
-    console.log('[ModalFormHandler] _handleSubmit called');
+    '[ModalFormHandler] _handleSubmit called');
     if (this.isSubmitting) return;
     this.isSubmitting = true;
 
@@ -590,7 +590,7 @@ class ModalFormHandler {
     }
 
     const files = this.fileUpload ? this.fileUpload.currentFiles : [];
-    console.log('[ModalFormHandler] Files attached:', files.length);
+    '[ModalFormHandler] Files attached:', files.length);
 
     await FormUtils.submitForm(this.form, {
       onSuccess: (result) => {
@@ -609,7 +609,7 @@ class ModalFormHandler {
   }
 
   _defaultSuccess(result) {
-    console.log('[ModalFormHandler] _defaultSuccess called');
+    '[ModalFormHandler] _defaultSuccess called');
     this.form.classList.add('hidden-form');
     const success = document.querySelector(this.successSelector);
     if (success) success.classList.remove('show');
@@ -626,7 +626,7 @@ class ModalFormHandler {
         }
       }, 3000);
     } else {
-      console.warn('[ModalFormHandler] modalManager not available');
+      '[ModalFormHandler] modalManager not available');
     }
     
     if (typeof this.onSuccess === 'function') {
@@ -635,7 +635,7 @@ class ModalFormHandler {
   }
 
   _defaultError(msg) {
-    console.warn('[ModalFormHandler] _defaultError:', msg);
+    '[ModalFormHandler] _defaultError:', msg);
     const warning = this.form.querySelector('.rate-limit-warning');
     if (warning) {
       if (warning.classList.contains('show')) return;
@@ -653,12 +653,12 @@ class ModalFormHandler {
   }
 
   resetForm() {
-    console.log('[ModalFormHandler] resetForm called for modal:', this.modalKey);
+    '[ModalFormHandler] resetForm called for modal:', this.modalKey);
     FormUtils.resetForm(this.form, this.successSelector, this.fileUpload, this.validatorInstance);
   }
 
   destroy() {
-    console.log('[ModalFormHandler] destroy called');
+    '[ModalFormHandler] destroy called');
     if (this._boundSubmitHandler) {
       this.form?.removeEventListener('form:valid', this._boundSubmitHandler);
       this._boundSubmitHandler = null;

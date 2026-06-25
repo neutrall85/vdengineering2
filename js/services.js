@@ -130,7 +130,7 @@ const Services = (function() {
      * @returns {Promise<string>}
      */
     async getCsrfToken() {
-      console.log('[ApiClient] getCsrfToken called');
+      '[ApiClient] getCsrfToken called');
       const response = await fetch(`${this.baseUrl}/api/csrf_token.php`, {
         method: 'GET',
         credentials: 'same-origin'
@@ -140,7 +140,7 @@ const Services = (function() {
         throw new Error(`Не удалось получить CSRF-токен: ${response.status} ${errorText}`);
       }
       const data = await response.json();
-      console.log('[ApiClient] CSRF token received:', data.csrf_token);
+      '[ApiClient] CSRF token received:', data.csrf_token);
       return data.csrf_token;
     }
   }

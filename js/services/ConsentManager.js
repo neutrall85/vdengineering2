@@ -82,7 +82,7 @@ const ConsentManager = {
   },
 
   withdrawConsent(storage) {
-    console.log('🔄 withdrawConsent вызван (баннер поверх модалки)');
+    '🔄 withdrawConsent вызван (баннер поверх модалки)');
 
     // Удаляем согласие
     const consentKey = 'user_preferences_v1';
@@ -376,7 +376,7 @@ const ConsentManager = {
         url: window.location.href
       })
     }).catch(() => {
-      console.warn('Failed to log cookie consent');
+      'Failed to log cookie consent');
     });
   },
 

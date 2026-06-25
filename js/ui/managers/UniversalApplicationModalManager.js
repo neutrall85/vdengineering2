@@ -2,7 +2,7 @@ const UniversalApplicationModalManager = {
   handler: null,
 
   init() {
-    console.log('[UniversalApplicationModalManager] init called');
+    '[UniversalApplicationModalManager] init called');
     this.handler = new ModalFormHandler({
       formId: 'universalApplicationForm',
       successSelector: '#universalSuccessMessage',
@@ -23,21 +23,21 @@ const UniversalApplicationModalManager = {
       onSuccess: null // Убираем задержку
     });
     this.handler.init();
-    console.log('[UniversalApplicationModalManager] handler initialized');
+    '[UniversalApplicationModalManager] handler initialized');
   },
 
   resetForm() {
-    console.log('[UniversalApplicationModalManager] resetForm called');
+    '[UniversalApplicationModalManager] resetForm called');
     if (this.handler) this.handler.resetForm();
   },
 
   removeFile(index) {
-    console.log('[UniversalApplicationModalManager] removeFile called with index:', index);
+    '[UniversalApplicationModalManager] removeFile called with index:', index);
     if (this.handler) this.handler.removeFile(index);
   },
 
   destroy() {
-    console.log('[UniversalApplicationModalManager] destroy called');
+    '[UniversalApplicationModalManager] destroy called');
     if (this.handler) {
       this.handler.destroy();
       this.handler = null;

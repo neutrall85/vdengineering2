@@ -4,7 +4,7 @@
  */
 class FormManager {
   constructor(apiClient, rateLimiter) {
-    console.log('[FormManager] Constructor called');
+    '[FormManager] Constructor called');
     this.handler = new ModalFormHandler({
       formId: 'proposalForm',
       successSelector: '#successMessage',
@@ -24,32 +24,32 @@ class FormManager {
       onSuccess: null
     });
     this.handler.init();
-    console.log('[FormManager] Handler initialized');
+    '[FormManager] Handler initialized');
   }
 
   init() {
-    console.log('[FormManager] init called (no-op)');
+    '[FormManager] init called (no-op)');
   }
 
   resetForm() {
-    console.log('[FormManager] resetForm called');
+    '[FormManager] resetForm called');
     if (this.handler) this.handler.resetForm();
   }
 
   removeFile(index) {
-    console.log('[FormManager] removeFile called with index:', index);
+    '[FormManager] removeFile called with index:', index);
     if (this.handler) this.handler.removeFile(index);
   }
 
   openModal() {
-    console.log('[FormManager] openModal called');
+    '[FormManager] openModal called');
     if (typeof modalManager !== 'undefined') {
       modalManager.open('proposal');
     }
   }
 
   destroy() {
-    console.log('[FormManager] destroy called');
+    '[FormManager] destroy called');
     if (this.handler) {
       this.handler.destroy();
       this.handler = null;
