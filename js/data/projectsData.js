@@ -16,10 +16,10 @@ const PROJECTS_DATA = {
       'Получен ДСТ ФАВТ, выпущен отдельный бюллетень для модернизации флота авиакомпании'
     ],
     images: [
-      'assets/images/Projects/ADS-B_Out/track.png',
-      'assets/images/Projects/ADS-B_Out/view.png',
-      'assets/images/Projects/ADS-B_Out/block.png',
-      'assets/images/Projects/ADS-B_Out/Display.png'
+      'assets/images/Projects/ADS-B_Out/track.webp',
+      'assets/images/Projects/ADS-B_Out/view.webp',
+      'assets/images/Projects/ADS-B_Out/block.webp',
+      'assets/images/Projects/ADS-B_Out/Display.webp'
     ]
   },
   "d18t-support": {
@@ -32,10 +32,10 @@ const PROJECTS_DATA = {
       'Налажена кооперация с АО «УЗГА» по ремонтам Д-18Т сер.3',
     ],
     images: [
-      'assets/images/Projects/engines/engine3.jpg',
-      'assets/images/Projects/engines/engine2.jpg',
-      'assets/images/Projects/engines/engine1.jpg',
-      'assets/images/Projects/engines/engine4.jpg'
+      'assets/images/Projects/engines/engine3.webp',
+      'assets/images/Projects/engines/engine2.webp',
+      'assets/images/Projects/engines/engine1.webp',
+      'assets/images/Projects/engines/engine4.webp'
     ]
   },
   "paint-update": {
@@ -49,9 +49,9 @@ const PROJECTS_DATA = {
       'Получено одобрение второстепенного изменения'
     ],
     images: [
-      'assets/images/Projects/An-124-100_paint/An-124-100_paint.jpg',
-      'assets/images/Projects/An-124-100_paint/dwg1.jpg',
-      'assets/images/Projects/An-124-100_paint/dwg2.jpg'
+      'assets/images/Projects/An-124-100_paint/An-124-100_paint.webp',
+      'assets/images/Projects/An-124-100_paint/dwg1.webp',
+      'assets/images/Projects/An-124-100_paint/dwg2.webp'
     ]
   },
   "foreign-mods": {
@@ -68,10 +68,10 @@ const PROJECTS_DATA = {
       'Самолет ATR 72-212А с альтернативной защитой линзы нижнего проблескового маяка предотвращения столкновений – 1 второстепенное изменение'
     ],
     images: [
-      'assets/images/Projects/mods/seats.jpg',
-      'assets/images/Projects/mods/dwg.png',
-      'assets/images/Projects/mods/oxygen.jpg',
-      'assets/images/Projects/mods/wheel.png'
+      'assets/images/Projects/mods/seats.webp',
+      'assets/images/Projects/mods/dwg.webp',
+      'assets/images/Projects/mods/oxygen.webp',
+      'assets/images/Projects/mods/wheel.webp'
     ]
   },
   "foreign-repairs": {
@@ -98,9 +98,9 @@ const PROJECTS_DATA = {
       'Ремонт трещины балки пола по шп. STA 695 B737'
     ],
     images: [
-      'assets/images/Projects/repairs/engine_pod.jpg',
-      'assets/images/Projects/repairs/defect.png',
-      'assets/images/Projects/repairs/roller.png'
+      'assets/images/Projects/repairs/engine_pod.webp',
+      'assets/images/Projects/repairs/defect.webp',
+      'assets/images/Projects/repairs/roller.webp'
     ]
   },
   // 5: {
@@ -114,10 +114,10 @@ const PROJECTS_DATA = {
   //     'Получено одобрение нетипового ремонта'
   //   ],
   //   images: [
-  //     'assets/images/Projects/frame/frame1.jpg',
-  //     'assets/images/Projects/frame/frame2.jpg',
-  //     'assets/images/Projects/frame/frame3.jpg',
-  //     'assets/images/Projects/frame/frame4.png'
+  //     'assets/images/Projects/frame/frame1.webp',
+  //     'assets/images/Projects/frame/frame2.webp',
+  //     'assets/images/Projects/frame/frame3.webp',
+  //     'assets/images/Projects/frame/frame4.webp'
   //   ]
   // },
   "nose-repair": {
@@ -131,9 +131,9 @@ const PROJECTS_DATA = {
       'Получено одобрение нетипового ремонта'
     ],
     images: [
-      'assets/images/Projects/nose_landing_gear_fairing/nose1.jpg',
-      'assets/images/Projects/nose_landing_gear_fairing/nose2.jpg',
-      'assets/images/Projects/nose_landing_gear_fairing/nose3.jpg'
+      'assets/images/Projects/nose_landing_gear_fairing/nose1.webp',
+      'assets/images/Projects/nose_landing_gear_fairing/nose2.webp',
+      'assets/images/Projects/nose_landing_gear_fairing/nose3.webp'
     ]
   },
   "landing-gear": {
@@ -151,8 +151,8 @@ const PROJECTS_DATA = {
       'Выпущен сервисный бюллетень',
     ],
     images: [
-      'assets/images/Projects/main_landing_gear/main_landing_gear1.jpg',
-      'assets/images/Projects/main_landing_gear/main_landing_gear2.jpg'
+      'assets/images/Projects/main_landing_gear/main_landing_gear1.webp',
+      'assets/images/Projects/main_landing_gear/main_landing_gear2.webp'
     ]
   },
   "remote-control": {
@@ -172,10 +172,10 @@ const PROJECTS_DATA = {
       'В настоящее время проходит опытная эксплуатация на ВС'
     ],
     images: [
-      'assets/images/Projects/onboard_valve_control/onboard_valve_control1.png',
-      'assets/images/Projects/onboard_valve_control/onboard_valve_control2.png',
-      'assets/images/Projects/onboard_valve_control/onboard_valve_control3.png',
-      'assets/images/Projects/onboard_valve_control/onboard_valve_control3.png'
+      'assets/images/Projects/onboard_valve_control/onboard_valve_control1.webp',
+      'assets/images/Projects/onboard_valve_control/onboard_valve_control2.webp',
+      'assets/images/Projects/onboard_valve_control/onboard_valve_control3.webp',
+      'assets/images/Projects/onboard_valve_control/onboard_valve_control3.webp'
     ]
   },
   "antenna-replacement": {
@@ -188,9 +188,9 @@ const PROJECTS_DATA = {
       'Разработаны дополнения к эксплуатационной документации (РЛЭ, РЭ, РО), учитывающе использование обоих типов антенн на самолете'
     ],
     images: [
-      'assets/images/Projects/change_antenna/change_antenna1.jpg',
-      'assets/images/Projects/change_antenna/change_antenna2.jpg',
-      'assets/images/Projects/change_antenna/change_antenna3.jpg'
+      'assets/images/Projects/change_antenna/change_antenna1.webp',
+      'assets/images/Projects/change_antenna/change_antenna2.webp',
+      'assets/images/Projects/change_antenna/change_antenna3.webp'
     ]
   },
   "cargo-equipment": {
@@ -201,10 +201,10 @@ const PROJECTS_DATA = {
       'Разработана КД, организовано производство, проведены испытания и сертификация cкладных решёток для перевозки E-commerce, пассивного контейнера для перевозки термочувствительных грузов, системы для загрузки паллет и контейнеров в Ан-124-100'
     ],
     images: [
-      'assets/images/Projects/loading_equipment/loading_equipment1.png',
-      'assets/images/Projects/loading_equipment/loading_equipment2.png',
-      'assets/images/Projects/loading_equipment/loading_equipment3.png',
-      'assets/images/Projects/loading_equipment/loading_equipment4.png'
+      'assets/images/Projects/loading_equipment/loading_equipment1.webp',
+      'assets/images/Projects/loading_equipment/loading_equipment2.webp',
+      'assets/images/Projects/loading_equipment/loading_equipment3.webp',
+      'assets/images/Projects/loading_equipment/loading_equipment4.webp'
     ]
   },
   "ground-equipment": {
@@ -215,10 +215,10 @@ const PROJECTS_DATA = {
       'Разработана КД, проведены расчёты на прочность, организовано производство систем подъёма грузов, погрузочных эстакад, грузоносителей и ходовых частей, специального оборудования (для перевозки турбин, автомобилей и т.п.)'
     ],
     images: [
-      'assets/images/Projects/loading_equipment2/loading_equipment1.png',
-      'assets/images/Projects/loading_equipment2/loading_equipment2.png',
-      'assets/images/Projects/loading_equipment2/loading_equipment3.png',
-      'assets/images/Projects/loading_equipment2/loading_equipment4.png'
+      'assets/images/Projects/loading_equipment2/loading_equipment1.webp',
+      'assets/images/Projects/loading_equipment2/loading_equipment2.webp',
+      'assets/images/Projects/loading_equipment2/loading_equipment3.webp',
+      'assets/images/Projects/loading_equipment2/loading_equipment4.webp'
     ]
   }
 };

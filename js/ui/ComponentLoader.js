@@ -118,7 +118,6 @@ const ComponentLoader = {
                 universalModalContainer.appendChild(node.cloneNode(true));
             });
             document.body.appendChild(universalModalContainer.firstElementChild);
-            // УДАЛЁН дублирующий вызов UniversalApplicationModalManager.init()
         }
 
         // Загрузка модалки успеха

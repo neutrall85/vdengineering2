@@ -74,7 +74,7 @@ if (!$envLoaded) {
 }
 
 // Проверка обязательных переменных
-$requiredVars = ['SMTP_USER', 'SMTP_PASS', 'ADMIN_EMAILS'];
+$requiredVars = ['SMTP_USER', 'SMTP_PASS'];
 $missing = [];
 foreach ($requiredVars as $var) {
     $v = getenv($var);

@@ -23,7 +23,7 @@ const CONFIG = {
   FORM: {
     RATE_LIMIT_MAX: 5,
     RATE_LIMIT_WINDOW_MS: 60000,
-    MAX_FILE_SIZE: 10 * 1024 * 1024,
+    MAX_TOTAL_SIZE: 24 * 1024 * 1024, // 24 MB
     ALLOWED_FILE_TYPES: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'],
     ALLOWED_MIME_TYPES: [
       'application/pdf',
@@ -31,7 +31,9 @@ const CONFIG = {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/zip'
+      'application/zip',
+      'application/x-zip-compressed',
+      'multipart/x-zip'
     ],
     WARNING_AUTO_HIDE_MS: 5000
   },
@@ -62,22 +64,6 @@ const CONFIG = {
   DEBUG: false
 };
 
-// Генерация CSRF токена
-// function generateCSRFToken() {
-//   const array = new Uint8Array(32);
-//   crypto.getRandomValues(array);
-//   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-// }
-
-// // Сохранение CSRF токена в sessionStorage
-// if (typeof window !== 'undefined') {
-//   if (!sessionStorage.getItem(CONFIG.SECURITY.CSRF_TOKEN_KEY)) {
-//     sessionStorage.setItem(CONFIG.SECURITY.CSRF_TOKEN_KEY, generateCSRFToken());
-//   }
-//   CONFIG.CSRF_TOKEN = sessionStorage.getItem(CONFIG.SECURITY.CSRF_TOKEN_KEY);
-// }
-
-// Экспортируем в глобальную область
 window.CONFIG = CONFIG;
 
 if (typeof module !== 'undefined' && module.exports) {

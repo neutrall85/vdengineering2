@@ -1,9 +1,6 @@
 /**
  * formUtils – утилиты для работы с формами (без состояния)
- * ООО "Волга-Днепр Инжиниринг"
  */
-
-// Кэш для загрузчиков файлов (ключ – DOM-элемент)
 const fileUploadCache = new WeakMap();
 
 const FormUtils = {
@@ -44,7 +41,7 @@ const FormUtils = {
     }
 
     const maxFiles = options.maxFiles || 10;
-    const maxFileSize = options.maxFileSize || 10 * 1024 * 1024;
+    const maxTotalSize = options.maxTotalSize || 24 * 1024 * 1024;
     const state = { currentFiles: [] };
 
     const fileInput = fileDrop.querySelector('input[type="file"]');
@@ -67,7 +64,7 @@ const FormUtils = {
 
     const changeHandler = (e) => {
       console.log('[FormUtils] file input change event, files:', e.target.files);
-      _handleFileSelect(e.target.files, fileDrop, state.currentFiles, maxFiles, maxFileSize, (newFiles) => {
+      _handleFileSelect(e.target.files, fileDrop, state.currentFiles, maxFiles, maxTotalSize, (newFiles) => {
         state.currentFiles = newFiles;
         console.log('[FormUtils] currentFiles updated, count:', state.currentFiles.length);
         _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
@@ -77,19 +74,16 @@ const FormUtils = {
 
     const dragOverHandler = (e) => {
       e.preventDefault();
-      fileDrop.style.borderColor = 'var(--vd-blue)';
-      fileDrop.style.background = 'rgba(0, 51, 160, 0.05)';
+      fileDrop.classList.add('drag-over');
     };
     const dragLeaveHandler = () => {
-      fileDrop.style.borderColor = '';
-      fileDrop.style.background = '';
+      fileDrop.classList.remove('drag-over');
     };
     const dropHandler = (e) => {
       e.preventDefault();
-      fileDrop.style.borderColor = '';
-      fileDrop.style.background = '';
+      fileDrop.classList.remove('drag-over');
       console.log('[FormUtils] drop event, files:', e.dataTransfer.files);
-      _handleFileSelect(e.dataTransfer.files, fileDrop, state.currentFiles, maxFiles, maxFileSize, (newFiles) => {
+      _handleFileSelect(e.dataTransfer.files, fileDrop, state.currentFiles, maxFiles, maxTotalSize, (newFiles) => {
         state.currentFiles = newFiles;
         console.log('[FormUtils] currentFiles updated (drop), count:', state.currentFiles.length);
         _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
@@ -134,9 +128,6 @@ const FormUtils = {
     return result;
   },
 
-  // ================================================================
-  // ПОЛУЧЕНИЕ CSRF-ТОКЕНА
-  // ================================================================
   async fetchCsrfToken() {
     try {
       const response = await fetch('api/csrf_token.php');
@@ -149,9 +140,6 @@ const FormUtils = {
     }
   },
 
-  // ================================================================
-  // ОТПРАВКА ФОРМЫ (ВЗЯТО ИЗ FORM-HANDLER.JS – РАБОТАЕТ)
-  // ================================================================
   async submitForm(form, options = {}, files = []) {
       console.log('[FormUtils] submitForm called, files count:', files.length);
       const { onSuccess, onError, onFinally } = options;
@@ -177,7 +165,6 @@ const FormUtils = {
     
         const formData = new FormData();
     
-        // Поля (кроме файлов)
         const inputs = form.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
           if (input.type === 'file') return;
@@ -188,12 +175,10 @@ const FormUtils = {
           }
         });
     
-        // ----- ИСПРАВЛЕНО: файлы добавляются с ключом 'fileAttachment[]' -----
         files.forEach(file => {
           formData.append('fileAttachment[]', file);
         });
     
-        // CSRF
         let csrfToken = await FormUtils.fetchCsrfToken();
         if (!csrfToken) {
           if (onError) onError('Ошибка безопасности. Обновите страницу.');
@@ -322,21 +307,39 @@ const FormUtils = {
   }
 };
 
-// ----- Вспомогательные функции (без изменений) -----
-function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxFileSize, onUpdate) {
+function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize, onUpdate) {
   console.log('[_handleFileSelect] Processing files:', files.length);
   if (!files || files.length === 0) return;
   const errors = [];
   const validNewFiles = [];
+
+  let currentTotalSize = 0;
+  for (const f of currentFiles) {
+    currentTotalSize += f.size;
+  }
+
   for (const file of Array.from(files)) {
-    if (file.size > maxFileSize) {
-      errors.push(`Файл "${file.name}" превышает ${maxFileSize / 1024 / 1024}MB`);
+    const ext = file.name.split('.').pop().toLowerCase();
+    const allowedTypes = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
+    if (!allowedTypes.includes(ext)) {
+      errors.push(`Недопустимый тип файла: ${file.name}`);
       continue;
     }
-    const validation = Utils.Validator.file(file);
-    if (!validation.valid) {
-      errors.push(validation.error);
-      continue;
+    if (file.type) {
+      const allowedMimes = window.CONFIG?.FORM?.ALLOWED_MIME_TYPES || [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/zip',
+        'application/x-zip-compressed',
+        'multipart/x-zip'
+      ];
+      if (!allowedMimes.includes(file.type)) {
+        errors.push(`Недопустимый MIME-тип: ${file.name}`);
+        continue;
+      }
     }
     const fileKey = `${file.name}:${file.size}`;
     const isDuplicate = currentFiles.some(f => `${f.name}:${f.size}` === fileKey);
@@ -344,6 +347,12 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxFileSize,
       errors.push(`Файл "${file.name}" уже добавлен`);
       continue;
     }
+    const newTotal = currentTotalSize + file.size;
+    if (newTotal > maxTotalSize) {
+      errors.push(`Общий размер файлов превышает ${maxTotalSize / 1024 / 1024} МБ. Файл "${file.name}" не добавлен.`);
+      continue;
+    }
+    currentTotalSize = newTotal;
     validNewFiles.push(file);
   }
 
@@ -356,7 +365,7 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxFileSize,
       filesToAdd = [];
     } else {
       filesToAdd = validNewFiles.slice(0, space);
-      errors.push(`Добавлено ${space} из ${validNewFiles.length} файлов. Лимит ${maxFiles}.`);
+      errors.push(`Добавлено ${space} из ${validNewFiles.length} файлов. Лимит: ${maxFiles}.`);
     }
   }
 
@@ -531,7 +540,10 @@ class ModalFormHandler {
     const fileDrop = this.form.querySelector(this.fileDropSelector);
     console.log('[ModalFormHandler] fileDrop element:', fileDrop);
     if (fileDrop) {
-      this.fileUpload = FormUtils.initFileUpload(fileDrop, null, this.fileOptions);
+      this.fileUpload = FormUtils.initFileUpload(fileDrop, null, {
+        maxFiles: this.fileOptions.maxFiles || 10,
+        maxTotalSize: this.fileOptions.maxTotalSize || 24 * 1024 * 1024
+      });
       console.log('[ModalFormHandler] fileUpload created:', this.fileUpload);
       if (this.fileUpload && typeof this.fileUpload.renderFileList === 'function') {
         this.fileUpload.renderFileList();
@@ -570,7 +582,6 @@ class ModalFormHandler {
     if (this.isSubmitting) return;
     this.isSubmitting = true;
 
-    // Проверка rate limit
     if (this.rateLimiter && !this.rateLimiter.canProceed()) {
       const remaining = Math.ceil(this.rateLimiter.getRemainingTime() / 1000);
       this._defaultError(`Пожалуйста, подождите ${remaining} секунд перед следующей отправкой.`);
@@ -581,7 +592,6 @@ class ModalFormHandler {
     const files = this.fileUpload ? this.fileUpload.currentFiles : [];
     console.log('[ModalFormHandler] Files attached:', files.length);
 
-    // Вызываем submitForm, все ошибки обрабатываются через onError
     await FormUtils.submitForm(this.form, {
       onSuccess: (result) => {
         this._defaultSuccess(result);
@@ -628,7 +638,6 @@ class ModalFormHandler {
     console.warn('[ModalFormHandler] _defaultError:', msg);
     const warning = this.form.querySelector('.rate-limit-warning');
     if (warning) {
-      // Если предупреждение уже висит – не дублируем
       if (warning.classList.contains('show')) return;
       warning.replaceChildren();
       const p = document.createElement('p');

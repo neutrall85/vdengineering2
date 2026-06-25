@@ -263,11 +263,7 @@ const FormValidation = (function() {
 
       errorElement.textContent = message;
       // Гарантированное добавление класса 'show' и inline-стилей
-      errorElement.classList.add('show');
-      errorElement.style.display = 'block';
-      errorElement.style.visibility = 'visible';
-      errorElement.style.opacity = '1';
-      
+      errorElement.classList.add('show');     
       element.setAttribute('aria-invalid', 'true');
       element.classList.add('error');
     }
@@ -285,9 +281,6 @@ const FormValidation = (function() {
 
       if (errorElement) {
         errorElement.classList.remove('show');
-        errorElement.style.display = '';
-        errorElement.style.visibility = '';
-        errorElement.style.opacity = '';
       }
 
       element.removeAttribute('aria-invalid');

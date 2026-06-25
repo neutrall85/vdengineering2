@@ -13,7 +13,7 @@ ini_set('html_errors', 0);
 // 2. Подключаем конфиги и логгер
 require_once __DIR__ . '/Logger.php';
 require_once __DIR__ . '/secret_config.php';
-require_once __DIR__ . '/response_templates.php';  // Шаблоны ответов
+require_once __DIR__ . '/response_templates.php';
 
 Logger::init(LOG_DIR);
 
@@ -36,6 +36,70 @@ header('X-Frame-Options: DENY');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 // ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ПРОВЕРКИ ФАЙЛОВ
+// ============================================================
+
+/**
+ * Проверка магических сигнатур (первые байты файла)
+ */
+function validateMagicBytes($filePath, $mime) {
+    $handle = fopen($filePath, 'rb');
+    if (!$handle) return false;
+    $bytes = fread($handle, 16);
+    fclose($handle);
+    if ($mime === 'application/pdf') {
+        return strpos($bytes, '%PDF') === 0;
+    }
+    if ($mime === 'application/zip' || strpos($mime, 'vnd.openxmlformats') !== false) {
+        return substr($bytes, 0, 4) === "PK\x03\x04" || substr($bytes, 0, 4) === "PK\x05\x06";
+    }
+    return true;
+}
+
+/**
+ * Проверка наличия макросов в OOXML-файлах
+ */
+function hasMacros($filePath, $mime) {
+    if (strpos($mime, 'vnd.openxmlformats') === false) return false;
+    $zip = new ZipArchive();
+    if ($zip->open($filePath) === true) {
+        $macroFiles = ['word/vbaProject.bin', 'xl/vbaProject.bin', 'ppt/vbaProject.bin'];
+        foreach ($macroFiles as $macro) {
+            if ($zip->locateName($macro) !== false) {
+                $zip->close();
+                return true;
+            }
+        }
+        $zip->close();
+    }
+    return false;
+}
+
+/**
+ * Определение MIME-типа с fallback на finfo
+ */
+function detectMimeType($filePath) {
+    if (function_exists('mime_content_type')) {
+        return @mime_content_type($filePath) ?: 'application/octet-stream';
+    }
+    if (class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        return $finfo->file($filePath) ?: 'application/octet-stream';
+    }
+    return 'application/octet-stream';
+}
+
+/**
+ * Улучшенная валидация российского номера телефона
+ */
+function validateRussianPhone($phone) {
+    $digits = preg_replace('/[^0-9]/', '', $phone);
+    if (strlen($digits) < 10 || strlen($digits) > 15) return false;
+    if (!preg_match('/^[78]\d{9,14}$/', $digits)) return false;
+    return true;
+}
+
+// ============================================================
 // НАЧАЛО ОБРАБОТКИ ЗАПРОСА
 // ============================================================
 Logger::info('Form submission started', [
@@ -50,15 +114,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     exit;
 }
 
-// [FIX-P1] Определяем IP сразу — нужен для всех последующих проверок
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-// ============================================================
-// [FIX-P1] ПРОВЕРКА РАЗМЕРА ЗАПРОСА (защита от DoS через огромный POST)
-// ============================================================
+// Проверка размера запроса
 $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
-$maxAllowed    = MAX_TOTAL_SIZE + 1024 * 1024; // файлы + 1 МБ на POST-поля
-
+$maxAllowed    = MAX_TOTAL_SIZE + 1024 * 1024;
 if ($contentLength > $maxAllowed) {
     Logger::warning('Request too large', [
         'content_length' => $contentLength,
@@ -73,12 +133,9 @@ if ($contentLength > $maxAllowed) {
     exit;
 }
 
-// ============================================================
-// CSRF ПРОВЕРКА
-// ============================================================
+// CSRF
 $csrf_token      = $_POST['csrf_token'] ?? '';
 $hasSessionToken = isset($_SESSION['csrf_token']);
-
 if (empty($csrf_token) || !$hasSessionToken || !hash_equals((string)$_SESSION['csrf_token'], (string)$csrf_token)) {
     Logger::warning('CSRF validation failed', [
         'has_post_token'    => !empty($csrf_token),
@@ -92,54 +149,37 @@ if (empty($csrf_token) || !$hasSessionToken || !hash_equals((string)$_SESSION['c
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
-// [FIX-P0] Не удаляем токен — он живёт 1 час (см. csrf_token.php).
-// Это позволяет отправлять форму из нескольких вкладок одновременно.
-
 Logger::debug('CSRF validation passed');
 
-// ============================================================
-// HONEYPOT (защита от ботов)
-// ============================================================
+// Honeypot
 if (!empty($_POST['website'])) {
     Logger::info('Honeypot triggered (bot detected)', ['ip' => $ip]);
-    // Возвращаем success, чтобы бот не понял, что попался
     echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// ============================================================
-// [FIX-P1] RATE LIMITING (атомарная операция под flock)
-// ============================================================
+// Rate limiting (атомарная запись)
 if (!is_dir(RATE_DIR)) {
     if (!mkdir(RATE_DIR, 0755, true) && !is_dir(RATE_DIR)) {
         Logger::error('Failed to create rate limit directory', ['path' => RATE_DIR]);
     }
 }
-
 $rate_file = RATE_DIR . 'rate_' . hash('sha256', $ip);
 $now       = time();
-
 $fp = @fopen($rate_file, 'c+');
 if (!$fp) {
     Logger::error('Cannot open rate limit file', ['path' => $rate_file]);
-    // Файл недоступен — не блокируем клиента, но проблема записана в лог
 } else {
     if (flock($fp, LOCK_EX)) {
         $content  = stream_get_contents($fp);
         $requests = $content ? (json_decode($content, true) ?: []) : [];
-        if (!is_array($requests)) {
-            $requests = [];
-        }
-
+        if (!is_array($requests)) $requests = [];
         $filtered = array_values(array_filter($requests, function($ts) use ($now) {
             return is_numeric($ts) && $ts > $now - RATE_LIMIT_WINDOW;
         }));
-
         if (count($filtered) >= RATE_LIMIT_MAX) {
             flock($fp, LOCK_UN);
             fclose($fp);
-
             Logger::warning('Rate limit exceeded', [
                 'ip'             => $ip,
                 'requests_count' => count($filtered),
@@ -153,7 +193,6 @@ if (!$fp) {
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
-
         $filtered[] = $now;
         ftruncate($fp, 0);
         rewind($fp);
@@ -171,7 +210,7 @@ $isProposal  = isset($_POST['companyName']);
 $isUniversal = isset($_POST['fullName']);
 $formType = 'unknown';
 $errors = [];
-$data   = []; // «сырые» валидированные данные (без HTML-экранирования)
+$data   = [];
 
 if ($isProposal) {
     $formType = 'proposal';
@@ -189,16 +228,16 @@ if ($isProposal) {
         $errors[] = 'Некорректный email';
     }
 
-    $phone_clean = preg_replace('/[^0-9+]/', '', $_POST['phone'] ?? '');
-    if (mb_strlen($phone_clean) < 10) {
-        $errors[] = 'Некорректный телефон';
+    $rawPhone = trim($_POST['phone'] ?? '');
+    if (!validateRussianPhone($rawPhone)) {
+        $errors[] = 'Некорректный номер телефона (российский формат)';
     }
 
     if (mb_strlen(trim($_POST['taskDescription'] ?? ''), 'UTF-8') < 10) {
         $errors[] = 'Описание задачи (мин. 10 символов)';
     }
 
-    if (empty($_POST['privacyConsent']) || empty($_POST['personalDataConsent'])) {
+    if (empty($_POST['personalDataConsent'])) {
         $errors[] = 'Необходимо согласие на обработку данных';
     }
 
@@ -207,7 +246,7 @@ if ($isProposal) {
         'company'   => trim($_POST['companyName'] ?? ''),
         'contact'   => trim($_POST['contactPerson'] ?? ''),
         'email'     => $rawEmail,
-        'phone'     => trim($_POST['phone'] ?? ''),
+        'phone'     => $rawPhone,
         'extension' => trim($_POST['extension'] ?? ''),
         'aircraft'  => trim($_POST['aircraftType'] ?? ''),
         'service'   => trim($_POST['serviceType'] ?? ''),
@@ -230,9 +269,9 @@ if ($isProposal) {
         $errors[] = 'Некорректный email';
     }
 
-    $phone_clean = preg_replace('/[^0-9+]/', '', $_POST['phone'] ?? '');
-    if (mb_strlen($phone_clean) < 10) {
-        $errors[] = 'Некорректный телефон';
+    $rawPhone = trim($_POST['phone'] ?? '');
+    if (!validateRussianPhone($rawPhone)) {
+        $errors[] = 'Некорректный номер телефона (российский формат)';
     }
 
     if (mb_strlen(trim($_POST['about'] ?? ''), 'UTF-8') < 10) {
@@ -247,7 +286,7 @@ if ($isProposal) {
         'type'          => 'universal',
         'fullName'      => trim($_POST['fullName'] ?? ''),
         'email'         => $rawEmail,
-        'phone'         => trim($_POST['phone'] ?? ''),
+        'phone'         => $rawPhone,
         'about'         => trim($_POST['about'] ?? ''),
         'vacancy_id'    => trim($_POST['vacancy_id'] ?? ''),
         'vacancy_title' => trim($_POST['vacancy_title'] ?? ''),
@@ -272,17 +311,55 @@ if ($errors) {
     exit;
 }
 
+// ============================================================
+// ЛОГИРОВАНИЕ СОГЛАСИЯ НА ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ
+// ============================================================
+if (!empty($_POST['personalDataConsent']) || !empty($_POST['consent'])) {
+    $consentType = $isProposal ? 'proposal' : 'universal';
+    $email = $data['email'] ?? 'unknown';
+    $phone = $data['phone'] ?? '';
+    $fullName = $data['contact'] ?? $data['fullName'] ?? '';
+
+    $sessionId = session_id();
+
+    $entry = [
+        'timestamp'      => date('Y-m-d H:i:s'),
+        'session_id'     => $sessionId,
+        'ip'             => $ip,
+        'user_agent'     => $_SERVER['HTTP_USER_AGENT'] ?? '',
+        'form_type'      => $consentType,
+        'email'          => $email,
+        'phone'          => $phone,
+        'full_name'      => $fullName,
+        'consent_given'  => true,
+        'consent_version' => '2026-06-05',
+        'consent_field'  => $isProposal ? 'personalDataConsent' : 'consent'
+    ];
+
+    $logFile = PERSONAL_CONSENT_LOG_DIR . 'consent-' . date('Y-m-d') . '.log';
+    
+    if (!is_dir(PERSONAL_CONSENT_LOG_DIR)) {
+        mkdir(PERSONAL_CONSENT_LOG_DIR, 0755, true);
+    }
+
+    file_put_contents(
+        $logFile,
+        json_encode($entry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
+        FILE_APPEND | LOCK_EX
+    );
+
+    Logger::debug('Personal data consent logged', ['session_id' => $sessionId]);
+}
+
 Logger::debug('Form validation passed', ['form_type' => $formType]);
 
 // ============================================================
-// ЗАГРУЗКА ФАЙЛОВ
+// ЗАГРУЗКА ФАЙЛОВ С РАСШИРЕННЫМИ ПРОВЕРКАМИ (без проверки размера каждого файла)
 // ============================================================
 $uploaded = [];
 
 if (!empty($_FILES['fileAttachment']['name'])) {
     $files = $_FILES['fileAttachment'];
-
-    // Нормализация структуры (один файл vs массив)
     if (!is_array($files['name'])) {
         $files = [
             'name'     => [$files['name']],
@@ -301,6 +378,7 @@ if (!empty($_FILES['fileAttachment']['name'])) {
         Logger::warning('Too many files', ['count' => $filesCount, 'max' => MAX_FILES]);
     }
 
+    // Проверка общего размера всех файлов
     $totalSize = array_sum($files['size']);
     if ($totalSize > MAX_TOTAL_SIZE) {
         $errors[] = "Общий размер файлов превышает " . round(MAX_TOTAL_SIZE / 1024 / 1024) . " МБ";
@@ -341,18 +419,9 @@ if (!empty($_FILES['fileAttachment']['name'])) {
             continue;
         }
 
-        if ($size > MAX_FILE_SIZE) {
-            Logger::warning('File too large', [
-                'file_name' => $name,
-                'size'      => $size,
-                'max_size'  => MAX_FILE_SIZE
-            ]);
-            $errors[] = "Файл $name превышает " . round(MAX_FILE_SIZE / 1024 / 1024) . " МБ";
-            continue;
-        }
-
+        // Проверка расширения и MIME (без проверки размера отдельного файла)
         $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-        $type = @mime_content_type($tmp) ?: 'application/octet-stream';
+        $type = detectMimeType($tmp);
 
         if (!in_array($ext, ALLOWED_EXTENSIONS, true)) {
             Logger::warning('Disallowed file extension', [
@@ -371,6 +440,24 @@ if (!empty($_FILES['fileAttachment']['name'])) {
                 'allowed'   => ALLOWED_MIME_TYPES
             ]);
             $errors[] = "Недопустимый тип файла: $name ($type)";
+            continue;
+        }
+
+        if (!validateMagicBytes($tmp, $type)) {
+            Logger::warning('Magic bytes mismatch', [
+                'file_name' => $name,
+                'mime_type' => $type
+            ]);
+            $errors[] = "Файл $name повреждён или имеет неверную сигнатуру";
+            continue;
+        }
+
+        if (hasMacros($tmp, $type)) {
+            Logger::warning('Macros detected', [
+                'file_name' => $name,
+                'mime_type' => $type
+            ]);
+            $errors[] = "Файл $name содержит макросы (запрещено)";
             continue;
         }
 
@@ -430,57 +517,19 @@ $nl2brSafe = static function ($v) use ($esc) {
 };
 
 // ============================================================
-// ОТПРАВКА EMAIL
+// ОТПРАВКА EMAIL ЧЕРЕЗ PHPMAILER (без fallback)
 // ============================================================
-$phpmailer_path = __DIR__ . '/PHPMailer/PHPMailer.php';
-$useFallback = !file_exists($phpmailer_path);
-
-// Формируем письмо для админа через ResponseBuilder
-$adminEmail = ResponseBuilder::buildAdminEmail($data, $uploaded, $esc, $nl2brSafe);
-$subject   = $adminEmail['subject'];
-$adminHtml = $adminEmail['html'];
-$adminText = $adminEmail['text'];
-
-$to = defined('ADMIN_EMAILS') && is_array(ADMIN_EMAILS) ? ADMIN_EMAILS[0] : 'admin@example.com';
-
-if ($useFallback) {
-    Logger::warning('PHPMailer not found, using mail() fallback');
-
-    $headers  = "From: " . FROM_EMAIL . "\r\n";
-    $headers .= "Reply-To: " . $data['email'] . "\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=utf-8\r\n";
-    $headers .= "X-Request-ID: " . Logger::getRequestId() . "\r\n";
-
-    $sent = @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $adminHtml, $headers);
-
-    if ($sent) {
-        Logger::info('Email sent via mail()', ['to' => $to, 'subject' => $subject]);
-        echo json_encode([
-            'success'    => true,
-            'message'    => ResponseBuilder::getSuccessMessage($formType, $data),
-            'form_type'  => $formType,
-        ], JSON_UNESCAPED_UNICODE);
-    } else {
-        Logger::error('mail() function failed', ['to' => $to, 'subject' => $subject]);
-        http_response_code(500);
-        echo json_encode([
-            'success'    => false,
-            'error'      => 'Ошибка отправки письма. Попробуйте позже.',
-        ], JSON_UNESCAPED_UNICODE);
-    }
-    exit;
-}
-
-// ============================================================
-// ОТПРАВКА ЧЕРЕЗ PHPMAILER
-// ============================================================
-require_once $phpmailer_path;
+require_once __DIR__ . '/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/PHPMailer/SMTP.php';
 require_once __DIR__ . '/PHPMailer/Exception.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+$adminEmail = ResponseBuilder::buildAdminEmail($data, $uploaded, $esc, $nl2brSafe);
+$subject   = $adminEmail['subject'];
+$adminHtml = $adminEmail['html'];
+$adminText = $adminEmail['text'];
 
 $mail = new PHPMailer(true);
 
@@ -497,21 +546,34 @@ try {
 
     $mail->setFrom(FROM_EMAIL, FROM_NAME);
 
-    $adminEmails = [];
-    if (defined('ADMIN_EMAILS') && is_array(ADMIN_EMAILS)) {
-        foreach (ADMIN_EMAILS as $email) {
-            $email = trim($email);
-            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $mail->addAddress($email);
-                $adminEmails[] = $email;
-            } else {
-                Logger::warning('Invalid admin email skipped', ['email' => $email]);
-            }
+    // Определяем список получателей в зависимости от типа формы
+    if ($formType === 'proposal') {
+        $adminEmails = defined('ADMIN_EMAILS_PROPOSAL') ? ADMIN_EMAILS_PROPOSAL : [];
+        if (empty($adminEmails)) {
+            $adminEmails = defined('ADMIN_EMAILS') && is_array(ADMIN_EMAILS) ? ADMIN_EMAILS : ['admin@example.com'];
         }
     } else {
-        $mail->addAddress('admin@example.com');
-        $adminEmails[] = 'admin@example.com';
+        $adminEmails = defined('ADMIN_EMAILS_RESUME') ? ADMIN_EMAILS_RESUME : [];
+        if (empty($adminEmails)) {
+            $adminEmails = defined('ADMIN_EMAILS') && is_array(ADMIN_EMAILS) ? ADMIN_EMAILS : ['admin@example.com'];
+        }
     }
+
+    $actualAdminEmails = [];
+    foreach ($adminEmails as $email) {
+        $email = trim($email);
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $mail->addAddress($email);
+            $actualAdminEmails[] = $email;
+        } else {
+            Logger::warning('Invalid admin email skipped', ['email' => $email]);
+        }
+    }
+    if (empty($actualAdminEmails)) {
+        $mail->addAddress('admin@example.com');
+        $actualAdminEmails[] = 'admin@example.com';
+    }
+    $adminEmails = $actualAdminEmails;
 
     if (!empty($data['email']) && is_string($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
         $replyName = $data['contact'] ?? $data['fullName'] ?? '';
@@ -523,7 +585,6 @@ try {
     $mail->Body    = $adminHtml;
     $mail->AltBody = $adminText;
 
-    // Прикрепляем файлы
     foreach ($uploaded as $f) {
         $filePath = UPLOAD_DIR . $f['saved'];
         if (file_exists($filePath)) {
@@ -548,7 +609,6 @@ try {
             $mail->clearAttachments();
             $mail->addAddress($data['email']);
 
-            // Формируем автоответ через ResponseBuilder
             $clientReply = ResponseBuilder::buildClientAutoReply($data, FROM_NAME, $esc);
             $mail->Subject = $clientReply['subject'];
             $mail->Body    = $clientReply['html'];
@@ -568,6 +628,12 @@ try {
         }
     }
 
+    // Удаление временных файлов
+    foreach ($uploaded as $f) {
+        @unlink(UPLOAD_DIR . $f['saved']);
+        Logger::debug('Temporary file deleted', ['file' => $f['saved']]);
+    }
+
     Logger::info('Form successfully submitted', [
         'form_type'    => $formType,
         'files_count'  => count($uploaded),
@@ -581,6 +647,9 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
+    foreach ($uploaded as $f) {
+        @unlink(UPLOAD_DIR . $f['saved']);
+    }
     Logger::error('PHPMailer send failed', [
         'error_info' => $mail->ErrorInfo,
         'form_type'  => $formType,

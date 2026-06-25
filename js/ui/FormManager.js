@@ -12,13 +12,16 @@ class FormManager {
       apiClient,
       rateLimiter,
       modalKey: 'proposal',
-      fileOptions: { maxFiles: 10, maxFileSize: 10 * 1024 * 1024 },
+      fileOptions: { 
+        maxFiles: 10, 
+        maxTotalSize: 24 * 1024 * 1024
+      },
       messages: {
         required: 'Это поле обязательно для заполнения',
         email: 'Введите корректный email адрес',
         phone: 'Введите корректный номер телефона'
       },
-      onSuccess: null // Убираем задержку – закрытие происходит в _defaultSuccess
+      onSuccess: null
     });
     this.handler.init();
     console.log('[FormManager] Handler initialized');

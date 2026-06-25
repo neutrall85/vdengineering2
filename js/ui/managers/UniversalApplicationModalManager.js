@@ -10,7 +10,10 @@ const UniversalApplicationModalManager = {
       apiClient: window.Services.apiClient,
       rateLimiter: null,
       modalKey: 'universal',
-      fileOptions: { maxFiles: 5, maxFileSize: 10 * 1024 * 1024 },
+      fileOptions: { 
+        maxFiles: 5, 
+        maxTotalSize: 24 * 1024 * 1024 // 24 MB общий размер
+      },
       messages: {
         required: 'Это поле обязательно для заполнения',
         email: 'Введите корректный email адрес',

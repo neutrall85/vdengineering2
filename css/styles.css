@@ -5,7 +5,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Доступность - стили фокуса для клавиатурной навигации */
 *:focus-visible {
   outline: 3px solid #9CA3AF;
   outline-offset: 2px;
@@ -22,14 +21,12 @@ textarea:focus-visible,
   box-shadow: 0 0 0 4px rgba(156, 163, 175, 0.3);
 }
 
-/* Убираем стандартный outline для форм, так как уже есть кастомный */
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
   box-shadow: 0 0 0 4px rgba(156, 163, 175, 0.3);
 }
 
-/* SVG градиенты - скрытие без inline-стилей */
 .svg-gradients {
   position: absolute;
   width: 0;
@@ -38,10 +35,9 @@ textarea:focus-visible,
 }
 
 :root {
-  /* Основные цвета */
   --vd-orange: #FF6600;
   --vd-orange-light: #FF8533;
-  --vd: #004E96;
+  --vd: #1b4a96;
   --vd-dark: #003366;
   --vd-blue: #2962FF;
   --vd-light-blue: #E6F0FA;
@@ -57,7 +53,6 @@ textarea:focus-visible,
   --error-bg: #FEF2F2;
   --vd-orange-rgb: 255, 102, 0;
 
-  /* Анимации и переходы - централизованные переменные */
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -71,7 +66,6 @@ textarea:focus-visible,
   --transition-transform: transform var(--duration-normal) var(--ease-smooth);
   --transition-shadow: box-shadow var(--duration-normal) var(--ease-smooth);
 
-  /* Градиенты - централизованное определение */
   --gradient-primary: linear-gradient(135deg, var(--vd) 0%, var(--vd-dark) 100%);
   --gradient-primary-alt: linear-gradient(135deg, var(--vd), var(--vd-light-blue));
   --gradient-primary-reverse: linear-gradient(135deg, var(--vd-dark) 0%, var(--vd) 100%);
@@ -82,7 +76,6 @@ textarea:focus-visible,
   --gradient-accent: linear-gradient(90deg, var(--vd), var(--vd-blue));
   --gradient-loader: linear-gradient(135deg, #0033A0 0%, #002580 100%);
 
-  /* Тени - унифицированная система */
   --shadow-xs: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 10px 20px rgba(0, 0, 0, 0.1);
@@ -93,9 +86,7 @@ textarea:focus-visible,
   --shadow-primary: 0 4px 15px rgba(0, 78, 150, 0.3);
   --shadow-primary-sm: 0 4px 12px rgba(0, 78, 150, 0.2);
   --shadow-primary-md: 0 6px 20px rgba(0, 78, 150, 0.25);
-  /* --shadow-nav: -5px 0 30px rgba(0, 0, 0, 0.3); */
 
-  /* Отступы (шкала spacing) */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -108,7 +99,6 @@ textarea:focus-visible,
   --space-16: 4rem;
   --space-20: 5rem;
 
-  /* Скругления (шкала border-radius) */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -116,7 +106,6 @@ textarea:focus-visible,
   --radius-2xl: 24px;
   --radius-full: 9999px;
 
-  /* Z-index система слоев - оптимизированная шкала */
   --z-base: 1;
   --z-dropdown: 10;
   --z-sticky: 30;
@@ -128,12 +117,10 @@ textarea:focus-visible,
   --z-tooltip: 1300;
   --z-loader: 9999;
 
-  /* Ширина скроллбара для компенсации при блокировке скролла */
   --scrollbar-width: 17px;
 
   --navbar-height: 70px;
 
-  /* Базовый размер шрифта для пропорционального масштабирования */
   font-size: 16px;
   scroll-padding-top: 100px;
 }
@@ -146,19 +133,16 @@ body {
   font-size: clamp(0.875rem, 1vw, 1rem);
 }
 
-/* Блокировка скролла при открытом модальном окне или мобильном меню */
 body.no-scroll {
   overflow: hidden;
 }
 
-/* Фиксация позиции скролла с сохранением текущей прокрутки */
 body.no-scroll-fixed {
   position: fixed;
   width: 100%;
   top: var(--scroll-position, 0);
   overflow: hidden;
 }
-
 
 /* ==================== ЛОАДЕР С САМОЛЁТИКОМ ==================== */
 .page-loader {
@@ -204,7 +188,6 @@ body.no-scroll-fixed {
   pointer-events: none;
 }
 
-/* Оборачивающий элемент для вращения */
 .plane-wrapper {
   position: absolute;
   top: 0;
@@ -215,7 +198,6 @@ body.no-scroll-fixed {
   transform-origin: 50% 50%;
 }
 
-/* Самолётик */
 .plane-icon {
   position: absolute;
   top: -10px;
@@ -233,7 +215,6 @@ body.no-scroll-fixed {
   height: 100%;
 }
 
-/* Анимация вращения */
 @keyframes rotatePlane {
   from {
     transform: rotate(0deg);
@@ -264,7 +245,7 @@ body.no-scroll-fixed {
   height: 4px;
   background: rgba(0, 0, 0, 0.05);
   z-index: 10000;
-  pointer-events: none; /* не блокирует клики по контенту */
+  pointer-events: none;
 }
 
 .scroll-progress-bar {
@@ -274,7 +255,6 @@ body.no-scroll-fixed {
   transition: width 0.1s ease-out;
 }
 
-/* Для пользователей, предпочитающих минимальную анимацию */
 @media (prefers-reduced-motion: reduce) {
   .scroll-progress-bar {
     transition: none;
@@ -283,14 +263,12 @@ body.no-scroll-fixed {
 
 /* ==================== АНИМАЦИИ ПОЯВЛЕНИЯ ПРИ СКРОЛЛЕ ==================== */
 
-/* Базовое состояние – скрыто */
 .animate-on-scroll {
   opacity: 0;
-  transform: translateY(30px); /* для fade‑up по умолчанию, но каждый тип переопределит */
+  transform: translateY(30px);
   will-change: opacity, transform;
 }
 
-/* Общие ключевые кадры для разных типов анимаций */
 @keyframes fadeUp {
   0% { opacity: 0; transform: translateY(30px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -353,7 +331,6 @@ body.no-scroll-fixed {
   100% { transform: translateX(0) rotate(0); opacity: 1; }
 }
 
-/* Привязка анимаций к классам и поддержка задержек через CSS-переменную */
 .fade-up.visible,
 .animate-on-scroll.fade-up.visible {
   animation: fadeUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
@@ -481,40 +458,39 @@ body.app-ready>footer {
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: center;       /* дочерние элементы (лого, меню) растягиваются */
-  min-height: inherit;        /* наследует min-height от .navbar */
+  align-items: center;
+  min-height: inherit;
 }
 
 .logo {
   display: flex;
-  align-items: center;       /* логотип растягивается внутри .logo */
+  align-items: center;
   gap: 1rem;
 }
 
 .logo-image {
-  height: 100%;               /* теперь 100% от 85px */
+  height: 100%;
   width: auto;
   object-fit: contain;
   max-height: none;
-  /* Увеличиваем максимальную ширину логотипа – теперь он может быть шире */
-  max-width: clamp(300px, 25vw, 350px);  /* минимум 180px, предпочтительно 25% вьюпорта, максимум 280px */
+  max-width: clamp(300px, 25vw, 350px);
 }
 
 .nav-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem 1.5rem;    /* вертикальный промежуток 0.3rem, горизонтальный 1.5rem */
-  align-items: center;    /* вместо stretch — ссылки не растягиваются */
+  gap: 0.3rem 1.5rem;
+  align-items: center;
   list-style: none;
-  margin: 0 0 0 1rem;     /* отступ слева 1rem (от логотипа) */
+  margin: 0 0 0 1rem;
   padding: 0;
 }
 
 .nav-links a {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.5rem;   /* минимальные вертикальные отступы */
-  height: auto;               /* не фиксированная высота */
+  padding: 0.25rem 0.5rem;
+  height: auto;
   color: white;
   text-decoration: none;
   font-weight: 500;
@@ -522,9 +498,9 @@ body.app-ready>footer {
   
   /* ЦЕНТРИРОВАНИЕ И РАСТЯЖКА: */
   display: flex;
-  align-items: center;        /* вертикальное центрирование текста */
-  height: 100%;               /* растягиваем на всю высоту .nav-links */
-  padding: 0 0.5rem;          /* горизонтальные отступы, вертикальные убраны */
+  align-items: center;
+  height: 100%;
+  padding: 0 0.5rem;
   border-radius: 50px;
   transition: color var(--duration-fast) var(--ease-smooth),
               transform var(--duration-fast) var(--ease-smooth);
@@ -645,7 +621,6 @@ body.app-ready>footer {
   padding-left: 1.25rem;
 }
 
-/* Стили для ссылок мобильного меню, скрытых от клавиатуры */
 .mobile-menu a[tabindex="-1"] {
   pointer-events: none;
 }
@@ -701,9 +676,6 @@ body.app-ready>footer {
   padding: calc(var(--navbar-height) + 2rem) 3% 3rem;
   overflow: hidden;
   background: var(--vd-light-blue);
-  /* background: 
-    linear-gradient(rgba(230, 240, 250, 0.7), rgba(230, 240, 250, 0.7)),
-    url('../assets/images/hero.webp') center / cover no-repeat; */
   color: #004E96;
 }
 
@@ -714,24 +686,21 @@ body.app-ready>footer {
   width: 100%;
 }
 
-/* Hero wrapper для разделения контента и слайд-шоу */
 .hero-wrapper {
   display: flex;
-  align-items: stretch;   /* вместо center, чтобы слайд-шоу растягивалось на высоту текста */
+  align-items: stretch;
   gap: clamp(2rem, 5vw, 4rem);
   width: 100%;
 }
 
-/* Текстовый блок */
 .hero-text {
   flex: 1;
   max-width: 600px;
 }
 
-/* Слайд-шоу в hero */
 .hero-slideshow {
   flex: 1;
-  display: flex;          /* чтобы внутренний контейнер тоже растянулся */
+  display: flex;
   max-width: none;
   position: relative;
 }
@@ -778,6 +747,19 @@ body.app-ready>footer {
   height: 24px;
   fill: var(--vd);
   transition: fill 0.2s;
+}
+
+.slideshow-btn,
+.slideshow-indicators {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.slideshow-container:hover .slideshow-btn,
+.slideshow-container:hover .slideshow-indicators,
+.slideshow-btn:focus-visible,
+.slideshow-indicator:focus-visible {
+  opacity: 1;
 }
 
 .slideshow-prev {
@@ -848,18 +830,15 @@ body.app-ready>footer {
   transform: scale(1.02);
 }
 
-/* Применяем анимацию к контейнеру слайд‑шоу */
 .hero-slideshow .slideshow-container {
   animation: gentleFloat 3s ease-in-out infinite;
   transform-origin: center;
 }
 
-/* Останавливаем анимацию при наведении курсора (опционально) */
 .hero-slideshow .slideshow-container:hover {
   animation-play-state: paused;
 }
 
-/* Отключаем анимацию на мобильных, где слайд‑шоу скрыто */
 @media (max-width: 1048px) {
   .hero-slideshow .slideshow-container {
     animation: none;
@@ -885,10 +864,10 @@ body.app-ready>footer {
   line-height: 1.7;
   margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
   max-width: 650px;
-  word-wrap: break-word;        /* перенос длинных слов (устаревший, но безопасный) */
-  overflow-wrap: break-word;    /* современный стандарт */
-  word-break: break-word;       /* для дополнительной кросс-браузерности */
-  hyphens: auto;                /* автоматические переносы по слогам (опционально) */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .hero-buttons {
@@ -896,7 +875,7 @@ body.app-ready>footer {
   gap: clamp(0.75rem, 2vw, 1rem);
   justify-content: flex-start;
   flex-wrap: wrap;
-  margin-top: clamp(1.5rem, 3vh, 2rem);   /* ← добавляем отступ сверху */
+  margin-top: clamp(1.5rem, 3vh, 2rem);
 }
 
 .hero-stats {
@@ -909,7 +888,6 @@ body.app-ready>footer {
   border-top: 1px solid rgba(0, 78, 150, 0.15);
 }
 
-/* Универсальные стили для статистики - стеклянный эффект */
 .stat-item {
   flex: 1;
   min-width: 0;
@@ -932,7 +910,7 @@ body.app-ready>footer {
 
 .stat-item:hover {
   background: var(--vd);
-  transform: scale(1.05) rotate(1deg);
+  transform: scale(1.05);
   border-color: var(--vd);
   box-shadow: 0 10px 25px rgba(0, 78, 150, 0.2);
 }
@@ -969,7 +947,6 @@ body.app-ready>footer {
 }
 
 .stat-link .stat-item {
-  /* существующие стили остаются */
   transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
               background 0.3s ease,
               border-color 0.3s ease,
@@ -978,7 +955,7 @@ body.app-ready>footer {
 
 .stat-link:hover .stat-item {
   background: var(--vd);
-  transform: scale(1.05) rotate(1deg);
+  transform: scale(1.05);
   border-color: var(--vd);
   box-shadow: 0 10px 25px rgba(0, 78, 150, 0.2);
 }
@@ -1094,7 +1071,7 @@ body.app-ready>footer {
 /* ==================== БАЗОВЫЕ СТИЛИ КАРТОЧЕК ==================== */
 .card {
   background: var(--vd-light-gray);
-  height: 320px;           /* было 270px */
+  height: 320px;
   border-radius: 20px;
   padding: clamp(1.0rem, 3vw, 1.5rem);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -1153,11 +1130,11 @@ body.app-ready>footer {
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* ← больше колонок */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: clamp(1.5rem, 3vw, 2rem);
   max-width: 1400px;
   margin: 0 auto;
-  align-items: start; /* ← карточки перестают растягиваться на высоту ряда */
+  align-items: start;
 }
 
 .service-icon {
@@ -1204,7 +1181,6 @@ body.app-ready>footer {
 
 .service-card:hover .service-icon {
   background: var(--vd);
-  /* transform: scale(1.05) rotate(5deg); */
   fill: white;
 }
 
@@ -1223,18 +1199,18 @@ body.app-ready>footer {
 
 /* ==================== О НАС PREVIEW ==================== */
 .about-preview--home .about-content {
-  align-items: stretch;   /* вместо center */
+  align-items: stretch;
 }
 
 .about-preview--home .about-image {
   display: flex;
-  align-self: stretch;    /* чтобы контейнер растянулся по высоте родителя */
+  align-self: stretch;
 }
 
 .about-preview--home .about-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;      /* или contain – по вашему желанию */
+  object-fit: cover;
 }
 
 .about-preview {
@@ -1324,7 +1300,6 @@ body.app-ready>footer {
   margin: 0 auto;
 }
 
-/* Grid-сетка для превью новостей на главной (3 колонки) */
 .news-grid-inline {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1333,7 +1308,6 @@ body.app-ready>footer {
   margin: 0 auto;
 }
 
-/* Карточки новостей на главной странице - вертикальная раскладка как на news.html */
 .news-card--compact {
   display: flex;
   flex-direction: column;
@@ -1350,7 +1324,6 @@ body.app-ready>footer {
   flex: 1;
 }
 
-/* Общий стиль для кнопок "Подробнее" в карточках новостей */
 .news-card-link {
   color: var(--vd);
   text-decoration: none;
@@ -1514,7 +1487,7 @@ body.app-ready>footer {
   display: block;
   font-size: 0.7rem;
   line-height: 1.2rem;
-  min-height: 1.2rem;       /* резервируем место под одну строку */
+  min-height: 1.2rem;
   color: #dc2626;
   margin-top: 0.2rem;
   margin-bottom: 0;
@@ -1528,7 +1501,6 @@ body.app-ready>footer {
   visibility: visible;
 }
 
-/* Подсветка поля при ошибке */
 .form-input.error,
 .form-select.error,
 .form-textarea.error {
@@ -1536,7 +1508,6 @@ body.app-ready>footer {
   background-color: rgba(220, 38, 38, 0.05);
 }
 
-/* Для чекбоксов и радиокнопок – отступ слева */
 .form-agreement-checkbox .error-message {
   margin-left: 1.75rem;
   margin-top: 0.1rem;
@@ -1793,7 +1764,6 @@ body.app-ready>footer {
 
 
 /* ==================== МОДАЛЬНЫЕ ОКНА ==================== */
-/* Базовый класс для всех модальных оверлеев */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1819,7 +1789,6 @@ body.app-ready>footer {
   visibility: visible;
 }
 
-/* Контейнер модального окна – высота подстраивается под содержимое */
 .modal-container {
   background: white;
   border-radius: var(--radius-lg, 20px);
@@ -1829,7 +1798,7 @@ body.app-ready>footer {
   height: auto;
   display: flex;
   flex-direction: column;
-  overflow: visible;        /* ← добавить эту строку */
+  overflow: visible;
   transform: scale(0.95);
   transition: transform 0.2s ease;
   position: relative;
@@ -1838,8 +1807,8 @@ body.app-ready>footer {
 
 .modal-container .modal-image {
   width: 100%;
-  max-height: 50vh;           /* не больше половины высоты экрана */
-  object-fit: contain;        /* сохраняем пропорции, не обрезаем */
+  max-height: 50vh;
+  object-fit: contain;
   display: block;
   background-color: #f5f5f5;
   cursor: zoom-in;
@@ -1851,25 +1820,21 @@ body.app-ready>footer {
   transform: scale(1);
 }
 
-/* Тело модалки – скролл появляется только при превышении max-height */
 .modal-body {
-  flex: 0 1 auto;                /* не растягивается, если контента мало */
+  flex: 0 1 auto;
   overflow-y: auto;
   padding: 1rem 1.5rem;
 }
 
-/* Для модалок политик – чуть шире */
 #policyModalOverlay .modal-container {
   max-width: min(90vw, 900px);
 }
 
-/* Для модалок с формами (proposal, universal) – уже */
 .modal-overlay-proposal .modal-container,
 .modal-overlay-universal .modal-container {
-  max-width: min(90vw, 650px);
+  max-width: min(90vw, 662px);
 }
 
-/* Изображения внутри модалок – адаптивные */
 .modal-image {
   max-width: 100%;
   height: auto;
@@ -1877,7 +1842,6 @@ body.app-ready>footer {
   background: #f5f5f5;
 }
 
-/* Контейнер для изображения – без фиксированной высоты */
 .modal-image-container {
   display: flex;
   align-items: center;
@@ -1890,25 +1854,21 @@ body.app-ready>footer {
 }
 
 /* ==================== ГАЛЕРЕЯ ПРОЕКТОВ – СКРЫТИЕ ЭЛЕМЕНТОВ УПРАВЛЕНИЯ ==================== */
-/* По умолчанию кнопки и индикаторы скрыты (прозрачны) */
 .modal-image-container .gallery-nav,
 .modal-image-container .gallery-indicators {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-/* При наведении на контейнер с изображением – показываем */
 .modal-image-container:hover .gallery-nav,
 .modal-image-container:hover .gallery-indicators {
   opacity: 1;
 }
 
-/* Кнопки навигации при наведении на них самих – тоже видны (на случай, если мышь уже на кнопке) */
 .modal-image-container .gallery-nav:hover {
   opacity: 1;
 }
 
-/* На мобильных устройствах, где нет hover, оставляем элементы всегда видимыми */
 @media (hover: none) {
   .modal-image-container .gallery-nav,
   .modal-image-container .gallery-indicators {
@@ -1916,7 +1876,6 @@ body.app-ready>footer {
   }
 }
 
-/* Кнопка закрытия – всегда видна, не мешает контенту */
 .modal-close {
   position: absolute;
   top: 12px;
@@ -1958,7 +1917,6 @@ body.app-ready>footer {
   outline-offset: 2px;
 }
 
-/* Кнопка "Назад" в модалках политик */
 .modal-back-btn {
   background: none;
   border: none;
@@ -1984,7 +1942,6 @@ body.app-ready>footer {
   outline-offset: 2px;
 }
 
-/* Стилизация скроллбара для модальных окон */
 .modal-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -2003,7 +1960,6 @@ body.app-ready>footer {
   background: rgba(0, 78, 150, 0.5);
 }
 
-/* Приводим изображение в модалке новостей к размеру, как в проектах */
 #newsModalOverlay .modal-image {
   width: 100%;
   height: clamp(200px, 30vh, 300px);
@@ -2014,7 +1970,6 @@ body.app-ready>footer {
   transition: opacity 0.2s ease;
 }
 
-/* Улучшения для модалок политик (специфичные) */
 #policyModalOverlay .modal-body {
   padding: 1rem 2rem 2rem 2rem;
   font-size: 0.95rem;
@@ -2074,7 +2029,6 @@ body.app-ready>footer {
   margin-bottom: 1rem;
 }
 
-/* Спиннер для кнопки отправки */
 .spinner {
     display: inline-block;
     width: 16px;
@@ -2090,7 +2044,6 @@ body.app-ready>footer {
     to { transform: rotate(360deg); }
 }
 
-/* Группа для полей телефона и добавочного номера */
 .form-phone-group {
   display: flex;
   gap: 0.5rem;
@@ -2172,6 +2125,11 @@ body.app-ready>footer {
   transition: transform var(--duration-normal) var(--ease-smooth), box-shadow var(--duration-normal) var(--ease-smooth), background-color var(--duration-normal) var(--ease-smooth);
   cursor: pointer;
   min-height: 120px;
+}
+
+.form-file.drag-over {
+  border-color: var(--vd-blue);
+  background: rgba(0, 51, 160, 0.05);
 }
 
 .form-file.has-file {
@@ -2261,7 +2219,6 @@ body.app-ready>footer {
   cursor: pointer;
 }
 
-/* Список файлов для множественной загрузки */
 .form-file-list {
   margin-top: 1rem;
   display: flex;
@@ -2323,7 +2280,6 @@ body.app-ready>footer {
   fill: var(--error-color);
 }
 
-/* Всплывающее предупреждение над зоной загрузки файлов */
 .upload-warning-container {
   position: relative;
   margin-bottom: 10px;
@@ -2498,7 +2454,6 @@ body.app-ready>footer {
   font-size: 0.9rem;
 }
 
-/* Предупреждение о лимитах файлов */
 .form-file-limit-warning {
   background: rgba(220, 38, 38, 0.1);
   border: 1px solid var(--error-color);
@@ -2616,7 +2571,6 @@ body.app-ready>footer {
   opacity: 0.9;
 }
 
-/* Обёртка изображения в галерее */
 .gallery-image-wrapper {
   width: 100%;
   height: 100%;
@@ -2634,7 +2588,6 @@ body.app-ready>footer {
   object-fit: contain;
 }
 
-/* Навигация галереи */
 .gallery-nav {
   position: absolute;
   top: 50%;
@@ -2678,7 +2631,6 @@ body.app-ready>footer {
   right: 10px;
 }
 
-/* Индикаторы (точки) */
 .gallery-indicators {
   position: absolute;
   bottom: 10px;
@@ -2882,19 +2834,6 @@ body.app-ready>footer {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
-}
-
-.process-section {
-  padding: clamp(20px, 8vh, 25px) 5%;
-  background: var(--vd-light-gray);
-}
-
-.process-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .step {
@@ -3664,10 +3603,10 @@ img.loading + .image-placeholder {
   align-self: flex-start;
 }
 
-.process-section-bg {
+/* .process-section-bg {
   padding: 60px 5%;
   background: var(--vd-light-gray);
-}
+} */
 
 .step-number-circle {
   width: 80px;
@@ -4000,303 +3939,6 @@ img.loading + .image-placeholder {
   font-weight: 500;
 }
 
-/* Секция направлений деятельности */
-.directions-section {
-  padding: clamp(20px, 8vh, 25px) 5%;
-  background: var(--vd-light-gray);
-}
-
-.directions-grid {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
-}
-
-.direction-card {
-  background: white;
-  border-radius: 16px;
-  padding: clamp(1.25rem, 2.5vw, 2rem);
-  transition: transform var(--duration-normal) var(--ease-elastic), gap var(--duration-normal) var(--ease-elastic);
-  position: relative;
-  overflow: hidden;
-}
-
-.direction-card-shadow {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-}
-
-.direction-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 35px rgba(0, 78, 150, 0.1);
-}
-
-.direction-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--vd), var(--vd-blue));
-  transform: scaleX(0);
-  transition: transform var(--duration-normal) var(--ease-smooth);
-}
-
-.direction-card:hover::before {
-  transform: scaleX(1);
-}
-
-.direction-icon-wrapper {
-  width: 60px;
-  height: 60px;
-  background: var(--vd-light-blue);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1.25rem;
-  transition: transform var(--duration-normal) var(--ease-bounce), box-shadow var(--duration-normal) var(--ease-smooth);
-}
-
-.direction-card:hover .direction-icon-wrapper {
-  background: var(--vd);
-  transform: scale(1.05);
-}
-
-.direction-icon {
-  width: 30px;
-  height: 30px;
-  fill: var(--vd);
-  transition: fill var(--duration-normal) var(--ease-smooth);
-}
-
-.direction-card:hover .direction-icon {
-  fill: white;
-}
-
-.direction-title {
-  font-size: clamp(1.05rem, 1.8vw, 1.2rem);
-  font-weight: 700;
-  color: var(--vd);
-  margin-bottom: 0.85rem;
-}
-
-.direction-text {
-  color: var(--metallic);
-  line-height: 1.65;
-  font-size: clamp(0.85rem, 1vw, 0.95rem);
-}
-
-/* Секция с фактами и цифрами */
-.facts-section {
-  padding: clamp(60px, 10vh, 100px) 5%;
-  background: white;
-}
-
-.facts-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-}
-
-.fact-item {
-  background: white;
-  border-radius: 20px;
-  padding: clamp(2rem, 4vw, 2.5rem);
-  text-align: center;
-  transition: transform var(--duration-normal) var(--ease-elastic), gap var(--duration-normal) var(--ease-elastic);
-  border: 1px solid var(--border-color);
-}
-
-.fact-shadow {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-}
-
-.fact-item:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 45px rgba(0, 78, 150, 0.12);
-  border-color: var(--vd);
-}
-
-.fact-number {
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
-  font-weight: 800;
-  color: var(--vd-orange);
-  margin-bottom: 0.5rem;
-  line-height: 1;
-}
-
-.fact-label {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 1rem;
-}
-
-.fact-desc {
-  color: var(--metallic);
-  font-size: clamp(0.85rem, 1vw, 0.95rem);
-  line-height: 1.6;
-}
-
-/* Секция миссии */
-.mission-section {
-  padding: clamp(10px, 8vh, 30px) 5%;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-}
-
-.mission-content-grid {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: clamp(25px, 4vw, 50px);
-  align-items: center;
-}
-
-.mission-content-center {
-  max-width: 900px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.mission-image-block {
-  position: relative;
-}
-
-.mission-text-block {
-  padding: 1.5rem 0;
-}
-
-.mission-title {
-  font-size: clamp(1.7rem, 3.5vw, 2.5rem);
-  font-weight: 700;
-  color: var(--vd);
-  margin-bottom: 1.25rem;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.mission-text {
-  font-size: clamp(0.95rem, 1.1vw, 1.05rem);
-  line-height: 1.7;
-  color: var(--metallic);
-  margin-bottom: 1.25rem;
-}
-
-.mission-text-highlight {
-  font-size: clamp(1.05rem, 1.2vw, 1.15rem);
-  line-height: 1.7;
-  color: var(--vd);
-  font-weight: 600;
-  padding: 2rem 2.5rem;
-  background: var(--vd-light-blue);
-  border-radius: 12px;
-  margin-top: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 78, 150, 0.08);
-}
-
-/* Секция ценностей */
-.values-section {
-  padding: clamp(20px, 8vh, 25px) 5%;
-  background: var(--vd-light-gray);
-}
-
-.values-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 3rem;
-  align-items: start;
-}
-
-.values-title {
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 700;
-  color: var(--vd);
-  margin-bottom: 1.5rem;
-}
-
-.values-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.value-item {
-  display: flex;
-  gap: 1rem;
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  transition: transform var(--duration-normal) var(--ease-smooth), box-shadow var(--duration-normal) var(--ease-smooth), background-color var(--duration-normal) var(--ease-smooth);
-}
-
-.value-item-shadow {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.value-item:hover {
-  transform: translateX(5px);
-  box-shadow: 0 8px 20px rgba(0, 78, 150, 0.08);
-}
-
-.value-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  background: var(--vd-light-blue);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--duration-normal) var(--ease-bounce), box-shadow var(--duration-normal) var(--ease-smooth);
-}
-
-.value-item:hover .value-icon {
-  background: var(--vd-light-blue);
-  transform: scale(1.05);
-}
-
-.value-icon svg {
-  width: 22px;
-  height: 22px;
-  fill: var(--vd);
-  transition: fill var(--duration-normal) var(--ease-smooth);
-}
-
-.value-item:hover .value-icon svg {
-  fill: var(--vd);
-}
-
-.value-content {
-  flex: 1;
-}
-
-.value-heading {
-  font-size: clamp(1rem, 1.3vw, 1.15rem);
-  font-weight: 700;
-  color: var(--vd);
-  margin-bottom: 0.5rem;
-}
-
-.value-description {
-  color: var(--metallic);
-  line-height: 1.6;
-  font-size: clamp(0.85rem, 1vw, 0.95rem);
-}
-
-.values-image-block .about-image-placeholder {
-  height: 400px;
-}
-
-
-
 /* ==================== СТРАНИЦА ВАКАНСИИ ==================== */
 .careers-intro-padding {
   padding: 80px 5% 60px;
@@ -4423,10 +4065,6 @@ img.loading + .image-placeholder {
   box-shadow: 0 10px 30px rgba(0, 78, 150, 0.15);
 }
 
-.vacancy-card-open {
-  border-left: 4px solid var(--vd-orange);
-}
-
 .vacancy-header {
   background: linear-gradient(135deg, var(--vd) 0%, var(--vd-dark) 100%);
   color: white;
@@ -4502,12 +4140,6 @@ img.loading + .image-placeholder {
 .btn-apply {
   width: 100%;
   justify-content: center;
-}
-
-/* Открытая заявка */
-.open-application-padding {
-  padding: 80px 5%;
-  background: white;
 }
 
 .open-application-content {
@@ -4791,10 +4423,6 @@ img.loading + .image-placeholder {
   .news-preview,
   .contact-cta,
   .about-main-section,
-  .directions-section,
-  .facts-section,
-  .mission-section,
-  .values-section,
   .careers-intro-padding,
   .vacancies-section-padding,
   .open-application-padding {
@@ -5086,14 +4714,6 @@ img.loading + .image-placeholder {
     font-size: 1rem;
   }
 
-  /* О компании */
-  /* .about-content-grid, */
-  .mission-content-grid,
-  .values-content {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
   .about-content-inline {
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -5105,16 +4725,6 @@ img.loading + .image-placeholder {
     gap: 1.5rem;
     display: flex;
     flex-direction: column;
-  }
-
-  .values-image-block {
-    order: -1;
-  }
-
-  .directions-grid,
-  .facts-container {
-    grid-template-columns: 1fr;
-    gap: 1rem;
   }
 
   .value-item {
@@ -5151,48 +4761,6 @@ img.loading + .image-placeholder {
     width: 60px;
     height: 60px;
     margin-bottom: 0.75rem;
-  }
-
-  .direction-card {
-    padding: 1.25rem;
-    border-radius: 14px;
-  }
-
-  .direction-title {
-    font-size: 1.15rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .direction-text {
-    font-size: 0.9rem;
-  }
-
-  .fact-item {
-    padding: 1.25rem;
-    border-radius: 14px;
-  }
-
-  .fact-number {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .fact-label {
-    font-size: 0.95rem;
-  }
-
-  .mission-title {
-    font-size: 1.6rem;
-  }
-
-  .mission-text-highlight {
-    font-size: 1rem;
-    padding: 1.5rem;
-  }
-
-  /* Процесс и фичи */
-  .process-steps {
-    grid-template-columns: 1fr;
   }
 
   .features-grid {
@@ -5396,29 +4964,26 @@ img.loading + .image-placeholder {
   .hero-stats {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between; /* или flex-start, но с gap будет равномерно */
+    justify-content: space-between;
     gap: 0.5rem;
     margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid rgba(0, 78, 150, 0.15);
   }
 
-  /* ОБЁРТКА ССЫЛКИ — она flex-элемент в .hero-stats */
   .stat-link {
-    flex: 0 0 calc(50% - 0.5rem); /* две колонки с учётом gap */
+    flex: 0 0 calc(50% - 0.5rem);
     max-width: calc(50% - 0.5rem);
-    display: block; /* чтобы ссылка занимала всю ширину */
+    display: block;
     text-decoration: none;
     color: inherit;
   }
 
-  /* САМА ПЛИТКА — занимает 100% родителя, без лишних flex-свойств */
   .stat-item {
     width: 100%;
     padding: 0.5rem 0.25rem;
     word-wrap: normal;
     overflow-wrap: normal;
-    /* flex, min-width, max-width — убираем! */
   }
 
   .stat-number {
@@ -5439,7 +5004,6 @@ img.loading + .image-placeholder {
     display: block;
   }
 
-  /* Секции - значительно уменьшаем отступы между секциями */
   .services,
   .about-preview,
   .projects-preview,
@@ -5653,31 +5217,6 @@ img.loading + .image-placeholder {
     font-size: 1.3rem;
   }
 
-  .direction-title {
-    font-size: 1rem;
-  }
-
-  .direction-text {
-    font-size: 0.8rem;
-  }
-
-  .fact-number {
-    font-size: 1.8rem;
-  }
-
-  .fact-label {
-    font-size: 0.85rem;
-  }
-
-  .mission-title {
-    font-size: 1.4rem;
-  }
-
-  .mission-text-highlight {
-    font-size: 0.9rem;
-    padding: 1rem;
-  }
-
   .value-heading {
     font-size: 1rem;
   }
@@ -5863,7 +5402,7 @@ img.loading + .image-placeholder {
   right: 0;
   background: #fff;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 2900;
+  z-index: 3100;
   display: none;
   flex-direction: column;
   padding: 1.5rem;
@@ -6022,7 +5561,8 @@ img.loading + .image-placeholder {
   color: #fff;
 }
 
-.user-privacy-link {
+.user-privacy-link 
+.user-cookie-policy-link{
   font-size: 0.85rem;
   color: #0033A0;
   text-decoration: underline;
@@ -6098,43 +5638,6 @@ img.loading + .image-placeholder {
   color: #666;
 }
 
-.user-settings-icon {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #0033A0;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 51, 160, 0.3);
-  transition: background-color 0.2s ease, transform 0.2s ease;
-  z-index: 9999;
-}
-
-.user-settings-icon.visible {
-  display: flex;
-}
-
-.user-settings-icon.hidden {
-  display: none;
-}
-
-.user-settings-icon:hover {
-  background: #002880;
-  transform: scale(1.1);
-}
-
-.user-settings-icon svg {
-  width: 24px;
-  height: 24px;
-}
-
 @media (max-width: 750px) {
 .service-card--wide {
     grid-column: auto; /* или span 1, по умолчанию */
@@ -6156,13 +5659,6 @@ img.loading + .image-placeholder {
   .user-category-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .user-settings-icon {
-    width: 45px;
-    height: 45px;
-    bottom: 1rem;
-    right: 1rem;
   }
 
   /* Адаптивность для детальных настроек */

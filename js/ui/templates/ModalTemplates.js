@@ -14,14 +14,11 @@ const ModalTemplates = {
     </button>
     <div class="modal-header">
       <h2 class="modal-title" id="modalTitle">Запрос коммерческого предложения</h2>
-      <p class="modal-subtitle">Заполните форму ниже, и мы свяжемся с вами в течение 24 часов</p>
     </div>
     <div class="modal-body">
       <div class="rate-limit-warning" id="rateLimitWarning">
         <p>⚠️ Слишком много запросов. Пожалуйста, подождите 60 секунд перед следующей отправкой.</p>
       </div>
-
-      <!-- Блок успеха УДАЛЁН – теперь используется отдельная модалка successModal -->
 
       <input type="hidden" id="csrfToken" name="csrf_token" value="">
 
@@ -84,23 +81,18 @@ const ModalTemplates = {
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
             <p class="form-file-text">Выбрать файл...</p>
-            <p class="form-file-hint">PDF, DOC, DOCX, XLS, XLSX, ZIP (Max 10MB)</p>
+            <p class="form-file-hint">PDF, DOC, DOCX, XLS, XLSX, ZIP (Не более 10 файлов общим размером 24MB)</p>
             <div class="form-file-list" id="fileList"></div>
           </div>
         </div>
 
+        <!-- ЧЕКБОКС СОГЛАСИЯ (имя = consent, значение = true) -->
         <div class="form-agreement form-agreement-checkbox">
           <label class="checkbox-label">
-            <input type="checkbox" id="privacyConsent" name="privacyConsent" required>
-            <span class="checkbox-text">Я ознакомлен и согласен с <a href="#" data-policy="privacy" target="_blank" rel="noopener noreferrer">Политикой конфиденциальности</a> <span class="required">*</span></span>
-          </label>
-          <p class="error-message" id="privacyConsentError">Необходимо согласие с Политикой конфиденциальности</p>
-        </div>
-
-        <div class="form-agreement form-agreement-checkbox">
-          <label class="checkbox-label">
-            <input type="checkbox" id="personalDataConsent" name="personalDataConsent" required>
-            <span class="checkbox-text">Я ознакомлен и согласен с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Политикой обработки персональных данных</a> <span class="required">*</span></span>
+            <input type="checkbox" id="personalDataConsent" name="personalDataConsent" value="true" required>
+            <span class="checkbox-text">
+              Я даю <a href="#" data-policy="consent" target="_blank" rel="noopener noreferrer">согласие</a> с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Политикой обработки персональных данных</a> <span class="required">*</span>
+            </span>
           </label>
           <p class="error-message" id="personalDataConsentError">Необходимо согласие с Политикой обработки персональных данных</p>
         </div>
@@ -129,8 +121,6 @@ const ModalTemplates = {
       <div class="rate-limit-warning" id="universalRateLimitWarning">
         <p>⚠️ Слишком много запросов. Пожалуйста, подождите 60 секунд перед следующей отправкой.</p>
       </div>
-
-      <!-- Блок успеха УДАЛЁН – теперь используется отдельная модалка successModal -->
 
       <form id="universalApplicationForm" novalidate>
         <div class="form-group">
@@ -165,18 +155,21 @@ const ModalTemplates = {
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
             <p class="form-file-text">Выбрать файл...</p>
-            <p class="form-file-hint">PDF, DOC, DOCX, XLS, XLSX (Max 10MB)</p>
+            <p class="form-file-hint">PDF, DOC, DOCX, XLS, XLSX, ZIP (Не более 5 файлов общим размером 24MB)</p>
             <div class="form-file-list" id="universalFileList"></div>
           </div>
           <p class="error-message" id="fileAttachmentError">Пожалуйста, прикрепите резюме</p>
         </div>
 
+        <!-- ЧЕКБОКС СОГЛАСИЯ (имя = consent, значение = true) -->
         <div class="form-agreement form-agreement-checkbox">
           <label class="checkbox-label">
-            <input type="checkbox" id="consent" name="consent" required>
-            <span class="checkbox-text">Я согласен с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Условиями обработки персональных данных</a> <span class="required">*</span></span>
+            <input type="checkbox" id="consent" name="consent" value="true" required>
+            <span class="checkbox-text">
+              Я даю <a href="#" data-policy="consent" target="_blank" rel="noopener noreferrer">согласие</a> с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Политикой обработки персональных данных</a> <span class="required">*</span>
+            </span>
           </label>
-          <p class="error-message" id="consentError">Необходимо подтвердить согласие</p>
+          <p class="error-message" id="consentError">Необходимо согласие с Политикой обработки персональных данных</p>
         </div>
 
         <button type="submit" class="form-submit" id="universalSubmitBtn">
@@ -188,12 +181,10 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    // НОВАЯ МОДАЛКА УСПЕХА (без крестика, использует существующие стили)
     successModal: `
 <!-- Success Modal -->
 <div class="modal-overlay modal-overlay-success" id="successModalOverlay" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
   <div class="modal-container modal-container-success">
-    <!-- Крестик удалён по требованию -->
     <div class="modal-body success-modal-body">
       <div class="success-message show" style="display: block; text-align: center; padding: 1rem 0;">
         <div class="success-icon">
@@ -204,8 +195,7 @@ const ModalTemplates = {
       </div>
     </div>
   </div>
-</div>
-`
+</div>`
 };
 
 if (typeof module !== 'undefined' && module.exports) {
