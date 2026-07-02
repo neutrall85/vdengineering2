@@ -3,7 +3,6 @@
  * API для сохранения согласия на использование cookies
  * ООО "Волга-Днепр Инжиниринг"
  */
-
 // Настройка ошибок
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -11,7 +10,6 @@ error_reporting(E_ALL);
 // Подключаем конфиги и логгер
 require_once __DIR__ . '/Logger.php';
 require_once __DIR__ . '/secret_config.php';
-
 Logger::init(LOG_DIR);
 
 // Заголовки
@@ -46,6 +44,7 @@ if (empty($consentType)) {
 
 // Получаем идентификатор сессии
 $sessionId = session_id();
+session_write_close();
 
 // Формируем запись
 $entry = [
@@ -66,11 +65,33 @@ if (!is_dir($logDir)) {
 }
 
 $logFile = $logDir . 'cookie-consent-' . date('Y-m-d') . '.log';
-file_put_contents(
-    $logFile,
-    json_encode($entry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
-    FILE_APPEND | LOCK_EX
-);
+
+// [FIX] Защита от переполнения диска/Inode на Timeweb: 
+// не пишем в лог, если эта сессия уже есть в последних записях за сегодня
+$alreadyLogged = false;
+if (file_exists($logFile)) {
+    $handle = fopen($logFile, 'r');
+    if ($handle) {
+        $size = filesize($logFile);
+        $readSize = min($size, 10240); // Читаем последние 10 КБ файла
+        if ($readSize > 0) {
+            fseek($handle, -$readSize, SEEK_END);
+            $tail = fread($handle, $readSize);
+            if (strpos($tail, $sessionId) !== false) {
+                $alreadyLogged = true;
+            }
+        }
+        fclose($handle);
+    }
+}
+
+if (!$alreadyLogged) {
+    file_put_contents(
+        $logFile, 
+        json_encode($entry, JSON_UNESCAPED_UNICODE) . PHP_EOL, 
+        FILE_APPEND | LOCK_EX
+    );
+}
 
 // Логируем в основной лог
 Logger::info('Cookie consent logged', ['type' => $consentType, 'ip' => $entry['ip']]);

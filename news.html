@@ -3,42 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Новости | ООО "Волга-Днепр Инжиниринг"</title>
-  <meta name="description" content="Актуальные новости и события компании Волга-Днепр Инжиниринг. Достижения в области модификации авиационной техники.">
-  <!-- Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://yandex.ru https://mc.yandex.ru; style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: https://neutrall85.github.io https://cdn.yandex.ru https://mc.yandex.ru https://api.volga-dnepr-engineering.ru; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.volga-dnepr-engineering.ru https://yandex.ru https://mc.yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru; object-src 'none'; base-uri 'self'; form-action 'self';">
-  <link rel="icon" type="image/png" href="/assets/images/tab.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <title>Новости и события | ООО "Волга-Днепр Инжиниринг"</title>
+  <meta name="description" content="Актуальные новости компании Волга-Днепр Инжиниринг. Достижения, новые проекты и события в области модификации авиационной техники.">
+  <meta name="keywords" content="новости, события, достижения, авиационный инжиниринг, Волга-Днепр Инжиниринг">
+  <meta name="robots" content="index, follow">
   
-  <script src="js/config.js" defer></script>
-  <script src="js/services/FormValidation.js" defer></script>
-  <script src="js/services.js" defer></script>
-  <script src="js/modules/init-nojs.js" defer></script>
-  <script src="js/services/ConsentManager.js" defer></script>
-  <script src="js/services/YandexMetricaModule.js" defer></script>
-  <script src="js/utils.js" defer></script>
-  <script src="js/services/Logger.js" defer></script>
-  <script src="js/data/policyDocuments.js" defer></script>
-  <script src="js/ui/ScrollManager.js" defer></script>
-  <script src="js/ui/ModalManager.js" defer></script>
-  <script src="js/ui/templates/NavbarTemplate.js" defer></script>
-  <script src="js/ui/templates/FooterTemplate.js" defer></script>
-  <script src="js/ui/templates/ComponentTemplates.js" defer></script>
-  <script src="js/ui/templates/ModalTemplates.js" defer></script>
-  <script src="js/ui/ComponentLoader.js" defer></script>
-  <script src="js/ui/managers/PolicyModalManager.js" defer></script>
-  <script src="js/utils/formUtils.js" defer></script>
-  <script src="js/ui/managers/UniversalApplicationModalManager.js" defer></script>
-  <script src="js/ui/NavigationManager.js" defer></script>
-  <script src="js/ui/AnimationManager.js" defer></script>
-  <script src="js/ui/FormManager.js" defer></script>
-  <script src="js/ui/NewsRenderer.js" defer></script>
-  <script src="js/ui/NewsManager.js" defer></script>
-  <script src="js/data/newsData.js" defer></script>
-  <script src="js/app.js" defer></script>
+  <meta property="og:title" content="Новости и события | ООО «Волга-Днепр Инжиниринг»">
+  <meta property="og:description" content="Актуальные новости и достижения компании в области авиационного инжиниринга.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vdengineering.ru/news">
+  <meta property="og:image" content="http://vdengineer.beget.tech/assets/images/og-image.webp">
+  <meta property="og:image:width" content="808">
+  <meta property="og:image:height" content="424">
+  <meta property="og:image:type" content="image/webp">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="Волга-Днепр Инжиниринг">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Новости | Волга-Днепр Инжиниринг">
+  <meta name="twitter:description" content="Актуальные новости и достижения компании.">
+  <meta name="twitter:image" content="http://vdengineer.beget.tech/assets/images/og-image.webp">
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" href="/assets/images/favicon-96x96.png" sizes="96x96"/>
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg"/>
+  <link rel="shortcut icon" href="/assets/images/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png"/>
+  <link rel="manifest" href="/assets/images/site.webmanifest"/>
+  
+  <link rel="canonical" href="https://vdengineering.ru/news">
+  
+  <link rel="stylesheet" href="/css/styles.css">
+  
+  <!-- Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Новости",
+    "description": "Актуальные новости и события компании",
+    "url": "https://vdengineering.ru/news"
+  }
+  </script>
+
+  <script src="/js/core/config.js" defer></script>
+  <script src="/js/validation/FormValidation.js" defer></script>
+  <script src="/js/services/services.js" defer></script>
+  <script src="/js/core/init-nojs.js" defer></script>
+  <script src="/js/core/Logger.js" defer></script>
+  <script src="/js/services/ConsentManager.js" defer></script>
+  <script src="/js/services/YandexMetricaModule.js" defer></script>
+  <script src="/js/utils/utils.js" defer></script>
+  <script src="/js/data/policyDocuments.js" defer></script>
+  <script src="/js/services/ScrollManager.js" defer></script>
+  <script src="/js/managers/ModalManager.js" defer></script>
+  <script src="/js/components/templates/NavbarTemplate.js" defer></script>
+  <script src="/js/components/templates/FooterTemplate.js" defer></script>
+  <script src="/js/components/templates/ComponentTemplates.js" defer></script>
+  <script src="/js/components/templates/ModalTemplates.js" defer></script>
+  <script src="/js/managers/ComponentLoader.js" defer></script>
+  <script src="/js/managers/PolicyModalManager.js" defer></script>
+  <script src="/js/utils/formUtils.js" defer></script>
+  <script src="/js/managers/UniversalApplicationModalManager.js" defer></script>
+  <script src="/js/managers/NavigationManager.js" defer></script>
+  <script src="/js/managers/AnimationManager.js" defer></script>
+  <script src="/js/managers/FormManager.js" defer></script>
+  <script src="/js/renderers/NewsRenderer.js" defer></script>
+  <script src="/js/managers/NewsManager.js" defer></script>
+  <script src="/js/data/newsData.js" defer></script>
+  <script src="/js/core/app.js" defer></script>
 </head>
 <body>
 
@@ -52,16 +85,16 @@
   <header class="no-js-header">
     <div class="container">
       <div class="logo">
-        <img src="images/logo.svg" alt="Волга-Днепр Инжиниринг" width="180" height="60">
+        <img src="/images/logo.svg" alt="Волга-Днепр Инжиниринг" width="180" height="60">
       </div>
       <nav class="no-js-nav">
         <ul>
-          <li><a href="about.html">О компании</a></li>
-          <li><a href="services.html">Услуги</a></li>
-          <li><a href="projects.html">Проекты</a></li>
-          <li><a href="news.html">Новости</a></li>
-          <li><a href="vacancies.html">Вакансии</a></li>
-          <li><a href="docs.html">Документы</a></li>
+          <li><a href="/about">О компании</a></li>
+          <li><a href="/services">Услуги</a></li>
+          <li><a href="/projects">Проекты</a></li>
+          <li><a href="/news">Новости</a></li>
+          <li><a href="/vacancies">Вакансии</a></li>
+          <li><a href="/docs">Документы</a></li>
         </ul>
       </nav>
     </div>
@@ -111,7 +144,7 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2026"></div>
+    <div class="news-grid news-grid-auto" id="newsGrid-2026"></div>
   </div>
 
   <div class="news-tab-content" id="tab-2025">
@@ -123,7 +156,7 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2025"></div>
+    <div class="news-grid news-grid-auto" id="newsGrid-2025"></div>
   </div>
 
   <div class="news-tab-content" id="tab-2024">
@@ -135,7 +168,7 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2024"></div>
+    <div class="news-grid news-grid-auto" id="newsGrid-2024"></div>
   </div>
 
   <div class="news-tab-content" id="tab-2023">
@@ -159,7 +192,7 @@
       </div>
       <div class="year-divider-line"></div>
     </div>
-    <div class="news-grid news-grid-auto animate-on-scroll fade-left" id="newsGrid-2022"></div>
+    <div class="news-grid news-grid-auto" id="newsGrid-2022"></div>
   </div>
   
   <div class="news-tab-content" id="tab-zozh">

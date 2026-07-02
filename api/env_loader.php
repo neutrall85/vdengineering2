@@ -2,26 +2,23 @@
 /**
  * env_loader.php — мини-парсер .env с проверкой обязательных переменных
  */
-
 function loadEnv($path) {
     if (!file_exists($path) || !is_readable($path)) {
         return false;
     }
-
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if ($lines === false) {
         return false;
     }
-
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '' || strpos($line, '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
-
+        
         [$name, $value] = array_pad(explode('=', $line, 2), 2, '');
         $name  = trim($name);
         $value = trim($value);
-
+        
         // Убираем обрамляющие кавычки
         if (strlen($value) >= 2) {
             $first = $value[0];
@@ -30,10 +27,12 @@ function loadEnv($path) {
                 $value = substr($value, 1, -1);
             }
         }
-
+        
         // [FIX] Заполняем все три источника для максимальной совместимости
         if ($name !== '') {
-            putenv("$name=$value");
+            if (function_exists('putenv')) {
+                @putenv("$name=$value");
+            }
             $_ENV[$name]    = $value;
             $_SERVER[$name] = $value;
         }
@@ -41,11 +40,14 @@ function loadEnv($path) {
     return true;
 }
 
-// Пути поиска .env
+// Пути поиска .env (добавлен путь вне public_html)
+$docRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
+$basePath = dirname($docRoot);
+
 $possiblePaths = [
-    __DIR__ . '/../.env',
-    __DIR__ . '/.env',
-    dirname($_SERVER['DOCUMENT_ROOT'] ?? '') . '/.env',
+    $basePath . '/.env',       // /home/n/neutrall85/.env (Рекомендуется)
+    __DIR__ . '/../.env',      // Родительская папка от api/
+    __DIR__ . '/.env',         // Текущая папка
 ];
 
 $envLoaded = false;

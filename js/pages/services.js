@@ -107,7 +107,7 @@ function initServiceGallery(images) {
     lightboxOverlay._removeHandlers = removeLightboxHandlers;
   }
 
-  mainImage.style.cursor = 'zoom-in';
+  mainImage.classList.add('zoom-in');
   mainImage.onclick = openLightbox;
 
   if (images.length === 1) {

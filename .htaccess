@@ -1,0 +1,232 @@
+# ============================================================
+# .htaccess — ПРОДАКШН-ВЕРСИЯ (БЕЗ CSP)
+# Beget (Apache + Nginx proxy)
+# ============================================================
+
+# Включаем движок rewrite
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Принудительный редирект с HTTP на HTTPS
+    #RewriteCond %{HTTPS} off
+    #RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+</IfModule>
+
+# Кастомные страницы ошибок
+ErrorDocument 404 /404.html
+ErrorDocument 403 /403.html
+ErrorDocument 500 /500.html
+
+# ============================================================
+# 1. ЗАЩИТА ЧУВСТВИТЕЛЬНЫХ ФАЙЛОВ
+# ============================================================
+
+# Запрет доступа к .env
+<FilesMatch "^\.env$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Запрет доступа ко ВСЕМ скрытым файлам (кроме .well-known для SSL)
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "^\.well-known">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</FilesMatch>
+
+# Запрет доступа к логам, бэкапам, конфигам
+<FilesMatch "\.(log|bak|sql|ini|conf|dist|save|orig|tmp)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ============================================================
+# 2. БЕЗОПАСНОСТЬ ДИРЕКТОРИЙ
+# ============================================================
+
+# Запрет листинга директорий
+Options -Indexes -MultiViews
+
+# Защита папки private_uploads (загрузки пользователей)
+<IfModule mod_rewrite.c>
+    RewriteRule ^private_uploads/ - [F,L]
+</IfModule>
+
+# Защита папок logs, data, sessions
+<IfModule mod_rewrite.c>
+    RewriteRule ^logs/ - [F,L]
+    RewriteRule ^data/ - [F,L]
+    RewriteRule ^sessions/ - [F,L]
+</IfModule>
+
+# ============================================================
+# 3. ЗАЩИТНЫЕ HTTP-ЗАГОЛОВКИ
+# ============================================================
+<IfModule mod_headers.c>
+    # ---- Базовая защита ----
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    
+    # ---- Content Security Policy ----
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com ; style-src 'self' https://yastatic.net; img-src 'self' https://static-maps.yandex.ru https://cdn.yandex.ru https://mc.yandex.ru https://mc.yandex.com; font-src 'self' https://yastatic.net; connect-src 'self' https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru wss://mc.yandex.com wss://yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+    
+    # Убираем версию сервера
+    Header always unset X-Powered-By
+    Header always unset Server
+    
+    # ---- HSTS (HTTP Strict Transport Security) ----
+    # Принудительно использует HTTPS (работает 1 год)
+    # ⚠️ ВКЛЮЧАЙТЕ ТОЛЬКО ЕСЛИ САЙТ ПОЛНОСТЬЮ НА HTTPS!
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    
+    # ---- Referrer-Policy ----
+    # Не передаёт полный URL в Referer для внешних сайтов
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # ---- Permissions-Policy ----
+    # Ограничивает возможности браузера (камера, микрофон, геолокация)
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+    
+    # ---- Кэширование для PHP/API (всегда свежее) ----
+    <FilesMatch "\.(php)$">
+        Header always set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+        Header always set Pragma "no-cache"
+        Header always set Expires "0"
+        
+        # Защита от кэша Nginx-прокси Beget
+        Header always set X-Accel-Expires "0"
+        Header always set X-Cache-Status "BYPASS"
+    </FilesMatch>
+    
+    # ---- Кэширование для JSON (API-ответы) ----
+    <FilesMatch "\.(json)$">
+        Header always set Cache-Control "no-store, no-cache, must-revalidate"
+        Header always set Pragma "no-cache"
+        Header always set Expires "0"
+        Header always set X-Accel-Expires "0"
+    </FilesMatch>
+</IfModule>
+
+# ============================================================
+# 4. ЧПУ (ЧЕЛОВЕКО-ПОНИМАЕМЫЕ URL)
+# ============================================================
+<IfModule mod_rewrite.c>
+    # Если запрошенный файл или папка не существуют,
+    # ищем файл с таким же именем и расширением .html
+   RewriteCond %{REQUEST_URI} !\.html$ [NC]
+   RewriteCond %{REQUEST_FILENAME} !-f
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteCond %{REQUEST_URI} !^/api/ [NC]
+   RewriteRule ^([^.]+)$ $1.html [L]
+</IfModule>
+
+# ============================================================
+# 5. ОГРАНИЧЕНИЕ РАЗМЕРА ЗАПРОСА (защита от DoS)
+# ============================================================
+LimitRequestBody 35000000
+
+# ============================================================
+# 6. СЖАТИЕ (ускорение загрузки)
+# ============================================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/xml text/xml image/svg+xml application/font-woff application/font-woff2
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|zip|gz|br)$ no-gzip dont-vary
+</IfModule>
+
+# ============================================================
+# 7. КЭШИРОВАНИЕ СТАТИКИ
+# ============================================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # HTML — не кешировать
+    ExpiresByType text/html "access plus 0 seconds"
+    
+    # CSS и JS — кэш 1 неделя
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    
+    # Изображения — кэш 1 месяц
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # Шрифты — кэш 1 год
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    
+    # PDF — кэш 1 день
+    ExpiresByType application/pdf "access plus 1 day"
+</IfModule>
+
+# Дополнительное кэширование через Cache-Control
+<IfModule mod_headers.c>
+    # Изображения — кэш 30 дней
+    <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+    
+    # Шрифты — кэш 1 год, immutable
+    <FilesMatch "\.(woff|woff2|ttf|eot|otf)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# ============================================================
+# 8. ЗАЩИТА ОТ ГОРЯЧИХ ССЫЛОК (Hotlinking)
+# ============================================================
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?vdengineer\.beget\.tech [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
+    RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F,NC,L]
+</IfModule>
+
+# ============================================================
+# 9. ЗАЩИТА ОТ СПАМ-БОТОВ (по User-Agent)
+# ============================================================
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (havij|libwww-perl|wget|python|nikto|curl|scan|java|winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ^$
+    RewriteRule ^ - [F,L]
+</IfModule>
+
+# ============================================================
+# 10. ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА
+# ============================================================
+# Запрет выполнения PHP в папке загрузок
+<IfModule mod_rewrite.c>
+    RewriteRule ^private_uploads/.*\.php$ - [F,L]
+</IfModule>

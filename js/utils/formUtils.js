@@ -5,10 +5,8 @@ const fileUploadCache = new WeakMap();
 
 const FormUtils = {
   initValidation(form, messages = {}, validateOnInput = true) {
-    '[FormUtils] initValidation called');
     if (!form || typeof FormValidation === 'undefined') {
       Logger?.WARN('FormValidation не доступен');
-      '[FormUtils] FormValidation not available');
       return null;
     }
     const defaultMessages = {
@@ -25,18 +23,15 @@ const FormUtils = {
   },
 
   initFileUpload(dropSelector, onFilesChange, options = {}) {
-    '[FormUtils] initFileUpload called with dropSelector:', dropSelector);
     const fileDrop = typeof dropSelector === 'string'
       ? document.querySelector(dropSelector)
       : dropSelector;
     if (!fileDrop) {
       Logger?.WARN('Контейнер файлов не найден');
-      '[FormUtils] fileDrop not found');
       return { currentFiles: [], removeFile: () => {}, renderFileList: () => {}, fileDrop: null };
     }
 
     if (fileUploadCache.has(fileDrop)) {
-      '[FormUtils] Returning cached fileUpload for', fileDrop);
       return fileUploadCache.get(fileDrop);
     }
 
@@ -47,7 +42,6 @@ const FormUtils = {
     const fileInput = fileDrop.querySelector('input[type="file"]');
     if (!fileInput) {
       Logger?.WARN('Поле input[type="file"] не найдено');
-      '[FormUtils] fileInput not found');
       return { currentFiles: state.currentFiles, removeFile: () => {}, renderFileList: () => {}, fileDrop };
     }
 
@@ -59,17 +53,35 @@ const FormUtils = {
         fileDrop.removeEventListener('dragleave', dragLeaveHandler);
         fileDrop.removeEventListener('drop', dropHandler);
       }
-      '[FormUtils] Removed old handlers');
     }
 
+    const allowedTypes = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || [
+      'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'ppt', 'pptx',
+      'jpg', 'jpeg', 'png', 'gif'
+    ];
+    const allowedMimes = window.CONFIG?.FORM?.ALLOWED_MIME_TYPES || [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/zip',
+      'application/x-zip-compressed',
+      'multipart/x-zip',
+      'application/octet-stream',
+      'image/jpeg',
+      'image/png',
+      'image/gif'
+    ];
+
     const changeHandler = (e) => {
-      '[FormUtils] file input change event, files:', e.target.files);
       _handleFileSelect(e.target.files, fileDrop, state.currentFiles, maxFiles, maxTotalSize, (newFiles) => {
         state.currentFiles = newFiles;
-        '[FormUtils] currentFiles updated, count:', state.currentFiles.length);
         _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
         if (onFilesChange) onFilesChange(state.currentFiles);
-      });
+      }, allowedTypes, allowedMimes);
     };
 
     const dragOverHandler = (e) => {
@@ -82,13 +94,11 @@ const FormUtils = {
     const dropHandler = (e) => {
       e.preventDefault();
       fileDrop.classList.remove('drag-over');
-      '[FormUtils] drop event, files:', e.dataTransfer.files);
       _handleFileSelect(e.dataTransfer.files, fileDrop, state.currentFiles, maxFiles, maxTotalSize, (newFiles) => {
         state.currentFiles = newFiles;
-        '[FormUtils] currentFiles updated (drop), count:', state.currentFiles.length);
         _renderFileList(fileDrop, state.currentFiles, (index) => removeFile(index));
         if (onFilesChange) onFilesChange(state.currentFiles);
-      });
+      }, allowedTypes, allowedMimes);
     };
 
     fileInput.addEventListener('change', changeHandler);
@@ -97,7 +107,6 @@ const FormUtils = {
     fileDrop.addEventListener('drop', dropHandler);
 
     const removeFile = (index) => {
-      '[FormUtils] removeFile called with index:', index);
       const idx = parseInt(index, 10);
       if (!isNaN(idx) && idx >= 0 && idx < state.currentFiles.length) {
         state.currentFiles.splice(idx, 1);
@@ -108,7 +117,6 @@ const FormUtils = {
     };
 
     const renderFileList = () => {
-      '[FormUtils] renderFileList called, current files count:', state.currentFiles.length);
       _renderFileList(fileDrop, state.currentFiles, removeFile);
     };
 
@@ -135,101 +143,96 @@ const FormUtils = {
       const data = await response.json();
       return data.csrf_token;
     } catch (err) {
-      'Ошибка получения CSRF:', err);
+      Logger.ERROR('Ошибка получения CSRF:', err);
       return null;
     }
   },
 
   async submitForm(form, options = {}, files = []) {
-      '[FormUtils] submitForm called, files count:', files.length);
-      const { onSuccess, onError, onFinally } = options;
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const originalText = submitBtn?.textContent || 'Отправить';
-      let isSubmitting = true;
-      let timeoutId = null;
-    
-      try {
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = 'Отправка... <span class="spinner"></span>';
-        }
-    
-        timeoutId = setTimeout(() => {
-          if (isSubmitting) {
-            Logger.ERROR('Form submission timeout');
-            if (onError) onError('Превышено время ожидания ответа сервера. Попробуйте позже.');
-            _resetSubmitState(submitBtn, originalText);
-            isSubmitting = false;
-          }
-        }, 30000);
-    
-        const formData = new FormData();
-    
-        const inputs = form.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-          if (input.type === 'file') return;
-          if (input.type === 'checkbox' || input.type === 'radio') {
-            if (input.checked) formData.append(input.name, input.value);
-          } else {
-            formData.append(input.name, input.value);
-          }
-        });
-    
-        files.forEach(file => {
-          formData.append('fileAttachment[]', file);
-        });
-    
-        let csrfToken = await FormUtils.fetchCsrfToken();
-        if (!csrfToken) {
-          if (onError) onError('Ошибка безопасности. Обновите страницу.');
-          return;
-        }
-        formData.append('csrf_token', csrfToken);
-    
-        const response = await fetch('/api/submit.php', {
-          method: 'POST',
-          body: formData
-        });
-    
-        const text = await response.text();
-        let result;
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          'Сервер вернул не JSON:', text.substring(0, 200));
-          if (onError) onError('Ошибка на сервере. Проверьте логи.');
-          return;
-        }
-    
-        if (!response.ok) {
-          const msg = result.error || result.errors?.join(', ') || 'Ошибка сервера';
-          if (onError) onError(msg);
-          return;
-        }
-    
-        if (result.success) {
-          '[FormUtils] Submission success:', result);
-          if (onSuccess) onSuccess(result);
-        } else {
-          '[FormUtils] Submission failed:', result);
-          if (onError) onError(result.error || 'Ошибка при отправке');
-        }
-      } catch (error) {
-        Logger.ERROR('Form submission error:', error);
-        '[FormUtils] Submission error:', error);
-        if (onError) onError(error.message || 'Произошла ошибка. Попробуйте позже.');
-      } finally {
-        clearTimeout(timeoutId);
-        _resetSubmitState(submitBtn, originalText);
-        isSubmitting = false;
-        if (onFinally) onFinally();
+    const { onSuccess, onError, onFinally } = options;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn?.textContent || 'Отправить';
+    let isSubmitting = true;
+    let timeoutId = null;
+  
+    try {
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Отправка... <span class="spinner"></span>';
       }
-    },
+  
+      timeoutId = setTimeout(() => {
+        if (isSubmitting) {
+          Logger.ERROR('Form submission timeout');
+          if (onError) onError('Превышено время ожидания ответа сервера. Попробуйте позже.');
+          _resetSubmitState(submitBtn, originalText);
+          isSubmitting = false;
+        }
+      }, 30000);
+  
+      const formData = new FormData();
+  
+      const inputs = form.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        if (input.type === 'file') return;
+        if (input.type === 'checkbox' || input.type === 'radio') {
+          if (input.checked) formData.append(input.name, input.value);
+        } else {
+          formData.append(input.name, input.value);
+        }
+      });
+  
+      files.forEach(file => {
+        formData.append('fileAttachment[]', file);
+      });
+  
+      let csrfToken = await FormUtils.fetchCsrfToken();
+      if (!csrfToken) {
+        if (onError) onError('Ошибка безопасности. Обновите страницу.');
+        return;
+      }
+      formData.append('csrf_token', csrfToken);
+  
+      const response = await fetch('/api/submit.php', {
+        method: 'POST',
+        body: formData
+      });
+  
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        Logger.ERROR('Сервер вернул не JSON:', text.substring(0, 200));
+        if (onError) onError('Ошибка на сервере. Проверьте логи.');
+        return;
+      }
+  
+      if (!response.ok) {
+        const msg = result.error || result.errors?.join(', ') || 'Ошибка сервера';
+        if (onError) onError(msg);
+        return;
+      }
+  
+      if (result.success) {
+        if (onSuccess) onSuccess(result);
+      } else {
+        if (onError) onError(result.error || 'Ошибка при отправке');
+      }
+    } catch (error) {
+      Logger.ERROR('Form submission error:', error);
+      if (onError) onError(error.message || 'Произошла ошибка. Попробуйте позже.');
+    } finally {
+      clearTimeout(timeoutId);
+      _resetSubmitState(submitBtn, originalText);
+      isSubmitting = false;
+      if (onFinally) onFinally();
+    }
+  },
 
   resetForm(form, successSelector, fileUpload, validator) {
-    '[FormUtils] resetForm called');
     if (!form) {
-      '[FormUtils] resetForm: form is null');
+      Logger.WARN('resetForm: form is null');
       return;
     }
     form.reset();
@@ -238,7 +241,6 @@ const FormUtils = {
     if (successMsg) successMsg.classList.remove('show');
 
     if (fileUpload) {
-      '[FormUtils] resetForm: resetting fileUpload, before clear count:', fileUpload.currentFiles?.length || 0);
       if (Array.isArray(fileUpload.currentFiles)) {
         fileUpload.currentFiles.length = 0;
       }
@@ -258,12 +260,10 @@ const FormUtils = {
         warning.classList.add('form-file-limit-hidden');
         warning.replaceChildren();
       }
-      '[FormUtils] resetForm: after clear count:', fileUpload.currentFiles?.length || 0);
       if (typeof fileUpload.renderFileList === 'function') {
         fileUpload.renderFileList();
       }
     } else {
-      '[FormUtils] resetForm: fileUpload is null');
       if (form) {
         const fileInput = form.querySelector('input[type="file"]');
         if (fileInput) fileInput.value = '';
@@ -280,7 +280,6 @@ const FormUtils = {
     }
 
     if (validator && typeof validator.reset === 'function') {
-      '[FormUtils] resetForm: resetting validator');
       validator.reset();
     }
 
@@ -307,49 +306,56 @@ const FormUtils = {
   }
 };
 
-function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize, onUpdate) {
-  '[_handleFileSelect] Processing files:', files.length);
+function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize, onUpdate, allowedTypes, allowedMimes) {
   if (!files || files.length === 0) return;
+
+  const defTypes = allowedTypes || window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || [
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'ppt', 'pptx',
+    'jpg', 'jpeg', 'png', 'gif'
+  ];
+  const defMimes = allowedMimes || window.CONFIG?.FORM?.ALLOWED_MIME_TYPES || [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/zip',
+    'application/x-zip-compressed',
+    'multipart/x-zip',
+    'application/octet-stream',
+    'image/jpeg',
+    'image/png',
+    'image/gif'
+  ];
+
+  const formatList = defTypes.map(ext => ext.toUpperCase()).join(', ');
+  const maxSizeMB = Math.round(maxTotalSize / 1024 / 1024);
+  const maxFilesCount = maxFiles;
+
   const errors = [];
   const validNewFiles = [];
-
-  let currentTotalSize = 0;
-  for (const f of currentFiles) {
-    currentTotalSize += f.size;
-  }
+  let currentTotalSize = currentFiles.reduce((sum, f) => sum + f.size, 0);
 
   for (const file of Array.from(files)) {
     const ext = file.name.split('.').pop().toLowerCase();
-    const allowedTypes = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
-    if (!allowedTypes.includes(ext)) {
-      errors.push(`Недопустимый тип файла: ${file.name}`);
+    if (!defTypes.includes(ext)) {
+      errors.push(`Файл "${file.name}" не поддерживается. Разрешённые форматы: ${formatList}.`);
       continue;
     }
-    if (file.type) {
-      const allowedMimes = window.CONFIG?.FORM?.ALLOWED_MIME_TYPES || [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/zip',
-        'application/x-zip-compressed',
-        'multipart/x-zip'
-      ];
-      if (!allowedMimes.includes(file.type)) {
-        errors.push(`Недопустимый MIME-тип: ${file.name}`);
-        continue;
-      }
+    if (file.type && !defMimes.includes(file.type)) {
+      errors.push(`Файл "${file.name}" имеет неправильный тип. Разрешены только: ${formatList}.`);
+      continue;
     }
     const fileKey = `${file.name}:${file.size}`;
-    const isDuplicate = currentFiles.some(f => `${f.name}:${f.size}` === fileKey);
-    if (isDuplicate) {
-      errors.push(`Файл "${file.name}" уже добавлен`);
+    if (currentFiles.some(f => `${f.name}:${f.size}` === fileKey)) {
+      errors.push(`Файл "${file.name}" уже добавлен.`);
       continue;
     }
     const newTotal = currentTotalSize + file.size;
     if (newTotal > maxTotalSize) {
-      errors.push(`Общий размер файлов превышает ${maxTotalSize / 1024 / 1024} МБ. Файл "${file.name}" не добавлен.`);
+      errors.push(`Файл "${file.name}" не добавлен. Общий размер не должен превышать ${maxSizeMB} МБ.`);
       continue;
     }
     currentTotalSize = newTotal;
@@ -358,35 +364,30 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize
 
   const totalAfterAdd = currentFiles.length + validNewFiles.length;
   let filesToAdd = validNewFiles;
-  if (totalAfterAdd > maxFiles) {
-    const space = maxFiles - currentFiles.length;
+  if (totalAfterAdd > maxFilesCount) {
+    const space = maxFilesCount - currentFiles.length;
     if (space <= 0) {
-      errors.push(`Достигнут лимит файлов (${maxFiles}). Удалите старые файлы.`);
+      errors.push(`Достигнут лимит файлов (максимум ${maxFilesCount} файлов). Удалите лишние.`);
       filesToAdd = [];
     } else {
       filesToAdd = validNewFiles.slice(0, space);
-      errors.push(`Добавлено ${space} из ${validNewFiles.length} файлов. Лимит: ${maxFiles}.`);
+      errors.push(`Добавлено только ${space} из ${validNewFiles.length} файлов (лимит ${maxFilesCount}).`);
     }
   }
 
   if (errors.length > 0) {
-    '[handleFileSelect] Errors:', errors);
-    _showUploadWarning(fileDrop, errors.join('; '));
+    _showUploadWarning(fileDrop, errors.join(' '));
   }
-  const newFiles = [...currentFiles, ...filesToAdd];
-  '[handleFileSelect] newFiles count:', newFiles.length);
-  onUpdate(newFiles);
+  onUpdate([...currentFiles, ...filesToAdd]);
 }
 
 function _renderFileList(fileDrop, currentFiles, removeFileFn) {
-  '[_renderFileList] called, files count:', currentFiles.length);
   if (!fileDrop) return;
   let container = fileDrop.querySelector('.form-file-list');
   if (!container) {
     container = document.createElement('div');
     container.className = 'form-file-list';
     fileDrop.appendChild(container);
-    '[_renderFileList] created new list container');
   }
   container.replaceChildren();
   if (currentFiles.length === 0) {
@@ -444,7 +445,6 @@ function _formatFileSize(bytes) {
 }
 
 function _showUploadWarning(fileDrop, message) {
-  '[showUploadWarning]', message);
   if (!fileDrop) return;
   let warningContainer = fileDrop.querySelector('.upload-warning-container');
   if (!warningContainer) {
@@ -460,14 +460,25 @@ function _showUploadWarning(fileDrop, message) {
   warningContainer.replaceChildren();
   const warningDiv = document.createElement('div');
   warningDiv.className = 'upload-warning';
-  warningDiv.textContent = `⚠️ ${message}`;
+  const parts = message.split('. ').filter(s => s.trim());
+  if (parts.length > 1) {
+    const list = document.createElement('ul');
+    parts.forEach(text => {
+      const li = document.createElement('li');
+      li.textContent = text.trim();
+      list.appendChild(li);
+    });
+    warningDiv.appendChild(list);
+  } else {
+    warningDiv.textContent = `⚠️ ${message}`;
+  }
   warningContainer.appendChild(warningDiv);
   warningContainer.classList.remove('form-file-limit-hidden');
 
   if (warningContainer._timeout) clearTimeout(warningContainer._timeout);
   warningContainer._timeout = setTimeout(() => {
     warningContainer.classList.add('form-file-limit-hidden');
-  }, 3000);
+  }, 6000);
 }
 
 function _resetSubmitState(btn, originalText) {
@@ -481,7 +492,6 @@ function _resetSubmitState(btn, originalText) {
 // ============================================================
 class ModalFormHandler {
   constructor(options) {
-    '[ModalFormHandler] Constructor called with options:', options);
     const {
       formId,
       successSelector,
@@ -500,7 +510,6 @@ class ModalFormHandler {
     this.form = document.getElementById(formId);
     if (!this.form) {
       Logger?.WARN(`ModalFormHandler: форма с id "${formId}" не найдена`);
-      '[ModalFormHandler] Form not found:', formId);
       return;
     }
 
@@ -521,35 +530,30 @@ class ModalFormHandler {
     this.isSubmitting = false;
     this._boundSubmitHandler = null;
     this._initialized = false;
-
-    '[ModalFormHandler] Instance created for modal:', modalKey);
   }
 
   init() {
-    '[ModalFormHandler] init() called');
-    if (this._initialized) {
-      '[ModalFormHandler] Already initialized, skipping');
-      return;
-    }
+    if (this._initialized) return;
     if (!this.form) {
-      '[ModalFormHandler] init: form is null');
+      Logger.WARN('init: form is null');
       return;
     }
 
-    this.validatorInstance = FormUtils.initValidation(this.form, this.messages);
+    // ===== ИСПРАВЛЕНИЕ: отключаем валидацию на input =====
+    this.validatorInstance = FormUtils.initValidation(this.form, {
+      ...this.messages,
+      validateOnInput: false   // <-- ОТКЛЮЧАЕМ ВАЛИДАЦИЮ ПРИ ВВОДЕ
+    });
+
     const fileDrop = this.form.querySelector(this.fileDropSelector);
-    '[ModalFormHandler] fileDrop element:', fileDrop);
     if (fileDrop) {
       this.fileUpload = FormUtils.initFileUpload(fileDrop, null, {
         maxFiles: this.fileOptions.maxFiles || 10,
         maxTotalSize: this.fileOptions.maxTotalSize || 24 * 1024 * 1024
       });
-      '[ModalFormHandler] fileUpload created:', this.fileUpload);
       if (this.fileUpload && typeof this.fileUpload.renderFileList === 'function') {
         this.fileUpload.renderFileList();
       }
-    } else {
-      '[ModalFormHandler] fileDrop not found');
     }
     this._boundSubmitHandler = (e) => this._handleSubmit(e);
     this.form.addEventListener('form:valid', this._boundSubmitHandler);
@@ -578,7 +582,6 @@ class ModalFormHandler {
   }
 
   async _handleSubmit(e) {
-    '[ModalFormHandler] _handleSubmit called');
     if (this.isSubmitting) return;
     this.isSubmitting = true;
 
@@ -590,7 +593,6 @@ class ModalFormHandler {
     }
 
     const files = this.fileUpload ? this.fileUpload.currentFiles : [];
-    '[ModalFormHandler] Files attached:', files.length);
 
     await FormUtils.submitForm(this.form, {
       onSuccess: (result) => {
@@ -609,7 +611,6 @@ class ModalFormHandler {
   }
 
   _defaultSuccess(result) {
-    '[ModalFormHandler] _defaultSuccess called');
     this.form.classList.add('hidden-form');
     const success = document.querySelector(this.successSelector);
     if (success) success.classList.remove('show');
@@ -625,8 +626,6 @@ class ModalFormHandler {
           modalManager.close('success');
         }
       }, 3000);
-    } else {
-      '[ModalFormHandler] modalManager not available');
     }
     
     if (typeof this.onSuccess === 'function') {
@@ -635,30 +634,37 @@ class ModalFormHandler {
   }
 
   _defaultError(msg) {
-    '[ModalFormHandler] _defaultError:', msg);
+    let userMessage = msg;
+    if (msg.includes('CSRF') || msg.includes('token')) {
+      userMessage = 'Ошибка безопасности. Обновите страницу и попробуйте снова.';
+    } else if (msg.includes('размер') || msg.includes('size')) {
+      const maxSize = this.fileOptions.maxTotalSize ? Math.round(this.fileOptions.maxTotalSize / 1024 / 1024) : 24;
+      userMessage = `Файл слишком большой. Максимальный размер – ${maxSize} МБ.`;
+    } else if (msg.includes('тип') || msg.includes('format') || msg.includes('расширение')) {
+      const formats = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'ZIP', 'PPT', 'PPTX', 'JPG', 'PNG', 'GIF'];
+      userMessage = `Неподдерживаемый формат файла. Разрешены: ${formats.map(f => f.toUpperCase()).join(', ')}.`;
+    } else if (msg.includes('сервера') || msg.includes('позже')) {
+      userMessage = 'Ошибка на сервере. Пожалуйста, попробуйте позже.';
+    }
+
     const warning = this.form.querySelector('.rate-limit-warning');
     if (warning) {
-      if (warning.classList.contains('show')) return;
       warning.replaceChildren();
       const p = document.createElement('p');
-      p.textContent = `⚠️ ${msg}`;
+      p.textContent = `⚠️ ${userMessage}`;
       warning.appendChild(p);
       warning.classList.add('show');
-      setTimeout(() => {
-        warning.classList.remove('show');
-      }, 5000);
+      setTimeout(() => warning.classList.remove('show'), 6000);
     } else {
-      alert(msg);
+      alert(userMessage);
     }
   }
 
   resetForm() {
-    '[ModalFormHandler] resetForm called for modal:', this.modalKey);
     FormUtils.resetForm(this.form, this.successSelector, this.fileUpload, this.validatorInstance);
   }
 
   destroy() {
-    '[ModalFormHandler] destroy called');
     if (this._boundSubmitHandler) {
       this.form?.removeEventListener('form:valid', this._boundSubmitHandler);
       this._boundSubmitHandler = null;

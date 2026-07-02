@@ -1,5 +1,6 @@
 <?php
 // api/csrf_token.php — выдача CSRF-токена
+require_once __DIR__ . '/secret_config.php'; // Подключаем конфиг (сессия уже стартована безопасно)
 
 // Все заголовки — ДО любого вывода
 header('Content-Type: application/json; charset=utf-8');
@@ -9,19 +10,6 @@ header('Expires: 0');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header_remove('X-Powered-By');
-
-// Старт сессии
-if (session_status() === PHP_SESSION_NONE) {
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
-
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.cookie_secure', $isHttps ? 1 : 0);
-    ini_set('session.use_strict_mode', 1);
-    ini_set('session.cookie_samesite', 'Strict');
-
-    session_start();
-}
 
 // [FIX-P0] Токен живёт 1 час. Регенерируем только если его нет или он истёк.
 // Это позволяет открывать форму в нескольких вкладках одновременно.
@@ -35,6 +23,7 @@ if (empty($_SESSION['csrf_token']) || ($now - $issuedAt) > $ttl) {
 }
 
 $remaining = $ttl - ($now - $_SESSION['csrf_token_time']);
+session_write_close();
 
 echo json_encode([
     'csrf_token' => $_SESSION['csrf_token'],

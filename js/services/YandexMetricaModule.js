@@ -1,6 +1,5 @@
 /**
- * Модуль Яндекс.Метрики
- * Отложенная загрузка и управление трекингом в зависимости от согласий пользователя
+ * Модуль Яндекс.Метрики — загрузка через официальный сниппет (без document.write)
  */
 const YandexMetricaModule = {
   state: {
@@ -10,125 +9,94 @@ const YandexMetricaModule = {
   },
 
   init() {
-    '[YandexMetricaModule] init() called');
-    this.state.counterId = window.CONFIG?.YANDEX?.METRIKA_COUNTER_ID || '109146519';
-    '[YandexMetricaModule] Counter ID:', this.state.counterId);
-    if (typeof Logger !== 'undefined') {
-      Logger.INFO('[YandexMetricaModule] Ready, counter ID:', this.state.counterId);
-    } else {
-      '[YandexMetricaModule] Ready, counter ID:', this.state.counterId);
-    }
+    this.state.counterId = window.CONFIG?.YANDEX?.METRIKA_COUNTER_ID;
+    Logger.INFO('[YandexMetricaModule] Ready, counter ID:', this.state.counterId);
   },
 
   enable() {
-    '[YandexMetricaModule] enable() called, initialized =', this.state.initialized);
     if (this.state.initialized) {
-      '[YandexMetricaModule] Already enabled, skipping');
-      if (typeof Logger !== 'undefined') Logger.INFO('[YandexMetricaModule] Already enabled');
+      Logger.INFO('[YandexMetricaModule] Already enabled');
       return;
     }
 
-    '[YandexMetricaModule] Starting _loadScript()...');
-    this._loadScript()
-      .then(() => {
-        '[YandexMetricaModule] _loadScript() resolved, calling _initCounter()');
-        this._initCounter();
-        this.state.initialized = true;
-        '[YandexMetricaModule] Enabled and counter initialized successfully');
-        if (typeof Logger !== 'undefined') {
-          Logger.INFO('[YandexMetricaModule] Enabled and counter initialized');
-        } else {
-          '[YandexMetricaModule] Enabled and counter initialized');
-        }
-      })
-      .catch(err => {
-        '[YandexMetricaModule] _loadScript() rejected:', err.message);
-        if (typeof Logger !== 'undefined') {
-          Logger.ERROR('[YandexMetricaModule] Failed to load Yandex.Metrika script:', err.message);
-        } else {
-          '[YandexMetricaModule] Failed to load Yandex.Metrika script:', err.message);
-        }
-      });
+    // Если ym уже существует, просто инициализируем счётчик
+    if (typeof window.ym === 'function') {
+      this._initCounter();
+      this.state.initialized = true;
+      return;
+    }
+
+    // Загружаем скрипт через официальный сниппет (без document.write)
+    this._loadWithSnippet();
   },
 
-  disable() {
-    '[YandexMetricaModule] disable() called, counterId =', this.state.counterId);
-    if (typeof window.ym !== 'function' || !this.state.counterId) {
-      '[YandexMetricaModule] Cannot disable: ym not a function or no counterId');
-      return;
-    }
-
+  _loadWithSnippet() {
     try {
-      window.ym(this.state.counterId, 'userParams', { analytics_enabled: false });
-      window.ym(this.state.counterId, 'hit', window.location.href, {
-        params: { analytics: 'disabled' }
-      });
-      '[YandexMetricaModule] Disabled tracking (userParams + hit sent)');
-      if (typeof Logger !== 'undefined') {
-        Logger.INFO('[YandexMetricaModule] Disabled tracking');
-      } else {
-        '[YandexMetricaModule] Disabled tracking');
-      }
-    } catch (error) {
-      '[YandexMetricaModule] Error disabling analytics:', error.message);
-      if (typeof Logger !== 'undefined') {
-        Logger.WARN('[YandexMetricaModule] Error disabling analytics:', error.message);
-      } else {
-        '[YandexMetricaModule] Error disabling analytics:', error.message);
-      }
-    } finally {
-      this.state.initialized = false;
-      '[YandexMetricaModule] state.initialized set to false');
+      // Официальный сниппет Яндекс.Метрики (без document.write)
+      (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j=0; j<document.scripts.length; j++) {
+          if (document.scripts[j].src === r) { return; }
+        }
+        k=e.createElement(t);
+        a=e.getElementsByTagName(t)[0];
+        k.async=1;
+        k.src=r;
+        a.parentNode.insertBefore(k,a);
+      })
+      (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+      // Ждём появления ym (до 2 секунд)
+      let attempts = 0;
+      const maxAttempts = 20;
+      const checkInterval = 100;
+
+      const checkYm = () => {
+        if (typeof window.ym === 'function') {
+          this._initCounter();
+          this.state.initialized = true;
+          Logger.INFO('[YandexMetricaModule] Enabled and counter initialized');
+          return true;
+        }
+        return false;
+      };
+
+      // Первая проверка сразу
+      if (checkYm()) return;
+
+      // Повторные проверки с интервалом
+      const intervalId = setInterval(() => {
+        attempts++;
+        if (checkYm()) {
+          clearInterval(intervalId);
+          return;
+        }
+        if (attempts >= maxAttempts) {
+          clearInterval(intervalId);
+          Logger.ERROR('[YandexMetricaModule] ym not defined after snippet load');
+        }
+      }, checkInterval);
+
+    } catch (e) {
+      Logger.ERROR('[YandexMetricaModule] Snippet error:', e.message);
     }
-  },
-
-  _loadScript() {
-    '[YandexMetricaModule] _loadScript() started');
-    return new Promise((resolve, reject) => {
-      if (this.state.loaded) {
-        '[YandexMetricaModule] Script already loaded, resolving immediately');
-        resolve();
-        return;
-      }
-
-      // Стандартная заглушка, как в оригинальном коде Яндекс.Метрики
-      window.ym = window.ym || function() {
-        (window.ym.a = window.ym.a || []).push(arguments);
-      };
-      window.ym.l = 1 * new Date();
-      '[YandexMetricaModule] window.ym stub created');
-
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.async = true;
-      script.src = 'https://mc.yandex.ru/metrika/tag.js';
-      '[YandexMetricaModule] Script element created, src =', script.src);
-
-      script.onload = () => {
-        '[YandexMetricaModule] Script onload fired, loaded = true');
-        this.state.loaded = true;
-        resolve();
-      };
-      script.onerror = (err) => {
-        '[YandexMetricaModule] Script onerror fired:', err);
-        reject(new Error('Script load error'));
-      };
-
-      document.head.appendChild(script);
-      '[YandexMetricaModule] Script appended to head');
-      
-      // ПРИМЕЧАНИЕ: Скрипт остается в DOM после загрузки, это ожидаемое поведение.
-      // Библиотека Яндекс.Метрики требует постоянного присутствия скрипта для корректной работы.
-      // Удаление скрипта приведет к неработоспособности трекинга и потере данных аналитики.
-    });
   },
 
   _initCounter() {
     const id = this.state.counterId;
-    '[YandexMetricaModule] _initCounter() called for id:', id);
+    if (!id) {
+      Logger.ERROR('[YandexMetricaModule] No counter ID');
+      return;
+    }
+
+    if (typeof window.ym !== 'function') {
+      Logger.ERROR('[YandexMetricaModule] window.ym is not a function, cannot init counter');
+      return;
+    }
+
     try {
       window.ym(id, 'init', {
-        // ssr: true,
         webvisor: false,
         clickmap: false,
         ecommerce: 'dataLayer',
@@ -137,19 +105,27 @@ const YandexMetricaModule = {
         accurateTrackBounce: true,
         trackLinks: true
       });
-      '[YandexMetricaModule] ym() init call completed successfully');
-      if (typeof Logger !== 'undefined') {
-        Logger.INFO('[YandexMetricaModule] Counter init called with id:', id);
-      } else {
-        '[YandexMetricaModule] Counter init called with id:', id);
-      }
+      Logger.INFO('[YandexMetricaModule] Counter init called with id:', id);
     } catch (e) {
-      '[YandexMetricaModule] Error during counter init:', e.message);
-      if (typeof Logger !== 'undefined') {
-        Logger.ERROR('[YandexMetricaModule] Error during counter init:', e.message);
-      } else {
-        '[YandexMetricaModule] Error during counter init:', e.message);
-      }
+      Logger.ERROR('[YandexMetricaModule] Error during counter init:', e.message);
+    }
+  },
+
+  disable() {
+    if (typeof window.ym !== 'function' || !this.state.counterId) {
+      return;
+    }
+
+    try {
+      window.ym(this.state.counterId, 'userParams', { analytics_enabled: false });
+      window.ym(this.state.counterId, 'hit', window.location.href, {
+        params: { analytics: 'disabled' }
+      });
+      Logger.INFO('[YandexMetricaModule] Disabled tracking');
+    } catch (error) {
+      Logger.WARN('[YandexMetricaModule] Error disabling analytics:', error.message);
+    } finally {
+      this.state.initialized = false;
     }
   }
 };

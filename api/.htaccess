@@ -1,0 +1,58 @@
+# ============================================================
+# /api/.htaccess — защита бэкенда форм
+# ООО "Волга-Днепр Инжиниринг"
+# ============================================================
+
+# Отключаем листинг директорий и серверные подписи
+Options -Indexes
+ServerSignature Off
+
+# ============================================================
+# 1. ЗАПРЕТ ПО УМОЛЧАНИЮ (whitelist)
+# ============================================================
+<FilesMatch ".*">
+    Require all denied
+</FilesMatch>
+
+# ============================================================
+# 2. ПУБЛИЧНЫЕ ЭНДПОИНТЫ
+# ============================================================
+<Files "submit.php">
+    Require all granted
+    LimitRequestBody 28311552
+</Files>
+
+<Files "csrf_token.php">
+    Require all granted
+    LimitRequestBody 1024
+</Files>
+
+<Files "cookie-consent.php">
+    Require all granted
+    LimitRequestBody 1024
+</Files>
+
+# ============================================================
+# 3. БЕЗОПАСНЫЕ HTTP-ЗАГОЛОВКИ
+# ============================================================
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-Robots-Tag "noindex, nofollow"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+    Header always unset X-Powered-By
+    Header always unset Server
+    Header unset ETag
+</IfModule>
+FileETag None
+
+# ============================================================
+# 4. ЗАЩИТА ОТ УТЕЧКИ ЧЕРЕЗ BACKUP-ФАЙЛЫ
+# ============================================================
+# Даже если кто-то случайно создаст submit.php.bak или Logger.php~
+# — они останутся заблокированы общим правилом deny выше.
+# Это правило — дополнительная страховка на уровне DOCUMENT_ROOT.

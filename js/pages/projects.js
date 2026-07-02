@@ -65,7 +65,6 @@ class ProjectRenderer {
     img.setAttribute('data-src', previewImage);
     img.alt = safeTitle;
     img.classList.add('project-img-cover');
-    // Первые две карточки получают высокий приоритет
     if (index < 2) {
       img.setAttribute('fetchpriority', 'high');
     }
@@ -114,7 +113,6 @@ class ProjectRenderer {
     const images = container.querySelectorAll('.project-card img[data-src]');
     if (!images.length) return;
 
-    // Увеличиваем rootMargin для более ранней загрузки на медленных сетях
     this.imageObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -183,7 +181,6 @@ function initProjectsPage() {
 
 // ========== ГАЛЕРЕЯ ПРОЕКТОВ (с поддержкой свайпа и предзагрузкой) ==========
 
-// Глобальный кеш изображений для галереи (сохраняется между открытиями)
 if (!window._galleryImageCache) {
   window._galleryImageCache = {};
 }
@@ -200,33 +197,27 @@ function initProjectGallery(images, container, mainImage) {
     return;
   }
 
-  // Если изображений нет – показываем плейсхолдер
   if (!images || images.length === 0) {
     newMainImage.src = 'assets/images/placeholder.jpg';
     newMainImage.alt = 'Изображение проекта';
     return;
   }
 
-  // ---------- КЕШ И ПРЕДЗАГРУЗКА ----------
   const cache = window._galleryImageCache;
 
-  // Функция предзагрузки всех изображений галереи
   function preloadAllImages() {
     images.forEach(src => {
       if (!cache[src]) {
         const img = new Image();
         img.decoding = 'async';
-        // Начинаем загрузку
         img.src = src;
         cache[src] = img;
       }
     });
   }
 
-  // Запускаем предзагрузку всех изображений сразу (с небольшой задержкой, чтобы не блокировать UI)
   setTimeout(preloadAllImages, 50);
 
-  // Дополнительно предзагружаем первое изображение через <link rel="preload"> (для ещё большей скорости)
   const firstSrc = images[0];
   if (firstSrc && !document.querySelector(`link[href="${firstSrc}"]`)) {
     const link = document.createElement('link');
@@ -236,39 +227,31 @@ function initProjectGallery(images, container, mainImage) {
     document.head.appendChild(link);
   }
 
-  // ---------- ЛОГИКА ГАЛЕРЕИ ----------
   let currentIndex = 0;
   let touchStartX = 0;
   let touchStartY = 0;
   let isSwiping = false;
   let isTransitioning = false;
 
-  // Обновление основного изображения (с использованием кеша)
   function updateMainImage(index) {
     const src = images[index];
     if (!src) return;
 
-    // Проверяем, загружено ли изображение в кеш
     const cachedImg = cache[src];
     if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
-      // Уже загружено – показываем мгновенно
       newMainImage.src = src;
     } else {
-      // Ещё не загружено – ставим src и начинаем загрузку
       newMainImage.src = src;
-      // Если нет в кеше – добавляем
       if (!cachedImg) {
         const img = new Image();
         img.src = src;
         cache[src] = img;
       }
     }
-    // Обновляем индикаторы
     const indicators = newContainer.querySelectorAll('.gallery-indicator');
     indicators.forEach((ind, i) => ind.classList.toggle('active', i === index));
   }
 
-  // Предзагрузка соседних (на всякий случай, если не все загрузились)
   function preloadAdjacent(index) {
     const prev = (index - 1 + images.length) % images.length;
     const next = (index + 1) % images.length;
@@ -282,7 +265,6 @@ function initProjectGallery(images, container, mainImage) {
     });
   }
 
-  // Навигация с защитой от быстрых кликов
   function navigate(direction) {
     if (isTransitioning) return;
     isTransitioning = true;
@@ -293,7 +275,6 @@ function initProjectGallery(images, container, mainImage) {
     setTimeout(() => { isTransitioning = false; }, 200);
   }
 
-  // ---------- ЛАЙТБОКС ----------
   function openLightbox() {
     const lightboxOverlay = document.getElementById('lightboxOverlay');
     const lightboxImage = document.getElementById('lightboxImage');
@@ -306,7 +287,6 @@ function initProjectGallery(images, container, mainImage) {
 
     function updateLightboxImage(index) {
       const src = images[index];
-      // Используем кеш, если доступен
       const cached = cache[src];
       if (cached && cached.complete && cached.naturalWidth > 0) {
         lightboxImage.src = src;
@@ -318,7 +298,6 @@ function initProjectGallery(images, container, mainImage) {
           cache[src] = img;
         }
       }
-      // Обновляем индикаторы
       const indicators = document.getElementById('lightboxIndicators');
       if (indicators) {
         indicators.querySelectorAll('.lightbox-indicator').forEach((el, i) => {
@@ -332,7 +311,6 @@ function initProjectGallery(images, container, mainImage) {
       updateLightboxImage(lbCurrentIndex);
     }
 
-    // Создаём индикаторы, если их нет
     let indicatorsContainer = document.getElementById('lightboxIndicators');
     if (!indicatorsContainer) {
       indicatorsContainer = document.createElement('div');
@@ -355,7 +333,6 @@ function initProjectGallery(images, container, mainImage) {
       });
     }
 
-    // Навигационные кнопки (для десктопа)
     let prevBtn = document.getElementById('lightboxPrevBtn');
     let nextBtn = document.getElementById('lightboxNextBtn');
     if (!prevBtn) {
@@ -372,13 +349,11 @@ function initProjectGallery(images, container, mainImage) {
     prevBtn.style.display = showNav ? 'flex' : 'none';
     nextBtn.style.display = showNav ? 'flex' : 'none';
 
-    // Обработчики кликов по кнопкам
     const prevHandler = () => navigateLightbox(-1);
     const nextHandler = () => navigateLightbox(1);
     prevBtn.onclick = prevHandler;
     nextBtn.onclick = nextHandler;
 
-    // Свайп в лайтбоксе
     function lbHandleTouchStart(e) {
       const touch = e.touches[0];
       lbTouchStartX = touch.clientX;
@@ -392,7 +367,7 @@ function initProjectGallery(images, container, mainImage) {
       const deltaY = touch.clientY - lbTouchStartY;
       if (Math.abs(deltaX) > 10) {
         lbIsSwiping = true;
-        e.preventDefault();
+        // e.preventDefault() больше не нужен — управляется CSS touch-action
       }
     }
     function lbHandleTouchEnd(e) {
@@ -404,7 +379,7 @@ function initProjectGallery(images, container, mainImage) {
       const absDeltaY = Math.abs(deltaY);
 
       if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
-        e.preventDefault();
+        // e.preventDefault() больше не нужен — управляется CSS touch-action
         if (deltaX > 0) navigateLightbox(-1);
         else navigateLightbox(1);
         lbIsSwiping = true;
@@ -418,17 +393,15 @@ function initProjectGallery(images, container, mainImage) {
     lbContent.removeEventListener('touchmove', lbHandleTouchMove);
     lbContent.removeEventListener('touchend', lbHandleTouchEnd);
     lbContent.addEventListener('touchstart', lbHandleTouchStart, { passive: true });
-    lbContent.addEventListener('touchmove', lbHandleTouchMove, { passive: false });
-    lbContent.addEventListener('touchend', lbHandleTouchEnd, { passive: false });
+    lbContent.addEventListener('touchmove', lbHandleTouchMove, { passive: true });
+    lbContent.addEventListener('touchend', lbHandleTouchEnd, { passive: true });
 
-    // Открытие лайтбокса
     updateLightboxImage(lbCurrentIndex);
     lightboxOverlay.classList.add('active');
     if (window.ScrollManager && !ScrollManager.isLocked()) {
       ScrollManager.lock();
     }
 
-    // Закрытие
     const closeBtn = document.getElementById('lightboxCloseBtn');
     const closeHandler = () => {
       lightboxOverlay.classList.remove('active');
@@ -456,7 +429,6 @@ function initProjectGallery(images, container, mainImage) {
     document.addEventListener('keydown', escapeHandler);
   }
 
-  // ---------- ОСНОВНАЯ ГАЛЕРЕЯ (свайп) ----------
   function handleTouchStart(e) {
     const touch = e.touches[0];
     touchStartX = touch.clientX;
@@ -470,7 +442,7 @@ function initProjectGallery(images, container, mainImage) {
     const deltaY = touch.clientY - touchStartY;
     if (Math.abs(deltaX) > 10) {
       isSwiping = true;
-      e.preventDefault();
+      // e.preventDefault() больше не нужен — управляется CSS touch-action
     }
   }
   function handleTouchEnd(e) {
@@ -482,7 +454,7 @@ function initProjectGallery(images, container, mainImage) {
     const absDeltaY = Math.abs(deltaY);
 
     if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
-      e.preventDefault();
+      // e.preventDefault() больше не нужен — управляется CSS touch-action
       if (deltaX > 0) navigate(-1);
       else navigate(1);
       isSwiping = true;
@@ -491,7 +463,6 @@ function initProjectGallery(images, container, mainImage) {
     touchStartY = 0;
   }
 
-  // Клик по изображению для открытия лайтбокса (игнорируем, если был свайп)
   newMainImage.addEventListener('click', function(e) {
     if (isSwiping) {
       isSwiping = false;
@@ -500,7 +471,6 @@ function initProjectGallery(images, container, mainImage) {
     openLightbox();
   });
 
-  // Создаём обёртку для изображения, если её нет
   let wrapper = newContainer.querySelector('.gallery-image-wrapper');
   if (!wrapper) {
     wrapper = document.createElement('div');
@@ -511,15 +481,13 @@ function initProjectGallery(images, container, mainImage) {
     wrapper.appendChild(newMainImage);
   }
 
-  // Обработчики свайпа для основной галереи
   wrapper.removeEventListener('touchstart', handleTouchStart);
   wrapper.removeEventListener('touchmove', handleTouchMove);
   wrapper.removeEventListener('touchend', handleTouchEnd);
   wrapper.addEventListener('touchstart', handleTouchStart, { passive: true });
-  wrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
-  wrapper.addEventListener('touchend', handleTouchEnd, { passive: false });
+  wrapper.addEventListener('touchmove', handleTouchMove, { passive: true });
+  wrapper.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-  // Кнопки и индикаторы для основной галереи
   if (images.length === 1) {
     updateMainImage(0);
     return;
@@ -548,11 +516,9 @@ function initProjectGallery(images, container, mainImage) {
   });
   newContainer.appendChild(indicatorsContainer);
 
-  // Показываем первое изображение
   updateMainImage(0);
   preloadAdjacent(0);
 
-  // Устанавливаем high priority для основного изображения
   newMainImage.fetchPriority = 'high';
   newMainImage.decoding = 'async';
 }
@@ -580,7 +546,6 @@ function destroyProjectsPage() {
     _projectsPageHandlers.renderer = null;
   }
   window._projectsPageInitialized = false;
-  // Кеш не очищаем, чтобы сохранить изображения при повторных открытиях
 }
 
 window.initProjectsPage = initProjectsPage;

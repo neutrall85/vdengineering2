@@ -12,8 +12,8 @@ const SERVICES_DATA = {
       "сводный перечень особых ситуаций."
     ],
     images: [
-      "assets/images/services/schema.jpg",
-      "assets/images/services/schema2.jpg"
+      "assets/images/services/schema.webp",
+      "assets/images/services/schema2.webp"
     ]
   }
 };

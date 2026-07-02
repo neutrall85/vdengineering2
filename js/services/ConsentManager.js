@@ -1,12 +1,12 @@
 /**
  * ConsentManager.js
  * Менеджер согласий пользователя (cookie, аналитика)
- * Версия 2.1 (без иконки, управление через ссылку в политике и футере)
+ * Версия 3.0 – делегирует работу с Metrika модулю YandexMetricaModule
  */
 
 const ConsentManager = {
   config: {
-    version: '2.1',
+    version: '3.0',
     categories: {
       functional: {
         id: 'functional',
@@ -28,10 +28,7 @@ const ConsentManager = {
     observer: null,
     recoveryTimer: null,
     eventBus: null,
-    _destroyed: false,
-    analyticsInitialized: false,
-    ymLoaded: false,
-    ymCounterId: null
+    _destroyed: false
   },
 
   init() {
@@ -39,10 +36,8 @@ const ConsentManager = {
       Logger.ERROR('ConsentManager: EventBus not available');
       return;
     }
-
     this.state.eventBus = window.Services.eventBus;
     const storage = window.Services.storage;
-    this.state.ymCounterId = window.CONFIG?.YANDEX?.METRIKA_COUNTER_ID || '109146519';
 
     const consent = this.getConsent(storage);
     if (!consent) {
@@ -54,27 +49,21 @@ const ConsentManager = {
     this._render();
     this._setupMutationObserver();
     this._attachEvents();
-
-    Logger.INFO('ConsentManager initialized (lazy analytics mode)');
+    Logger.INFO('ConsentManager initialized (v3.0)');
   },
 
   getConsent(storage) {
-    const consentKey = 'user_preferences_v1';
-    return storage.get(consentKey, null);
+    return storage.get('user_preferences_v1', null);
   },
 
   saveConsent(consent, storage) {
     Logger.INFO('ConsentManager: saveConsent called with consent:', consent);
-    const consentKey = 'user_preferences_v1';
     const consentData = {
       timestamp: new Date().toISOString(),
       version: this.config.version,
       categories: consent
     };
-
-    storage.set(consentKey, consentData);
-    Logger.INFO('ConsentManager: Consent saved to storage:', consentData);
-
+    storage.set('user_preferences_v1', consentData);
     this._sendConsentToServer(consent);
     this._applyConsent(consent, storage);
     this.state.eventBus.emit('preferences:saved', consentData);
@@ -82,15 +71,9 @@ const ConsentManager = {
   },
 
   withdrawConsent(storage) {
-    '🔄 withdrawConsent вызван (баннер поверх модалки)');
-
-    // Удаляем согласие
-    const consentKey = 'user_preferences_v1';
-    storage.remove(consentKey);
-    this._disableAnalytics(true);
+    storage.remove('user_preferences_v1');
+    this._applyConsent({ functional: true, analytics: false }, storage);
     this.state.eventBus.emit('preferences:withdrawn');
-
-    // Показываем баннер поверх модалки
     this.show();
   },
 
@@ -101,107 +84,27 @@ const ConsentManager = {
   _applyConsent(categories, storage) {
     Logger.INFO('ConsentManager: _applyConsent called with categories:', categories);
     const analyticsEnabled = categories && categories.analytics === true;
+
     if (analyticsEnabled) {
-      this._enableAnalytics();
+      if (typeof YandexMetricaModule !== 'undefined') {
+        YandexMetricaModule.enable();
+      } else {
+        Logger.WARN('YandexMetricaModule not available');
+      }
     } else {
-      this._disableAnalytics(false);
+      if (typeof YandexMetricaModule !== 'undefined') {
+        if (YandexMetricaModule.state && YandexMetricaModule.state.counterId) {
+            YandexMetricaModule.disable();
+        }
+      }
     }
     this.state.eventBus.emit('preferences:applied', categories);
   },
 
-  _loadAnalyticsScript() {
-    return new Promise((resolve, reject) => {
-      if (this.state.ymLoaded) {
-        resolve();
-        return;
-      }
-
-      if (document.querySelector('script[src*="mc.yandex.ru/metrika/tag.js"]')) {
-        this.state.ymLoaded = true;
-        resolve();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://mc.yandex.ru/metrika/tag.js';
-      script.async = true;
-      script.onload = () => {
-        this.state.ymLoaded = true;
-        window.ym = window.ym || function () {
-          (window.ym.a = window.ym.a || []).push(arguments);
-        };
-        window.ym(this.state.ymCounterId, 'init', {
-          clickmap: true,
-          trackLinks: true,
-          accurateTrackBounce: true,
-          webvisor: true,
-        });
-        Logger.INFO('ConsentManager: Yandex Metrika script loaded and initialized');
-        resolve();
-      };
-      script.onerror = (err) => {
-        Logger.ERROR('ConsentManager: Failed to load Metrika script', err);
-        reject(err);
-      };
-      document.head.appendChild(script);
-    });
-  },
-
-  _enableAnalytics() {
-    if (this.state.analyticsInitialized) {
-      Logger.INFO('ConsentManager: Analytics already enabled');
-      return;
-    }
-
-    this._loadAnalyticsScript()
-      .then(() => {
-        window.ym(this.state.ymCounterId, 'userParams', { analytics_enabled: true });
-        this.state.analyticsInitialized = true;
-        Logger.INFO('ConsentManager: Analytics enabled');
-      })
-      .catch(err => {
-        Logger.ERROR('ConsentManager: Could not enable analytics', err);
-      });
-  },
-
-  _disableAnalytics(clearCookies = false) {
-    if (!this.state.analyticsInitialized && !clearCookies) {
-      return;
-    }
-
-    try {
-      if (window.ym && this.state.ymLoaded) {
-        window.ym(this.state.ymCounterId, 'userParams', { analytics_enabled: false });
-      }
-      this.state.analyticsInitialized = false;
-      Logger.INFO('ConsentManager: Analytics disabled');
-
-      if (clearCookies) {
-        this._clearYandexCookies();
-        Logger.INFO('ConsentManager: Yandex Metrika cookies cleared');
-      }
-    } catch (e) {
-      Logger.WARN('ConsentManager: Error disabling analytics', e.message);
-    }
-  },
-
-  _clearYandexCookies() {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name] = cookie.split('=');
-      const trimmedName = name.trim();
-      if (trimmedName.startsWith('_ym_')) {
-        document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.${window.location.hostname}`;
-      }
-    }
-  },
-
+  // ===== ОСТАЛЬНЫЕ МЕТОДЫ (без изменений) =====
   _render() {
     if (document.getElementById('user-notice-banner')) return;
-
     const sanitizer = Utils.Sanitizer || { escapeHtml: (str) => str };
-
     const bannerHTML = `
       <div id="user-notice-banner" class="user-notice-banner" role="dialog" aria-modal="true" aria-labelledby="user-notice-title">
         <div class="user-notice-content">
@@ -211,7 +114,6 @@ const ConsentManager = {
               Мы используем файлы cookie для улучшения работы сайта. Технические cookie необходимы для функционирования сайта.
               Аналитические cookie (Яндекс.Метрика) собирают обезличенную статистику посещений – они включаются только с вашего разрешения.
             </p>
-
             <div class="user-consent-details" id="user-consent-details">
               <div class="user-consent-category">
                 <label class="user-consent-label">
@@ -232,7 +134,6 @@ const ConsentManager = {
                 </label>
               </div>
             </div>
-
             <div class="user-notice-buttons">
               <button type="button" class="user-btn user-btn-primary" id="user-accept-all">Принять всё</button>
               <button type="button" class="user-btn user-btn-secondary" id="user-reject-all">Отклонить всё</button>
@@ -246,10 +147,8 @@ const ConsentManager = {
         </div>
       </div>
     `;
-
     document.body.insertAdjacentHTML('beforeend', bannerHTML);
     this.state.banner = document.getElementById('user-notice-banner');
-
     const storage = window.Services.storage;
     const consent = this.getConsent(storage);
     if (!consent) {
@@ -261,23 +160,19 @@ const ConsentManager = {
 
   _attachEvents() {
     const storage = window.Services.storage;
-
     document.getElementById('user-accept-all')?.addEventListener('click', () => {
       Logger.INFO('ConsentManager: Accept all clicked');
       this.saveConsent({ functional: true, analytics: true }, storage);
     });
-
     document.getElementById('user-reject-all')?.addEventListener('click', () => {
       Logger.INFO('ConsentManager: Reject all clicked');
       this.saveConsent({ functional: true, analytics: false }, storage);
     });
-
     document.getElementById('user-save-selection')?.addEventListener('click', () => {
       const consentAnalytics = document.getElementById('consent-analytics')?.checked || false;
       Logger.INFO('ConsentManager: Save selection clicked, analytics =', consentAnalytics);
       this.saveConsent({ functional: true, analytics: consentAnalytics }, storage);
     });
-
     document.getElementById('user-privacy-link')?.addEventListener('click', (e) => {
       e.preventDefault();
       if (typeof PolicyModalManager !== 'undefined') {
@@ -286,7 +181,6 @@ const ConsentManager = {
         Logger.WARN('ConsentManager: PolicyModalManager not available');
       }
     });
-
     document.getElementById('user-cookie-policy-link')?.addEventListener('click', (e) => {
       e.preventDefault();
       if (typeof PolicyModalManager !== 'undefined') {
@@ -295,8 +189,6 @@ const ConsentManager = {
         Logger.WARN('ConsentManager: PolicyModalManager not available');
       }
     });
-
-    // Обработчик для ссылки "Настройки cookie" (в футере или в политике)
     document.addEventListener('click', (e) => {
       const link = e.target.closest('#cookie-settings-link');
       if (link) {
@@ -307,7 +199,6 @@ const ConsentManager = {
   },
 
   show() {
-    // Если баннер отсутствует в DOM или ссылка на него потеряна – пересоздаём
     if (!this.state.banner || !document.getElementById('user-notice-banner')) {
       this._render();
     }
@@ -326,7 +217,6 @@ const ConsentManager = {
 
   _setupMutationObserver() {
     const bannerId = 'user-notice-banner';
-
     this.state.observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.removedNodes.forEach((node) => {
@@ -337,7 +227,6 @@ const ConsentManager = {
         });
       });
     });
-
     this.state.observer.observe(document.body, {
       childList: true,
       subtree: true
@@ -347,7 +236,6 @@ const ConsentManager = {
   _scheduleRecovery() {
     if (this.state._destroyed) return;
     if (this.state.recoveryTimer) clearTimeout(this.state.recoveryTimer);
-
     const storage = window.Services.storage;
     this.state.recoveryTimer = setTimeout(() => {
       if (this.state._destroyed) return;
@@ -361,23 +249,17 @@ const ConsentManager = {
 
   _sendConsentToServer(categories) {
     let consentType = 'functional';
-    if (categories.analytics === true) {
-      consentType = 'all';
-    } else if (categories.analytics === false) {
-      consentType = 'functional';
-    }
-
+    if (categories.analytics === true) consentType = 'all';
+    else if (categories.analytics === false) consentType = 'functional';
     fetch('/api/cookie-consent.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         consent_type: consentType,
-        version: this.config.version || '2.0',
+        version: this.config.version || '3.0',
         url: window.location.href
       })
-    }).catch(() => {
-      'Failed to log cookie consent');
-    });
+    }).catch(() => Logger.WARN('Failed to log cookie consent'));
   },
 
   destroy() {

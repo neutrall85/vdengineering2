@@ -11,40 +11,33 @@ const _pageInitHandlers = {
 function initDocsPage() {
   // Обработчик для кнопок просмотра документов
   const docViewLinks = document.querySelectorAll('.doc-view-link');
-  
   docViewLinks.forEach(function(link) {
     link.addEventListener('click', function(e) {
-      // Можно добавить дополнительную логику при клике на просмотр документа
-      // Например, аналитику или логирование
       if (typeof Logger !== 'undefined') {
         Logger.INFO('Просмотр документа:', this.href);
       }
     });
   });
 
-  // Ленивая загрузка изображений превью с использованием Intersection Observer
+  // Ленивая загрузка изображений превью
   const previewImages = document.querySelectorAll('.doc-preview-image');
-  
   let imageObserver = null;
   if ('IntersectionObserver' in window) {
-    imageObserver = new IntersectionObserver((entries, observer) => {
+    imageObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const img = entry.target;
-          observer.unobserve(img);
+          imageObserver.unobserve(img);
         }
       });
     }, {
       rootMargin: '50px 0px',
       threshold: 0.01
     });
-
-    previewImages.forEach(img => {
-      imageObserver.observe(img);
-    });
+    previewImages.forEach(img => imageObserver.observe(img));
   }
 
-  // Обработка ошибок загрузки изображений превью
+  // Обработка ошибок загрузки изображений
   const errorHandlerMap = new Map();
   previewImages.forEach(img => {
     const errorHandler = function() {
@@ -57,10 +50,8 @@ function initDocsPage() {
       const svg = document.createElementNS(svgNS, 'svg');
       svg.setAttribute('viewBox', '0 0 24 24');
       svg.className = 'doc-icon';
-      
       const path = document.createElementNS(svgNS, 'path');
       path.setAttribute('d', 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z');
-      
       svg.appendChild(path);
       
       const span = document.createElement('span');
@@ -72,14 +63,31 @@ function initDocsPage() {
       this.parentElement.appendChild(placeholder);
       this.style.display = 'none';
     };
-    
     img.addEventListener('error', errorHandler);
     errorHandlerMap.set(img, errorHandler);
   });
   
-  // Сохраняем ссылки для очистки
   _pageInitHandlers.imageObserver = imageObserver;
   _pageInitHandlers.errorHandlerMap = errorHandlerMap;
+
+  // ======= КЛИКАБЕЛЬНЫЕ КАРТОЧКИ (с поддержкой новой вкладки) =======
+  const cards = document.querySelectorAll('.doc-card');
+  const cardClickHandlers = [];
+  cards.forEach(card => {
+    const link = card.querySelector('.doc-view-link');
+    if (!link) return;
+
+    const handler = function(e) {
+      // Если клик был по самой ссылке или её потомкам — не перехватываем
+      if (link.contains(e.target)) return;
+      
+      // Эмулируем клик по ссылке — браузер сам обработает Ctrl/Shift/среднюю кнопку
+      link.click();
+    };
+    card.addEventListener('click', handler);
+    cardClickHandlers.push({ card, handler });
+  });
+  _pageInitHandlers.cardClickHandlers = cardClickHandlers;
 }
 
 /**

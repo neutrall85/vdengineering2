@@ -114,10 +114,9 @@ class VacancyRenderer {
 let vacancyRenderer = null;
 
 function initVacanciesPage() {
-  '[Vacancies] initVacanciesPage вызвана');
   const grid = document.getElementById('vacanciesGrid');
   if (!grid) {
-    '[Vacancies] Контейнер vacanciesGrid не найден');
+    Logger.ERROR('Контейнер vacanciesGrid не найден');
     return;
   }
 
@@ -126,16 +125,14 @@ function initVacanciesPage() {
 
   const renderWithRetry = (attempt = 0) => {
     if (window.VACANCIES_DATA && Array.isArray(window.VACANCIES_DATA) && window.VACANCIES_DATA.length > 0) {
-      '[Vacancies] Данные загружены, рендерим', window.VACANCIES_DATA.length, 'вакансий');
       if (!vacancyRenderer) {
         vacancyRenderer = new VacancyRenderer(window.VACANCIES_DATA);
       }
       vacancyRenderer.render('vacanciesGrid');
     } else if (attempt < MAX_RETRIES) {
-      `[Vacancies] Данных ещё нет, попытка ${attempt + 1} из ${MAX_RETRIES}`);
       setTimeout(() => renderWithRetry(attempt + 1), RETRY_DELAY_MS);
     } else {
-      '[Vacancies] Данные не загружены после всех попыток');
+      Logger.ERROR('Данные не загружены после всех попыток');
       grid.innerHTML = '<p class="no-vacancies">Данные о вакансиях временно недоступны. Пожалуйста, попробуйте позже.</p>';
     }
   };
