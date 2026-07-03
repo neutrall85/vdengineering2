@@ -66,7 +66,7 @@ class NewsRenderer {
     if (newsList.length === 0) {
       const noNews = document.createElement('p');
       noNews.classList.add('no-news');
-      noNews.textContent = 'Нет новостей за выбранный период';
+      noNews.textContent = 'Нет новостей';
       container.appendChild(noNews);
       return;
     }
