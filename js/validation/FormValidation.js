@@ -95,6 +95,15 @@ const FormValidation = (function() {
         rules.push({ type: 'phone', message: this.options.messages.phone });
       }
 
+      if (field.hasAttribute('pattern')) {
+        const pattern = field.getAttribute('pattern');
+        rules.push({
+          type: 'pattern',
+          value: new RegExp(pattern),
+          message: field.getAttribute('data-pattern-error') || 'Некорректный формат'
+        });
+      }
+
       const minLength = field.getAttribute('minlength');
       if (minLength) {
         rules.push({ 
@@ -237,6 +246,8 @@ const FormValidation = (function() {
           return Utils.Validator.email(value);
         case 'phone':
           return Utils.Validator.phone(value);
+        case 'pattern':
+          return rule.value.test(String(value))
         case 'minLength':
           return Utils.Validator.minLength(value, rule.value);
         case 'maxLength':

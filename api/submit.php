@@ -375,41 +375,80 @@ if ($isFeedback) {
     $formType = 'proposal';
     Logger::debug('Processing proposal form');
 
-    $required = ['companyName', 'contactPerson', 'email', 'phone', 'aircraftType', 'serviceType', 'taskDescription'];
+    // 1. Обязательные поля (добавлены requestCategory и desiredDate)
+    $required = [
+        'companyName',
+        'contactPerson',
+        'email',
+        'phone',
+        'aircraftType',
+        'serviceType',
+        'taskDescription',
+        'requestCategory',
+        'desiredDate'
+    ];
     foreach ($required as $f) {
         if (empty(trim($_POST[$f] ?? ''))) {
             $errors[] = "Поле $f обязательно";
         }
     }
 
+    // 2. Валидация email
     $rawEmail = trim($_POST['email'] ?? '');
     if ($rawEmail !== '' && !filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Некорректный email';
     }
 
+    // 3. Валидация телефона
     $rawPhone = trim($_POST['phone'] ?? '');
     if (!validatePhone($rawPhone)) {
         $errors[] = 'Некорректный номер телефона';
     }
 
+    // 4. Минимальная длина описания задачи
     if (mb_strlen(trim($_POST['taskDescription'] ?? ''), 'UTF-8') < 10) {
         $errors[] = 'Описание задачи (мин. 10 символов)';
     }
 
+    // 5. Проверка категории запроса
+    $category = trim($_POST['requestCategory'] ?? '');
+    if (!in_array($category, ['AOG', 'NORM', 'CRIT'], true)) {
+        $errors[] = 'Некорректная категория запроса';
+    }
+
+    // 6. Проверка формата даты и её актуальности
+    $desiredDate = trim($_POST['desiredDate'] ?? '');
+    if ($desiredDate !== '' && !preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $desiredDate)) {
+        $errors[] = 'Неверный формат даты (ожидается ДД.ММ.ГГГГ)';
+    } else {
+        // Если формат верный, проверяем, что дата не прошедшая
+        if ($desiredDate !== '') {
+            $dateParts = explode('.', $desiredDate);
+            $timestamp = mktime(0, 0, 0, (int)$dateParts[1], (int)$dateParts[0], (int)$dateParts[2]);
+            if ($timestamp < time()) {
+                $errors[] = 'Дата должна быть не ранее сегодняшнего дня';
+            }
+        }
+    }
+
+    // 7. Согласие на обработку ПД
     if (empty($_POST['personalDataConsent'])) {
         $errors[] = 'Необходимо согласие на обработку данных';
     }
 
+    // 8. Формируем массив данных (добавлены category и desired_date)
     $data = [
-        'type'      => 'proposal',
-        'company'   => trim($_POST['companyName'] ?? ''),
-        'contact'   => trim($_POST['contactPerson'] ?? ''),
-        'email'     => $rawEmail,
-        'phone'     => $rawPhone,
-        'extension' => trim($_POST['extension'] ?? ''),
-        'aircraft'  => trim($_POST['aircraftType'] ?? ''),
-        'service'   => trim($_POST['serviceType'] ?? ''),
-        'task'      => trim($_POST['taskDescription'] ?? ''),
+        'type'         => 'proposal',
+        'company'      => trim($_POST['companyName'] ?? ''),
+        'contact'      => trim($_POST['contactPerson'] ?? ''),
+        'email'        => $rawEmail,
+        'phone'        => $rawPhone,
+        'extension'    => trim($_POST['extension'] ?? ''),
+        'aircraft'     => trim($_POST['aircraftType'] ?? ''),
+        'service'      => trim($_POST['serviceType'] ?? ''),
+        'task'         => trim($_POST['taskDescription'] ?? ''),
+        'category'     => $category,
+        'desired_date' => $desiredDate,
     ];
 
 } elseif ($isUniversal) {

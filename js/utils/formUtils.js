@@ -690,3 +690,412 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = FormUtils;
   module.exports.ModalFormHandler = ModalFormHandler;
 }
+
+const DateInputHelper = {
+    initDateInput: function(input, options) {
+        if (!input || input._datePickerInitialized) return;
+        input._datePickerInitialized = true;
+
+        const { onSelect = null } = options || {};
+        let picker = null;
+        let isVisible = false;
+        let closeTimeout = null;
+        let scrollCleanup = null;
+
+        // ========== СОЗДАНИЕ КАЛЕНДАРЯ ==========
+        const createPicker = () => {
+            const container = document.createElement('div');
+            container.className = 'date-picker';
+            container.style.display = 'none';
+
+            const header = document.createElement('div');
+            header.className = 'date-picker-header';
+
+            const monthSelect = document.createElement('select');
+            monthSelect.className = 'date-picker-month-select';
+            const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+            months.forEach((m, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = m;
+                monthSelect.appendChild(opt);
+            });
+
+            const yearSelect = document.createElement('select');
+            yearSelect.className = 'date-picker-year-select';
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear - 10; y <= currentYear + 10; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+
+            const navDiv = document.createElement('div');
+            navDiv.className = 'date-picker-nav';
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹';
+            prevBtn.setAttribute('aria-label', 'Предыдущий месяц');
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '›';
+            nextBtn.setAttribute('aria-label', 'Следующий месяц');
+            navDiv.appendChild(prevBtn);
+            navDiv.appendChild(nextBtn);
+
+            header.appendChild(monthSelect);
+            header.appendChild(yearSelect);
+            header.appendChild(navDiv);
+            container.appendChild(header);
+
+            const grid = document.createElement('div');
+            grid.className = 'date-picker-grid';
+            container.appendChild(grid);
+            document.body.appendChild(container);
+
+            const render = (date, selectedDate) => {
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                monthSelect.value = month;
+                yearSelect.value = year;
+                grid.innerHTML = '';
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(day => {
+                    const cell = document.createElement('div');
+                    cell.className = 'day-name';
+                    cell.textContent = day;
+                    grid.appendChild(cell);
+                });
+
+                let firstDay = new Date(year, month, 1).getDay();
+                firstDay = firstDay === 0 ? 6 : firstDay - 1;
+                for (let i = 0; i < firstDay; i++) {
+                    const empty = document.createElement('div');
+                    empty.className = 'day-cell empty';
+                    grid.appendChild(empty);
+                }
+
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+                    cell.textContent = d;
+                    const dateObj = new Date(year, month, d);
+                    dateObj.setHours(0, 0, 0, 0);
+
+                    if (dateObj < today) {
+                        cell.classList.add('disabled');
+                        cell.style.opacity = '0.4';
+                        cell.style.cursor = 'not-allowed';
+                    } else {
+                        if (dateObj.getTime() === today.getTime()) {
+                            cell.classList.add('today');
+                        }
+                        if (selectedDate && dateObj.getTime() === selectedDate.getTime()) {
+                            cell.classList.add('selected');
+                        }
+                        cell.addEventListener('pointerdown', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const selected = new Date(year, month, d);
+                            const formatted = DateInputHelper._formatDate(selected);
+                            input.value = formatted;
+                            if (typeof onSelect === 'function') onSelect(selected, formatted);
+                            setTimeout(closePicker, 20);
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        });
+                    }
+                    grid.appendChild(cell);
+                }
+            };
+
+            const changeMonth = (delta) => {
+                const newDate = new Date(+yearSelect.value, +monthSelect.value + delta, 1);
+                render(newDate, getSelectedDateFromInput());
+            };
+            prevBtn.addEventListener('click', e => { e.stopPropagation(); changeMonth(-1); });
+            nextBtn.addEventListener('click', e => { e.stopPropagation(); changeMonth(1); });
+            monthSelect.addEventListener('change', () => {
+                render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
+            });
+            yearSelect.addEventListener('change', () => {
+                render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
+            });
+
+            document.addEventListener('click', function(e) {
+                if (picker && !picker.contains(e.target) && e.target !== input) {
+                    closePicker();
+                }
+            });
+
+            const getSelectedDateFromInput = () => {
+                const val = input.value.trim();
+                if (!val) return null;
+                const parts = val.split('.');
+                if (parts.length !== 3) return null;
+                let day = parseInt(parts[0], 10);
+                let month = parseInt(parts[1], 10) - 1;
+                let year = parseInt(parts[2], 10);
+                if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+                const date = new Date(year, month, day);
+                if (isNaN(date.getTime())) return null;
+                date.setHours(0, 0, 0, 0);
+                return date;
+            };
+
+            let initialDate = new Date();
+            const selected = getSelectedDateFromInput();
+            if (selected) initialDate = selected;
+            container._render = render;
+            render(initialDate, selected);
+            return container;
+        };
+
+        const closePicker = () => {
+            if (closeTimeout) clearTimeout(closeTimeout);
+            if (picker) {
+                picker.style.display = 'none';
+                picker.classList.remove('visible');
+                isVisible = false;
+            }
+            if (scrollCleanup) {
+                scrollCleanup();
+                scrollCleanup = null;
+            }
+        };
+
+        const openPicker = () => {
+            if (!picker) picker = createPicker();
+            const rect = input.getBoundingClientRect();
+            picker.style.display = 'flex';
+            picker.style.position = 'absolute';
+            picker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+            picker.style.left = (rect.left + window.scrollX) + 'px';
+            picker.style.zIndex = '9999';
+            if (window.innerWidth < 480) {
+                picker.style.left = '50%';
+                picker.style.transform = 'translateX(-50%)';
+            } else {
+                picker.style.transform = '';
+            }
+            picker.classList.add('visible');
+            isVisible = true;
+
+            const scrollableParents = [];
+            let parent = input.parentElement;
+            while (parent) {
+                const style = window.getComputedStyle(parent);
+                if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                    scrollableParents.push(parent);
+                }
+                parent = parent.parentElement;
+            }
+
+            const handlers = [];
+            const windowHandler = () => { if (isVisible) closePicker(); };
+            window.addEventListener('scroll', windowHandler, { passive: true });
+            handlers.push({ element: window, handler: windowHandler });
+
+            scrollableParents.forEach(parent => {
+                const handler = () => { if (isVisible) closePicker(); };
+                parent.addEventListener('scroll', handler, { passive: true });
+                handlers.push({ element: parent, handler: handler });
+            });
+
+            scrollCleanup = () => {
+                handlers.forEach(({ element, handler }) => {
+                    element.removeEventListener('scroll', handler);
+                });
+                handlers.length = 0;
+            };
+        };
+
+        // ========== ОБРАБОТКА ВВОДА (гарантированная маска) ==========
+        input.addEventListener('input', function() {
+            // 1. МАСКА – всегда применяется
+            let digits = this.value.replace(/\D/g, '');
+            if (digits.length > 8) digits = digits.slice(0, 8);
+            let masked = '';
+            for (let i = 0; i < digits.length; i++) {
+                if (i === 2 || i === 4) masked += '.';
+                masked += digits[i];
+            }
+            // Если значение изменилось – обновляем поле
+            if (this.value !== masked) {
+                this.value = masked;
+                // Ставим курсор в конец
+                this.setSelectionRange(masked.length, masked.length);
+                // Триггерим событие для синхронизации (но чтобы избежать цикла, не вызываем повторно input)
+                // Мы продолжим выполнение с обновлённым значением.
+                // Важно: после изменения this.value нужно перечитать digits для дальнейшей логики.
+                digits = masked.replace(/\D/g, '');
+            }
+
+            // 2. АВТОДОПОЛНЕНИЕ ГОДА (если введено 6 цифр и не удаление)
+            // Определяем, было ли удаление: сравниваем длину текущей строки с предыдущей
+            const prevLen = this._prevLen || 0;
+            const isDeleting = digits.length < prevLen;
+            this._prevLen = digits.length;
+
+            if (digits.length === 6 && !isDeleting) {
+                const day = digits.slice(0, 2);
+                const month = digits.slice(2, 4);
+                const yearShort = digits.slice(4, 6);
+                const fullYear = new Date().getFullYear();
+                const century = Math.floor(fullYear / 100) * 100;
+                let yearFull = century + parseInt(yearShort, 10);
+                if (yearFull < fullYear - 80) yearFull += 100;
+                const dateObj = new Date(yearFull, parseInt(month, 10) - 1, parseInt(day, 10));
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dateObj >= today) {
+                    const newFormatted = `${day}.${month}.${yearFull}`;
+                    this.value = newFormatted;
+                    this.setSelectionRange(newFormatted.length, newFormatted.length);
+                    // Обновляем digits для синхронизации
+                    digits = newFormatted.replace(/\D/g, '');
+                    // Обновляем _prevLen
+                    this._prevLen = digits.length;
+                }
+            }
+
+            // 3. СИНХРОНИЗАЦИЯ КАЛЕНДАРЯ (если открыт)
+            if (picker && picker._render && isVisible) {
+                const val = this.value.trim();
+                let displayDate = null;
+                let selectedDate = null;
+
+                let day = null, month = null, year = null;
+                const parts = val.split('.');
+                if (parts.length >= 1 && parts[0].length > 0) {
+                    day = parseInt(parts[0], 10);
+                }
+                if (parts.length >= 2 && parts[1].length > 0) {
+                    month = parseInt(parts[1], 10) - 1;
+                }
+                if (parts.length >= 3 && parts[2].length > 0) {
+                    year = parseInt(parts[2], 10);
+                    if (year < 100) {
+                        const fullYear = new Date().getFullYear();
+                        const century = Math.floor(fullYear / 100) * 100;
+                        let y = century + year;
+                        if (y < fullYear - 80) y += 100;
+                        year = y;
+                    }
+                }
+
+                const now = new Date();
+                const displayDay = (day !== null && !isNaN(day)) ? day : 1;
+                const displayMonth = (month !== null && !isNaN(month)) ? month : now.getMonth();
+                const displayYear = (year !== null && !isNaN(year)) ? year : now.getFullYear();
+
+                displayDate = new Date(displayYear, displayMonth, 1);
+
+                // Подсветка: если есть день
+                if (day !== null && !isNaN(day)) {
+                    const yearForDate = (year !== null && !isNaN(year)) ? year : now.getFullYear();
+                    const monthForDate = (month !== null && !isNaN(month)) ? month : now.getMonth();
+                    const testDate = new Date(yearForDate, monthForDate, day);
+                    if (!isNaN(testDate.getTime())) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (testDate >= today) {
+                            selectedDate = new Date(yearForDate, monthForDate, day);
+                            selectedDate.setHours(0, 0, 0, 0);
+                        }
+                    }
+                }
+
+                if (val.length === 0) {
+                    displayDate = new Date();
+                    selectedDate = null;
+                }
+
+                if (displayDate) {
+                    picker._render(displayDate, selectedDate);
+                }
+            }
+
+            // 4. Закрытие при полной дате
+            if (this.value.length === 10 && picker && isVisible) {
+                setTimeout(closePicker, 20);
+            }
+        });
+
+        // === ЗАПРЕТ ПРОШЛЫХ ДАТ ПРИ ПОТЕРЕ ФОКУСА ===
+        input.addEventListener('blur', function() {
+            const val = this.value.trim();
+            if (!val) return;
+            const parts = val.split('.');
+            if (parts.length !== 3) return;
+            let day = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10) - 1;
+            let year = parseInt(parts[2], 10);
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return;
+            const dateObj = new Date(year, month, day);
+            if (isNaN(dateObj.getTime())) return;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (dateObj < today) {
+                const todayFormatted = DateInputHelper._formatDate(today);
+                this.value = todayFormatted;
+                this.dispatchEvent(new Event('input', { bubbles: true }));
+                if (typeof onSelect === 'function') onSelect(today, todayFormatted);
+                if (picker && picker._render) picker._render(today, today);
+            }
+        });
+
+        // === ОТКРЫТИЕ ПО ФОКУСУ / КЛИКУ ===
+        input.addEventListener('focus', function() {
+            if (this.value) {
+                const parsed = DateInputHelper._parseDisplayDate(this.value);
+                if (parsed) {
+                    parsed.setHours(0, 0, 0, 0);
+                    if (picker && picker._render) picker._render(parsed, parsed);
+                }
+            }
+            openPicker();
+        });
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!isVisible) openPicker();
+        });
+
+        // === ЗАКРЫТИЕ ПРИ ПОТЕРЕ ФОКУСА (с задержкой) ===
+        input.addEventListener('blur', function(e) {
+            const related = e.relatedTarget;
+            if (related && picker && picker.contains(related)) return;
+            closeTimeout = setTimeout(() => {
+                if (picker && !picker.contains(document.activeElement)) {
+                    closePicker();
+                }
+            }, 150);
+        });
+
+        input._datePicker = picker;
+        input._cleanupDatePicker = () => {
+            closePicker();
+            if (scrollCleanup) scrollCleanup();
+        };
+    },
+
+    _formatDate: function(date) {
+        const d = String(date.getDate()).padStart(2, '0');
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${d}.${m}.${date.getFullYear()}`;
+    },
+
+    _parseDisplayDate: function(value) {
+        if (!value) return null;
+        const parts = value.split('.');
+        if (parts.length !== 3) return null;
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+        const date = new Date(y, m, d);
+        return (date.getFullYear() === y && date.getMonth() === m && date.getDate() === d) ? date : null;
+    }
+};

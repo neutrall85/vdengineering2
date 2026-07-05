@@ -1712,6 +1712,7 @@ body.app-ready>footer {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
 }
 
 .iframe-borderless {
@@ -1961,7 +1962,7 @@ body.app-ready>footer {
 }
 
 fieldset.radio-group-fieldset {
-    border: none !important;
+    border: none;
     padding: 0;
     margin: 0;
     min-width: 0;
@@ -2155,11 +2156,152 @@ fieldset.radio-group-fieldset > legend.form-label {
   text-decoration: none;
 }
 
+/* ===== Календарь для поля даты ===== */
+.date-picker {
+  display: none;
+  position: absolute;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  padding: 16px;
+  width: 260px;
+  font-family: 'Montserrat', sans-serif;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+.date-picker.visible {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.date-picker.centered {
+  left: 50%;
+  transform: translateX(-50%);
+}
+.date-picker .date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+.date-picker .date-picker-nav {
+  display: flex;
+  gap: 6px;
+}
+.date-picker .date-picker-nav button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 6px;
+  color: #004e96;
+  line-height: 1;
+}
+.date-picker .date-picker-nav button:hover {
+  color: #003366;
+}
+.date-picker .date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.date-picker .date-picker-grid .day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+  padding: 6px 0;
+}
+.date-picker .date-picker-grid .day-cell {
+  text-align: center;
+  padding: 8px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+  color: #333;
+}
+.date-picker .date-picker-grid .day-cell:hover {
+  background: #f0f4ff;
+}
+.date-picker .date-picker-grid .day-cell.today {
+  font-weight: 700;
+  color: #004e96;
+}
+.date-picker .date-picker-grid .day-cell.selected {
+  background: #004e96;
+  color: #fff;
+}
+.date-picker .date-picker-grid .day-cell.empty {
+  cursor: default;
+}
+
+.date-picker select {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 14px;
+    font-family: inherit;
+    margin: 0 2px;
+}
+.date-picker .date-picker-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.date-picker .date-picker-nav button {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 6px;
+    color: #004e96;
+    line-height: 1;
+}
+.date-picker .date-picker-nav button:hover {
+    color: #002f5f;
+}
+
 
 /* ==================== ФОРМЫ ==================== */
 .form-group {
   position: relative;
   margin-bottom: 1rem;
+}
+
+.form-required-note {
+  color: var(--error-color);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-group-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.form-group-col {
+  flex: 1;
+  min-width: 180px;
+}
+@media (max-width: 768px) {
+  .form-group-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .form-group-col {
+    min-width: 100%;
+    flex: none;
+  }
 }
 
 .spinner {
@@ -5928,7 +6070,33 @@ img.loading + .image-placeholder {
 }
 
 #mapContainer {
-  min-height: 350px;
-  background: #f0f4f8;
+  position: relative;          /* для позиционирования картинки */
+  width: 100%;
+  height: 350px;              /* фиксированная высота на десктопе */
   border-radius: 12px;
+  overflow: hidden;
+  background: #f0f4f8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ====== КАРТИНКА ВНУТРИ ====== */
+#mapContainer img.static-map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;          /* картинка заполняет контейнер, сохраняя пропорции */
+  display: block;
+  cursor: pointer;
+  border-radius: inherit;    /* наследует скругление от контейнера */
+}
+
+/* ====== АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ ====== */
+@media (max-width: 768px) {
+  #mapContainer {
+    height: auto;             /* отключаем фиксированную высоту */
+    aspect-ratio: 16 / 9;    /* задаём пропорции – можно менять под свои нужды */
+    min-height: 200px;       /* чтобы карта не была слишком маленькой */
+  }
 }

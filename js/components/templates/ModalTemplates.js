@@ -14,6 +14,7 @@ const ModalTemplates = {
     </button>
     <div class="modal-header">
       <h2 class="modal-title" id="modalTitle">Запрос коммерческого предложения</h2>
+      <p class="form-required-note">Поля, отмеченные звездочкой (*), обязательны для заполнения</p>
     </div>
     <div class="modal-body">
       <div class="rate-limit-warning" id="rateLimitWarning">
@@ -40,8 +41,8 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="email">Электронная почта <span class="required">*</span></label>
-          <input type="email" class="form-input" id="email" name="email" placeholder="ваш.email@company.com" required maxlength="255" autocomplete="email">
+          <label class="form-label" for="proposalEmail">Электронная почта <span class="required">*</span></label>
+          <input type="email" class="form-input" id="proposalEmail" name="email" placeholder="ваш.email@company.com" required maxlength="255" autocomplete="email">
           <p class="error-message" id="emailError">Пожалуйста, введите корректный email</p>
         </div>
 
@@ -64,6 +65,31 @@ const ModalTemplates = {
           <label class="form-label" for="serviceType">Требуемая услуга <span class="required">*</span></label>
           <input type="text" class="form-input" id="serviceType" name="serviceType" placeholder="Введите тип услуги (например, модификация систем управления)" required minlength="2" maxlength="100" autocomplete="off">
           <p class="error-message" id="serviceTypeError">Пожалуйста, выберите тип услуги</p>
+        </div>
+
+                <div class="form-group-row">
+          <div class="form-group-col">
+            <label class="form-label" for="requestCategory">Категория запроса <span class="required">*</span></label>
+            <select class="form-select" id="requestCategory" name="requestCategory" required>
+              <option value="">Выберите категорию</option>
+              <option value="AOG">AOG</option>
+              <option value="NORM">NORM</option>
+              <option value="CRIT">CRIT</option>
+            </select>
+            <p class="error-message" id="requestCategoryError">Пожалуйста, выберите категорию запроса</p>
+          </div>
+          <div class="form-group-col">
+            <div class="form-group">
+              <label class="form-label" for="desiredDate">Планируемая дата получения КП <span class="required">*</span></label>
+              <input type="text" class="form-input" id="desiredDate" name="desiredDate" placeholder="ДД.ММ.ГГГГ" required pattern="\\d{2}\\.\\d{2}\\.\\d{4}" maxlength="10" autocomplete="off" data-pattern-error="Введите дату в формате ДД.ММ.ГГГГ">
+              <p class="error-message" id="desiredDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="desiredApprovalDate">Планируемая дата одобрения</label>
+              <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" required pattern="\\d{2}\\.\\d{2}\\.\\d{4}" maxlength="10" autocomplete="off" data-pattern-error="Введите дату в формате ДД.ММ.ГГГГ">
+              <p class="error-message" id="desiredApprovalDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -115,6 +141,7 @@ const ModalTemplates = {
     <div class="modal-header">
       <h2 class="modal-title" id="universalApplicationModalTitle">Отклик на вакансию</h2>
       <p class="modal-subtitle" id="universalApplicationModalSubtitle">Заполните форму ниже, и мы рассмотрим вашу кандидатуру</p>
+      <p class="form-required-note">Поля, отмеченные звездочкой (*), обязательны для заполнения</p>
     </div>
     <div class="modal-body">
       <div class="rate-limit-warning" id="universalRateLimitWarning">
@@ -135,8 +162,8 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="email">Адрес e-mail <span class="required">*</span></label>
-          <input type="email" class="form-input" id="email" name="email" placeholder="ваш.email@example.com" required maxlength="255" autocomplete="email">
+          <label class="form-label" for="universalEmail">Адрес e-mail <span class="required">*</span></label>
+          <input type="email" class="form-input" id="universalEmail" name="email" placeholder="ваш.email@example.com" required maxlength="255" autocomplete="email">
           <p class="error-message" id="emailError">Пожалуйста, введите корректный email</p>
         </div>
 
@@ -196,7 +223,6 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    // ========== НОВАЯ МОДАЛКА ОБРАТНОЙ СВЯЗИ ==========
 feedbackModal: `
 <!-- Feedback Modal -->
 <div class="modal-overlay modal-overlay-feedback" id="feedbackModalOverlay" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
@@ -206,6 +232,7 @@ feedbackModal: `
     </button>
     <div class="modal-header">
       <h2 class="modal-title" id="feedbackModalTitle">Обратная связь</h2>
+      <p class="form-required-note">Поля, отмеченные звездочкой (*), обязательны для заполнения</p>
     </div>
     <div class="modal-body">
       <div class="rate-limit-warning" id="feedbackRateLimitWarning">
@@ -277,7 +304,6 @@ feedbackModal: `
           </div>
         </div>
 
-        <!-- ЧЕКБОКС СОГЛАСИЯ -->
         <div class="form-agreement form-agreement-checkbox">
           <label class="checkbox-label">
             <input type="checkbox" id="feedbackConsent" name="consent" value="true" required>

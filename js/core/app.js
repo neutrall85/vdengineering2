@@ -176,6 +176,16 @@ class Application {
         window.feedbackFormManager.init();
         this.services.feedbackFormManager = window.feedbackFormManager;
     }
+
+    const dateInput = document.getElementById('desiredDate');
+    if (dateInput && typeof DateInputHelper !== 'undefined') {
+        DateInputHelper.initDateInput(dateInput);
+    }
+
+    const approvalDateInput = document.getElementById('desiredApprovalDate');
+    if (approvalDateInput && typeof DateInputHelper !== 'undefined') {
+        DateInputHelper.initDateInput(approvalDateInput);
+    }
   }
 
   _registerModules() {

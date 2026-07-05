@@ -66,7 +66,7 @@ const CONFIG = {
   },
   // ===== НОВЫЙ РАЗДЕЛ ДЛЯ КАРТЫ =====
   MAP: {
-    STATIC_URL: 'https://static-maps.yandex.ru/1.x/?ll=37.41917,55.947444&z=17&size=600,350&l=map&pt=37.41917,55.947444,pm2rdm',
+    STATIC_URL: '/assets/images/map-office.webp',
     MAP_PAGE_URL: 'https://yandex.ru/maps/213/moscow/?ll=37.41917%2C55.947444&z=17&pt=37.41917%2C55.947444'
   }
 };
