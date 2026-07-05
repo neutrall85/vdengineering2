@@ -67,16 +67,11 @@ const ModalTemplates = {
           <p class="error-message" id="serviceTypeError">Пожалуйста, выберите тип услуги</p>
         </div>
 
-                <div class="form-group-row">
+        <div class="form-group-row">
           <div class="form-group-col">
-            <label class="form-label" for="requestCategory">Категория запроса <span class="required">*</span></label>
-            <select class="form-select" id="requestCategory" name="requestCategory" required>
-              <option value="">Выберите категорию</option>
-              <option value="AOG">AOG</option>
-              <option value="NORM">NORM</option>
-              <option value="CRIT">CRIT</option>
-            </select>
-            <p class="error-message" id="requestCategoryError">Пожалуйста, выберите категорию запроса</p>
+            <label class="form-label" for="requestCategory">Категория запроса из договора <span class="required">*</span></label>
+            <input type="text" class="form-input" id="requestCategory" name="requestCategory" placeholder="Например, AOG" required minlength="2" maxlength="100">
+            <p class="error-message" id="requestCategoryError">Пожалуйста, введите категорию запроса</p>
           </div>
           <div class="form-group-col">
             <div class="form-group">
