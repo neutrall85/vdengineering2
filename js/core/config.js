@@ -64,10 +64,10 @@ const CONFIG = {
     METRIKA_COUNTER_ID: '110278877',
     MAPS_API_KEY: '4b80a36f-415c-4a3e-a4c1-458070e04049'
   },
-  // ===== НОВЫЙ РАЗДЕЛ ДЛЯ КАРТЫ =====
+  
   MAP: {
     STATIC_URL: '/assets/images/map-office.webp',
-    MAP_PAGE_URL: 'https://yandex.ru/maps/213/moscow/?ll=37.41917%2C55.947444&z=17&pt=37.41917%2C55.947444'
+    MAP_PAGE_URL: 'https://yandex.ru/maps/213/moscow/?ll=37.41917%2C55.947444&z=17&pt=37.41917%2C55.947444&mode=routes&rtext=~55.947444%2C37.41917'
   }
 };
 
