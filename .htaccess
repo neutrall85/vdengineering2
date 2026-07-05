@@ -95,7 +95,7 @@ Options -Indexes -MultiViews
     Header always set Cross-Origin-Opener-Policy "same-origin"
     
     # ---- Content Security Policy ----
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com ; style-src 'self' https://yastatic.net; img-src 'self' https://static-maps.yandex.ru https://cdn.yandex.ru https://mc.yandex.ru https://mc.yandex.com; font-src 'self' https://yastatic.net; connect-src 'self' https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru wss://mc.yandex.com wss://yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com ; style-src 'self' https://yastatic.net; img-src 'self' data: https://cdn.yandex.ru https://mc.yandex.ru https://mc.yandex.com; font-src 'self' https://yastatic.net; connect-src 'self' https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru wss://mc.yandex.com wss://yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; object-src 'none'; base-uri 'self'; form-action 'self';"
     
     # Убираем версию сервера
     Header always unset X-Powered-By
