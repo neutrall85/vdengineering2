@@ -185,7 +185,7 @@ const FormUtils = {
       files.forEach(file => {
         formData.append('fileAttachment[]', file);
       });
-  
+
       let csrfToken = await FormUtils.fetchCsrfToken();
       if (!csrfToken) {
         if (onError) onError('Ошибка безопасности. Обновите страницу.');
@@ -691,6 +691,9 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.ModalFormHandler = ModalFormHandler;
 }
 
+// ============================================================
+// ВОССТАНОВЛЕННЫЙ DateInputHelper (БЕЗ ИНЛАЙН-СТИЛЕЙ)
+// ============================================================
 const DateInputHelper = {
     initDateInput: function(input, options) {
         if (!input || input._datePickerInitialized) return;
@@ -702,11 +705,9 @@ const DateInputHelper = {
         let closeTimeout = null;
         let scrollCleanup = null;
 
-        // ========== СОЗДАНИЕ КАЛЕНДАРЯ ==========
         const createPicker = () => {
             const container = document.createElement('div');
             container.className = 'date-picker';
-            container.style.display = 'none';
 
             const header = document.createElement('div');
             header.className = 'date-picker-header';
@@ -856,7 +857,6 @@ const DateInputHelper = {
         const closePicker = () => {
             if (closeTimeout) clearTimeout(closeTimeout);
             if (picker) {
-                picker.style.display = 'none';
                 picker.classList.remove('visible');
                 isVisible = false;
             }
@@ -869,17 +869,8 @@ const DateInputHelper = {
         const openPicker = () => {
             if (!picker) picker = createPicker();
             const rect = input.getBoundingClientRect();
-            picker.style.display = 'flex';
-            picker.style.position = 'absolute';
-            picker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
-            picker.style.left = (rect.left + window.scrollX) + 'px';
-            picker.style.zIndex = '9999';
-            if (window.innerWidth < 480) {
-                picker.style.left = '50%';
-                picker.style.transform = 'translateX(-50%)';
-            } else {
-                picker.style.transform = '';
-            }
+            picker.style.setProperty('--picker-top', (rect.bottom + window.scrollY + 5) + 'px');
+            picker.style.setProperty('--picker-left', (rect.left + window.scrollX) + 'px');
             picker.classList.add('visible');
             isVisible = true;
 
@@ -912,9 +903,8 @@ const DateInputHelper = {
             };
         };
 
-        // ========== ОБРАБОТКА ВВОДА (гарантированная маска) ==========
+        // Маска ввода
         input.addEventListener('input', function() {
-            // 1. МАСКА – всегда применяется
             let digits = this.value.replace(/\D/g, '');
             if (digits.length > 8) digits = digits.slice(0, 8);
             let masked = '';
@@ -922,19 +912,12 @@ const DateInputHelper = {
                 if (i === 2 || i === 4) masked += '.';
                 masked += digits[i];
             }
-            // Если значение изменилось – обновляем поле
             if (this.value !== masked) {
                 this.value = masked;
-                // Ставим курсор в конец
                 this.setSelectionRange(masked.length, masked.length);
-                // Триггерим событие для синхронизации (но чтобы избежать цикла, не вызываем повторно input)
-                // Мы продолжим выполнение с обновлённым значением.
-                // Важно: после изменения this.value нужно перечитать digits для дальнейшей логики.
                 digits = masked.replace(/\D/g, '');
             }
 
-            // 2. АВТОДОПОЛНЕНИЕ ГОДА (если введено 6 цифр и не удаление)
-            // Определяем, было ли удаление: сравниваем длину текущей строки с предыдущей
             const prevLen = this._prevLen || 0;
             const isDeleting = digits.length < prevLen;
             this._prevLen = digits.length;
@@ -954,27 +937,19 @@ const DateInputHelper = {
                     const newFormatted = `${day}.${month}.${yearFull}`;
                     this.value = newFormatted;
                     this.setSelectionRange(newFormatted.length, newFormatted.length);
-                    // Обновляем digits для синхронизации
                     digits = newFormatted.replace(/\D/g, '');
-                    // Обновляем _prevLen
                     this._prevLen = digits.length;
                 }
             }
 
-            // 3. СИНХРОНИЗАЦИЯ КАЛЕНДАРЯ (если открыт)
             if (picker && picker._render && isVisible) {
                 const val = this.value.trim();
                 let displayDate = null;
                 let selectedDate = null;
-
                 let day = null, month = null, year = null;
                 const parts = val.split('.');
-                if (parts.length >= 1 && parts[0].length > 0) {
-                    day = parseInt(parts[0], 10);
-                }
-                if (parts.length >= 2 && parts[1].length > 0) {
-                    month = parseInt(parts[1], 10) - 1;
-                }
+                if (parts.length >= 1 && parts[0].length > 0) day = parseInt(parts[0], 10);
+                if (parts.length >= 2 && parts[1].length > 0) month = parseInt(parts[1], 10) - 1;
                 if (parts.length >= 3 && parts[2].length > 0) {
                     year = parseInt(parts[2], 10);
                     if (year < 100) {
@@ -985,15 +960,11 @@ const DateInputHelper = {
                         year = y;
                     }
                 }
-
                 const now = new Date();
                 const displayDay = (day !== null && !isNaN(day)) ? day : 1;
                 const displayMonth = (month !== null && !isNaN(month)) ? month : now.getMonth();
                 const displayYear = (year !== null && !isNaN(year)) ? year : now.getFullYear();
-
                 displayDate = new Date(displayYear, displayMonth, 1);
-
-                // Подсветка: если есть день
                 if (day !== null && !isNaN(day)) {
                     const yearForDate = (year !== null && !isNaN(year)) ? year : now.getFullYear();
                     const monthForDate = (month !== null && !isNaN(month)) ? month : now.getMonth();
@@ -1007,24 +978,20 @@ const DateInputHelper = {
                         }
                     }
                 }
-
                 if (val.length === 0) {
                     displayDate = new Date();
                     selectedDate = null;
                 }
-
                 if (displayDate) {
                     picker._render(displayDate, selectedDate);
                 }
             }
 
-            // 4. Закрытие при полной дате
             if (this.value.length === 10 && picker && isVisible) {
                 setTimeout(closePicker, 20);
             }
         });
 
-        // === ЗАПРЕТ ПРОШЛЫХ ДАТ ПРИ ПОТЕРЕ ФОКУСА ===
         input.addEventListener('blur', function() {
             const val = this.value.trim();
             if (!val) return;
@@ -1047,7 +1014,6 @@ const DateInputHelper = {
             }
         });
 
-        // === ОТКРЫТИЕ ПО ФОКУСУ / КЛИКУ ===
         input.addEventListener('focus', function() {
             if (this.value) {
                 const parsed = DateInputHelper._parseDisplayDate(this.value);
@@ -1063,7 +1029,6 @@ const DateInputHelper = {
             if (!isVisible) openPicker();
         });
 
-        // === ЗАКРЫТИЕ ПРИ ПОТЕРЕ ФОКУСА (с задержкой) ===
         input.addEventListener('blur', function(e) {
             const related = e.relatedTarget;
             if (related && picker && picker.contains(related)) return;
@@ -1099,3 +1064,8 @@ const DateInputHelper = {
         return (date.getFullYear() === y && date.getMonth() === m && date.getDate() === d) ? date : null;
     }
 };
+
+// Экспортируем в глобальную область
+if (typeof window !== 'undefined') {
+    window.DateInputHelper = DateInputHelper;
+}

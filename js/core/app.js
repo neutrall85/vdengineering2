@@ -1,10 +1,6 @@
 /**
  * Главный файл инициализации приложения
  * ООО "Волга-Днепр Инжиниринг"
- * 
- * Добавлена поддержка глубоких ссылок (hash) для проектов и новостей.
- * Добавлена поддержка query-параметра ?modal=feedback для автоматического открытия модалки.
- * Карта реализована через Яндекс.Карты JavaScript API (интерактивная) или статическое изображение.
  */
 class Application {
   constructor() {
@@ -82,19 +78,15 @@ class Application {
           this._handleHashScroll();
           this._initScrollProgressBar();
           this._initHashListener();
-
-          // ===== НОВЫЙ ВЫЗОВ ДЛЯ КАРТЫ =====
           this._initMapLoader();
   
           setTimeout(() => {
               this._openModalFromHash();
           }, 300);
   
-          // ========== НОВЫЙ ОБРАБОТЧИК ДЛЯ ПЕРЕРЕНДЕРИНГА ПРИ АКТИВАЦИИ ВКЛАДКИ ==========
           if (!this._visibilityHandlerAdded) {
               document.addEventListener('visibilitychange', () => {
                   if (!document.hidden) {
-                      // Перерендерим новости
                       if (window.newsManager) {
                           const activeTab = document.querySelector('.news-tab.active');
                           if (activeTab) {
@@ -107,19 +99,16 @@ class Application {
                               }
                           }
                       }
-                      // Перерендерим проекты
                       if (window._projectsPageInitialized && window._projectsPageHandlers?.renderer) {
                           const grid = document.querySelector('.projects-grid');
                           if (grid) {
                               window._projectsPageHandlers.renderer.render(grid);
                           }
                       }
-                      // При необходимости добавить для услуг
                   }
               });
               this._visibilityHandlerAdded = true;
           }
-          // ===================================================================
   
           this.initialized = true;
           if (this.errors.length > 0) {
@@ -154,7 +143,6 @@ class Application {
       Logger.WARN('UniversalApplicationModalManager not available');
     }
 
-    // ========== НОВЫЙ МЕНЕДЖЕР ДЛЯ FEEDBACK ==========
     const feedbackForm = document.getElementById('feedbackForm');
     if (feedbackForm) {
         const rateLimiter = new Utils.RateLimiter(window.Services.storage);
@@ -177,11 +165,11 @@ class Application {
         this.services.feedbackFormManager = window.feedbackFormManager;
     }
 
+    // ===== ВОССТАНАВЛИВАЕМ КАЛЕНДАРЬ =====
     const dateInput = document.getElementById('desiredDate');
     if (dateInput && typeof DateInputHelper !== 'undefined') {
         DateInputHelper.initDateInput(dateInput);
     }
-
     const approvalDateInput = document.getElementById('desiredApprovalDate');
     if (approvalDateInput && typeof DateInputHelper !== 'undefined') {
         DateInputHelper.initDateInput(approvalDateInput);
@@ -302,24 +290,8 @@ class Application {
       }
     };
 
-    // ===== ИСПРАВЛЕНИЕ: оптимизация изменения высоты textarea =====
-    let textareaResizeRAF = null;
-    this._boundInputHandler = (e) => {
-      if (e.target.tagName === 'TEXTAREA' && e.target.classList.contains('form-textarea')) {
-        if (textareaResizeRAF) {
-          cancelAnimationFrame(textareaResizeRAF);
-        }
-        textareaResizeRAF = requestAnimationFrame(() => {
-          const el = e.target;
-          el.style.height = 'auto';
-          el.style.height = el.scrollHeight + 'px';
-          textareaResizeRAF = null;
-        });
-      }
-    };
-    document.addEventListener('input', this._boundInputHandler);
+    // обработчик для textarea удалён – используем field-sizing
 
-    // ===== ПРЯМОЙ ОБРАБОТЧИК ДЛЯ ССЫЛКИ "НАСТРОЙКИ COOKIE" (ГАРАНТИРОВАННОЕ ПЕРЕКЛЮЧЕНИЕ КАРТЫ) =====
     document.addEventListener('click', (e) => {
         const link = e.target.closest('#cookie-settings-link');
         if (!link) return;
@@ -458,18 +430,6 @@ class Application {
     this._prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (this._prefersReducedMotion.matches) {
       document.body.classList.add('reduced-motion');
-      const style = document.createElement('style');
-      style.textContent = `
-        .reduced-motion *,
-        .reduced-motion *::before,
-        .reduced-motion *::after {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }
-      `;
-      document.head.appendChild(style);
     }
     this._boundMotionChangeHandler = (e) => {
       if (e.matches) {
@@ -666,10 +626,6 @@ class Application {
     if (this.imageObserver) {
       this.imageObserver.disconnect();
       this.imageObserver = null;
-    }
-    if (this._boundInputHandler) {
-      document.removeEventListener('input', this._boundInputHandler);
-      this._boundInputHandler = null;
     }
     this._destroyScrollProgressBar();
 

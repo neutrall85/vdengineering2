@@ -76,12 +76,12 @@ const ModalTemplates = {
           <div class="form-group-col">
             <div class="form-group">
               <label class="form-label" for="desiredDate">Планируемая дата получения КП <span class="required">*</span></label>
-              <input type="text" class="form-input" id="desiredDate" name="desiredDate" placeholder="ДД.ММ.ГГГГ" required pattern="\\d{2}\\.\\d{2}\\.\\d{4}" maxlength="10" autocomplete="off" data-pattern-error="Введите дату в формате ДД.ММ.ГГГГ">
+              <input type="text" class="form-input" id="desiredDate" name="desiredDate" placeholder="ДД.ММ.ГГГГ" required maxlength="10" autocomplete="off">
               <p class="error-message" id="desiredDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
             <div class="form-group">
               <label class="form-label" for="desiredApprovalDate">Планируемая дата одобрения</label>
-              <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" required pattern="\\d{2}\\.\\d{2}\\.\\d{4}" maxlength="10" autocomplete="off" data-pattern-error="Введите дату в формате ДД.ММ.ГГГГ">
+              <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" required maxlength="10" autocomplete="off">
               <p class="error-message" id="desiredApprovalDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
           </div>

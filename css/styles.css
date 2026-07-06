@@ -2160,6 +2160,8 @@ fieldset.radio-group-fieldset > legend.form-label {
 .date-picker {
   display: none;
   position: absolute;
+  top: var(--picker-top, auto);
+  left: var(--picker-left, auto);
   z-index: 9999;
   background: #ffffff;
   border: 1px solid #e0e0e0;
@@ -2168,13 +2170,21 @@ fieldset.radio-group-fieldset > legend.form-label {
   padding: 16px;
   width: 260px;
   font-family: 'Montserrat', sans-serif;
-  touch-action: manipulation;
   box-sizing: border-box;
 }
+
 .date-picker.visible {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Мобильное центрирование */
+@media (max-width: 480px) {
+  .date-picker.visible {
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 .date-picker.centered {
   left: 50%;
@@ -6099,4 +6109,37 @@ img.loading + .image-placeholder {
     aspect-ratio: 16 / 9;    /* задаём пропорции – можно менять под свои нужды */
     min-height: 200px;       /* чтобы карта не была слишком маленькой */
   }
+}
+
+/* ===== REDUCED MOTION (вместо динамического <style>) ===== */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms;
+  animation-iteration-count: 1;
+  transition-duration: 0.01ms;
+  scroll-behavior: auto;
+}
+
+/* ===== АВТО-ВЫСОТА TEXTAREA (через field-sizing) ===== */
+.form-textarea {
+  field-sizing: content;
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* ===== АНИМАЦИЯ СИМВОЛОВ (без transitionDelay) ===== */
+.char {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  display: inline-block;
+}
+.char.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.char-space {
+  display: inline-block;
+  width: 0.25em;
 }

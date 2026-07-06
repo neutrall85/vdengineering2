@@ -87,6 +87,7 @@ class AnimationManager {
     });
   }
 
+  // ИЗМЕНЕНИЕ: переписан метод _processTextReveal – без инлайн-стилей, через классы и таймер
   _processTextReveal(element) {
     if (element.dataset.revealProcessed) return;
     element.dataset.revealProcessed = 'true';
@@ -95,7 +96,7 @@ class AnimationManager {
     if (!originalText.trim()) return;
     
     const fragment = document.createDocumentFragment();
-    let letterIndex = 0;
+    const charSpans = [];
     
     for (let i = 0; i < originalText.length; i++) {
       const ch = originalText[i];
@@ -108,14 +109,24 @@ class AnimationManager {
         const span = document.createElement('span');
         span.className = 'char';
         span.textContent = ch;
-        span.style.transitionDelay = `${letterIndex * 0.03}s`;
         fragment.appendChild(span);
-        letterIndex++;
+        charSpans.push(span);
       }
     }
     
     element.innerHTML = '';
     element.appendChild(fragment);
+    
+    // Последовательно добавляем класс .visible к каждому символу с задержкой 30ms
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index >= charSpans.length) {
+        clearInterval(interval);
+        return;
+      }
+      charSpans[index].classList.add('visible');
+      index++;
+    }, 30);
   }
 
   _initCounters() {
