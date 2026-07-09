@@ -19,7 +19,6 @@ function loadEnv($path) {
         $name  = trim($name);
         $value = trim($value);
         
-        // Убираем обрамляющие кавычки
         if (strlen($value) >= 2) {
             $first = $value[0];
             $last  = $value[strlen($value) - 1];
@@ -28,7 +27,6 @@ function loadEnv($path) {
             }
         }
         
-        // [FIX] Заполняем все три источника для максимальной совместимости
         if ($name !== '') {
             if (function_exists('putenv')) {
                 @putenv("$name=$value");
@@ -40,14 +38,14 @@ function loadEnv($path) {
     return true;
 }
 
-// Пути поиска .env (добавлен путь вне public_html)
 $docRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
 $basePath = dirname($docRoot);
 
 $possiblePaths = [
-    $basePath . '/.env',       // /home/n/neutrall85/.env (Рекомендуется)
-    __DIR__ . '/../.env',      // Родительская папка от api/
-    __DIR__ . '/.env',         // Текущая папка
+    $basePath . '/.env',
+    __DIR__ . '/../.env',
+    __DIR__ . '/.env',
+    dirname(__DIR__, 2) . '/www/.env',
 ];
 
 $envLoaded = false;
@@ -60,22 +58,13 @@ foreach ($possiblePaths as $path) {
     }
 }
 
-// [FIX] Единая функция логирования (если Logger ещё не инициализирован — в error_log)
-$envLog = static function (string $level, string $msg, array $ctx = []) {
-    if (class_exists('Logger') && method_exists('Logger', strtolower($level))) {
-        Logger::$level($msg, $ctx);
-    } else {
-        error_log("[$level] $msg" . ($ctx ? ' ' . json_encode($ctx, JSON_UNESCAPED_UNICODE) : ''));
-    }
-};
-
+// Используем error_log, а не Logger
 if (!$envLoaded) {
-    $envLog('warning', '.env file not found', ['searched' => $possiblePaths]);
+    error_log("[WARNING] .env file not found, searched: " . json_encode($possiblePaths));
 } else {
-    $envLog('debug', '.env loaded', ['path' => $loadedFrom]);
+    error_log("[DEBUG] .env loaded from: $loadedFrom");
 }
 
-// Проверка обязательных переменных
 $requiredVars = ['SMTP_USER', 'SMTP_PASS'];
 $missing = [];
 foreach ($requiredVars as $var) {
@@ -87,7 +76,6 @@ foreach ($requiredVars as $var) {
         }
     }
 }
-
 if (!empty($missing)) {
-    $envLog('warning', 'Missing required env variables', ['missing' => $missing]);
+    error_log("[WARNING] Missing required env variables: " . json_encode($missing));
 }

@@ -148,7 +148,7 @@ const FormUtils = {
     }
   },
 
-  async submitForm(form, options = {}, files = []) {
+    async submitForm(form, options = {}, files = []) {
     const { onSuccess, onError, onFinally } = options;
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn?.textContent || 'Отправить';
@@ -186,9 +186,43 @@ const FormUtils = {
         formData.append('fileAttachment[]', file);
       });
 
+      // ===== НОВАЯ ПРОВЕРКА ДАТ =====
+      const dateReceived = formData.get('desiredDate');
+      const dateApproval = formData.get('desiredApprovalDate');
+
+      if (dateReceived && dateApproval) {
+        // Функция парсинга ДД.ММ.ГГГГ в Date
+        const parseDate = (str) => {
+          if (!str) return null;
+          const parts = str.split('.');
+          if (parts.length !== 3) return null;
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const year = parseInt(parts[2], 10);
+          if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+          return new Date(year, month, day);
+        };
+
+        const receivedDate = parseDate(dateReceived);
+        const approvalDate = parseDate(dateApproval);
+
+        if (receivedDate && approvalDate && approvalDate < receivedDate) {
+          const errorMsg = 'Дата одобрения не может быть раньше даты получения КП.';
+          if (onError) onError(errorMsg);
+          _resetSubmitState(submitBtn, originalText);
+          isSubmitting = false;
+          clearTimeout(timeoutId);
+          return;
+        }
+      }
+      // =============================
+
       let csrfToken = await FormUtils.fetchCsrfToken();
       if (!csrfToken) {
         if (onError) onError('Ошибка безопасности. Обновите страницу.');
+        _resetSubmitState(submitBtn, originalText);
+        isSubmitting = false;
+        clearTimeout(timeoutId);
         return;
       }
       formData.append('csrf_token', csrfToken);
@@ -205,12 +239,18 @@ const FormUtils = {
       } catch (e) {
         Logger.ERROR('Сервер вернул не JSON:', text.substring(0, 200));
         if (onError) onError('Ошибка на сервере. Проверьте логи.');
+        _resetSubmitState(submitBtn, originalText);
+        isSubmitting = false;
+        clearTimeout(timeoutId);
         return;
       }
   
       if (!response.ok) {
         const msg = result.error || result.errors?.join(', ') || 'Ошибка сервера';
         if (onError) onError(msg);
+        _resetSubmitState(submitBtn, originalText);
+        isSubmitting = false;
+        clearTimeout(timeoutId);
         return;
       }
   
@@ -539,12 +579,13 @@ class ModalFormHandler {
       return;
     }
 
-    // ===== ИСПРАВЛЕНИЕ: отключаем валидацию на input =====
+    // Инициализация валидации (с отключённой валидацией на input)
     this.validatorInstance = FormUtils.initValidation(this.form, {
       ...this.messages,
-      validateOnInput: false   // <-- ОТКЛЮЧАЕМ ВАЛИДАЦИЮ ПРИ ВВОДЕ
+      validateOnInput: false
     });
 
+    // Инициализация загрузки файлов
     const fileDrop = this.form.querySelector(this.fileDropSelector);
     if (fileDrop) {
       this.fileUpload = FormUtils.initFileUpload(fileDrop, null, {
@@ -555,29 +596,142 @@ class ModalFormHandler {
         this.fileUpload.renderFileList();
       }
     }
+
+    // Подписка на событие form:valid
     this._boundSubmitHandler = (e) => this._handleSubmit(e);
     this.form.addEventListener('form:valid', this._boundSubmitHandler);
+
+    // Автопрефикс для телефона
     const phoneInput = this.form.querySelector('input[type="tel"]');
     if (phoneInput && window.Utils?.PhoneUtils) {
       window.Utils.PhoneUtils.setupAutoPrefix(phoneInput);
     }
+
+    // CSRF-токен
     const csrfInput = this.form.querySelector('input[name="csrf_token"]');
     if (csrfInput && window.CONFIG?.CSRF_TOKEN) {
       csrfInput.value = window.CONFIG.CSRF_TOKEN;
     }
+
+    // Инициализация чекбоксов согласия и кнопки отправки
     this._initConsentCheckboxes();
+
+    // ===== НОВАЯ ИНИЦИАЛИЗАЦИЯ ПРОВЕРКИ ДАТ =====
+    this._initDateValidation();
 
     this._initialized = true;
   }
 
+  // ===== НОВЫЙ МЕТОД: проверка порядка дат =====
+    _initDateValidation() {
+    const dateReceived = this.form.querySelector('#desiredDate');
+    const dateApproval = this.form.querySelector('#desiredApprovalDate');
+    const errorEl = this.form.querySelector('#dateOrderError');
+    const submitBtn = this.form.querySelector('button[type="submit"]');
+
+    if (!dateReceived || !dateApproval || !errorEl) return;
+
+    // Используем функцию парсинга из DateInputHelper (если она доступна)
+    // Или создаём свою, аналогичную
+    const parseDate = (str) => {
+      if (!str) return null;
+      // Если есть DateInputHelper – используем его
+      if (typeof DateInputHelper !== 'undefined' && DateInputHelper._parseDisplayDate) {
+        return DateInputHelper._parseDisplayDate(str);
+      }
+      // Фолбэк
+      const parts = str.split('.');
+      if (parts.length !== 3) return null;
+      let day = parseInt(parts[0], 10);
+      let month = parseInt(parts[1], 10) - 1;
+      let year = parseInt(parts[2], 10);
+      if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+      // Преобразуем короткий год
+      if (year < 100) {
+        const fullYear = new Date().getFullYear();
+        const century = Math.floor(fullYear / 100) * 100;
+        let y = century + year;
+        if (y < fullYear - 80) y += 100;
+        year = y;
+      }
+      const d = new Date(year, month, day);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
+    const validateDates = () => {
+      const receivedVal = dateReceived.value.trim();
+      const approvalVal = dateApproval.value.trim();
+
+      // Если поле одобрения пустое – скрываем ошибку
+      if (!approvalVal) {
+        errorEl.classList.remove('show');
+        this._updateSubmitButton();
+        return;
+      }
+
+      const receivedDate = parseDate(receivedVal);
+      const approvalDate = parseDate(approvalVal);
+
+      // Если хотя бы одна дата невалидна – скрываем ошибку (пусть валидатор формы покажет)
+      if (!receivedDate || !approvalDate) {
+        errorEl.classList.remove('show');
+        this._updateSubmitButton();
+        return;
+      }
+
+      // Сравниваем
+      if (approvalDate < receivedDate) {
+        errorEl.textContent = 'Дата одобрения не может быть раньше даты получения КП.';
+        errorEl.classList.add('show');
+      } else {
+        errorEl.classList.remove('show');
+      }
+      this._updateSubmitButton();
+    };
+
+    // Вешаем обработчики
+    dateReceived.addEventListener('input', validateDates);
+    dateReceived.addEventListener('blur', validateDates);
+    dateApproval.addEventListener('input', validateDates);
+    dateApproval.addEventListener('blur', validateDates);
+
+    // Первоначальная проверка
+    validateDates();
+
+    // Сохраняем ссылки для возможной очистки
+    this._dateValidationHandlers = { dateReceived, dateApproval, validateDates };
+  }
+
+  // ===== ОБНОВЛЁННЫЙ МЕТОД ДЛЯ КНОПКИ =====
+  _updateSubmitButton() {
+    const submitBtn = this.form.querySelector('button[type="submit"]');
+    if (!submitBtn) return;
+
+    // Проверяем чекбоксы
+    const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
+    const allChecked = Array.from(requiredCheckboxes).every(cb => cb.checked);
+
+    // Проверяем ошибку дат
+    const errorEl = this.form.querySelector('#dateOrderError');
+    const hasDateError = errorEl ? errorEl.classList.contains('show') : false;
+
+    submitBtn.disabled = !allChecked || hasDateError;
+  }
+
+  // ===== ИСПРАВЛЕННЫЙ МЕТОД ДЛЯ ЧЕКБОКСОВ =====
   _initConsentCheckboxes() {
     const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
     const submitBtn = this.form.querySelector('button[type="submit"]');
     if (!submitBtn) return;
+
     const update = () => {
-      submitBtn.disabled = !Array.from(requiredCheckboxes).every(cb => cb.checked);
+      this._updateSubmitButton();
     };
-    requiredCheckboxes.forEach(cb => cb.addEventListener('change', update));
+
+    requiredCheckboxes.forEach(cb => {
+      cb.addEventListener('change', update);
+      // Также при загрузке – проверяем
+    });
     update();
   }
 

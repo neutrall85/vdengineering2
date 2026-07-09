@@ -13,25 +13,25 @@ header('X-Frame-Options: DENY');
 // ---- Загрузка .env ----
 require_once __DIR__ . '/env_loader.php';
 
-// ---- Корень сайта ----
+// ---- Корень сайта (исправлено для вашего хостинга) ----
 $siteRoot = dirname($_SERVER['DOCUMENT_ROOT']);
 
-// ---- Пути к служебным папкам ----
-define('LOG_DIR',      rtrim($siteRoot, '/\\') . '/logs/');
-define('RATE_DIR',     rtrim($siteRoot, '/\\') . '/data/');
-define('UPLOAD_DIR',   rtrim($siteRoot, '/\\') . '/private_uploads/');
-define('SESSION_DIR',  rtrim($siteRoot, '/\\') . '/sessions/');
+// ---- Пути к служебным папкам (явно задаём абсолютные пути) ----
+define('LOG_DIR', '/var/www/normacode_ru_usr/data/logs/');
+define('RATE_DIR', '/var/www/normacode_ru_usr/data/rate/');
+define('UPLOAD_DIR', '/var/www/normacode_ru_usr/data/private_uploads/');
+define('SESSION_DIR', '/var/www/normacode_ru_usr/data/sessions/');
+
+// Остальные константы (логи по типам)
 define('CONSENT_LOG_DIR',          LOG_DIR . 'consent/');
 define('PERSONAL_CONSENT_LOG_DIR', CONSENT_LOG_DIR . 'personal/');
 define('COOKIE_CONSENT_LOG_DIR',   CONSENT_LOG_DIR . 'cookies/');
 
-// ---- Структура папок для логов ----
 define('LOG_FORMS_DIR',    LOG_DIR . 'forms/');
 define('LOG_ERRORS_DIR',   LOG_DIR . 'errors/');
 define('LOG_ACCESS_DIR',   LOG_DIR . 'access/');
 define('LOG_SMTP_DIR',     LOG_DIR . 'smtp/');
 define('LOG_UPLOADS_DIR',  LOG_DIR . 'uploads/');
-define('CONSENT_LOG_DIR',  LOG_DIR . 'consent/');
 
 // ---- Функция env() ----
 function env(string $key, bool $required = true): ?string {

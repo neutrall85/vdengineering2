@@ -71,7 +71,8 @@ class ResponseBuilder {
             'service'       => 'Тип услуги',
             'task'          => 'Описание задачи',
             'category'      => 'Категория запроса',
-            'desired_date'  => 'Желаемая дата получения КП',
+            'desired_date'  => 'Планируемая дата получения КП',
+            'desired_approval_date' => 'Планируемая дата одобрения',
             'about'         => 'О себе / сопроводительное письмо',
             'vacancy_title' => 'Вакансия',
             'vacancy_id'    => 'ID вакансии',
@@ -81,6 +82,7 @@ class ResponseBuilder {
             if ($k === 'type') continue;
             if (($k === 'vacancy_id' || $k === 'vacancy_title') && $v === '') continue;
             if ($k === 'extension' && $v === '') continue;
+            if ($k === 'desired_approval_date' && $v === '') continue;
 
             $label = $esc($labels[$k] ?? $k);
             if (in_array($k, ['task', 'about'], true)) {
@@ -111,6 +113,7 @@ class ResponseBuilder {
             if ($k === 'type') continue;
             if (($k === 'vacancy_id' || $k === 'vacancy_title') && $v === '') continue;
             if ($k === 'extension' && $v === '') continue;
+            if ($k === 'desired_approval_date' && $v === '') continue;
             $label = $labels[$k] ?? $k;
             $text .= "$label: $v\n";
         }
@@ -170,7 +173,6 @@ class ResponseBuilder {
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Уважаемый(ая), ' . $clientName . ',</p>
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Благодарим Вас за обращение в <strong style="color:#004E96;">' . $companyEsc . '</strong>.</p>
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Ваш запрос на коммерческое предложение направлен специалистам.</p>
-      <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Если вопрос срочный — просто ответьте на это письмо, мы увидим его в первую очередь.</p>
       <p style="margin:20px 0 0; font-size:15px; color:#333; line-height:1.5;">С уважением, команда <strong style="color:#004E96;">' . $companyEsc . '</strong></p>
     </td>
   </tr>
@@ -229,7 +231,7 @@ class ResponseBuilder {
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Уважаемый(ая), ' . $clientName . ',</p>
       ' . $vacancyHtml . '
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Благодарим Вас за интерес к работе в <strong style="color:#004E96;">' . $companyEsc . '</strong>.</p>
-      <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Ваше резюме передано в отдел управления персонала. Если Ваш опыт и компетенции соответствуют требованиям вакансии, мы свяжемся с Вами в течение <strong style="color:#004E96;">5 рабочих дней</strong> для обсуждения дальнейших шагов.</p>
+      <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Ваше резюме передано в отдел управления персонала. Если Ваш опыт и компетенции соответствуют требованиям вакансии, мы свяжемся с Вами в ближайшее время для обсуждения дальнейших шагов.</p>
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Обратите внимание: при большом количестве откликов мы отвечаем только кандидатам, прошедшим первичный отбор. Это не отменяет внимательного рассмотрения каждого резюме.</p>
       <p style="margin:20px 0 0; font-size:15px; color:#333; line-height:1.5;">С уважением,<br>отдел управления персоналом<br><strong style="color:#004E96;">' . $companyEsc . '</strong></p>
     </td>
@@ -248,8 +250,8 @@ class ResponseBuilder {
         $text = "Отклик получен\n\n"
             . "Уважаемый(ая), $clientName,\n\n"
             . $vacancyText
-            . "Благодарим Вас за интерес к работе в $companyRaw.\n\n"
-            . "Ваше резюме передано в отдел управления персонала. Если Ваш опыт и компетенции соответствуют требованиям вакансии, мы свяжемся с Вами в течение 5 рабочих дней для обсуждения дальнейших шагов.\n\n"
+            . "Благодарим Вас  за Ваше желание построить свою карьеру в команде $companyRaw.\n\n"
+            . "Ваше резюме передано в отдел управления персонала. Если Ваш опыт и компетенции соответствуют требованиям вакансии, мы свяжемся с Вами в ближайшее время для обсуждения дальнейших шагов.\n\n"
             . "Обратите внимание: при большом количестве откликов мы отвечаем только кандидатам, прошедшим первичный отбор. Это не отменяет внимательного рассмотрения каждого резюме.\n\n"
             . "С уважением,\nотдел управления персоналом\n$companyRaw";
 
@@ -284,7 +286,7 @@ class ResponseBuilder {
     <td style="padding:25px 30px;">
       <h2 style="margin:0 0 16px; font-size:20px; color:#004E96; font-weight:600;">Резюме получено</h2>
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Уважаемый(ая), ' . $clientName . ',</p>
-      <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Благодарим Вас за интерес к работе в <strong style="color:#004E96;">' . $companyEsc . '</strong>.</p>
+      <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Благодарим за Ваше желание построить свою карьеру в команде <strong style="color:#004E96;">' . $companyEsc . '</strong>.</p>
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Ваше резюме получено и передано в отдел управления персонала. Мы рассмотрим его в рамках актуальных и будущих вакансий компании.</p>
       <p style="margin:0 0 12px; font-size:15px; color:#333; line-height:1.5;">Если Ваш опыт и компетенции будут соответствовать нашим потребностям, мы свяжемся с Вами.</p>
       <p style="margin:20px 0 0; font-size:15px; color:#333; line-height:1.5;">С уважением,<br>отдел управления персоналом<br><strong style="color:#004E96;">' . $companyEsc . '</strong></p>
@@ -303,7 +305,7 @@ class ResponseBuilder {
 
         $text = "Резюме получено\n\n"
             . "Уважаемый(ая), $clientName,\n\n"
-            . "Благодарим Вас за интерес к работе в $companyRaw.\n\n"
+            . "Благодарим за Ваше желание построить свою карьеру в команде $companyRaw.\n\n"
             . "Ваше резюме получено и передано в отдел управления персонала. Мы рассмотрим его в рамках актуальных и будущих вакансий компании.\n\n"
             . "Если Ваш опыт и компетенции будут соответствовать нашим потребностям, мы свяжемся с Вами.\n\n"
             . "С уважением,\nотдел управления персоналом\n$companyRaw";
@@ -373,7 +375,6 @@ class ResponseBuilder {
         return ['subject' => $subject, 'html' => $html, 'text' => $text];
     }
 
-    // ===== ИЗМЕНЁННЫЙ МЕТОД ДЛЯ ADMIN FEEDBACK – добавлен тип отзыва =====
     public static function buildFeedbackAdminEmail(array $data, array $uploaded, callable $esc, callable $nl2brSafe): array {
         $subject = '📩 Обратная связь — ' . ($data['organization'] ?? 'без организации') . ' | ' . ($data['fullName'] ?? '');
 
@@ -397,7 +398,7 @@ class ResponseBuilder {
       <p style="margin:0 0 8px; font-size:14px; color:#333;"><strong style="color:#004E96;">ФИО:</strong> ' . $esc($data['fullName']) . '</p>
       <p style="margin:0 0 8px; font-size:14px; color:#333;"><strong style="color:#004E96;">Организация:</strong> ' . $esc($data['organization']) . '</p>
       <p style="margin:0 0 8px; font-size:14px; color:#333;"><strong style="color:#004E96;">Email:</strong> ' . $esc($data['email']) . '</p>
-      <p style="margin:0 0 8px; font-size:14px; color:#333;"><strong style="color:#004E96;">Тип отзыва:</strong> ' . $esc($data['sentiment'] ?? 'не указан') . '</p>'; // <-- ДОБАВЛЕНО
+      <p style="margin:0 0 8px; font-size:14px; color:#333;"><strong style="color:#004E96;">Тип отзыва:</strong> ' . $esc($data['sentiment'] ?? 'не указан') . '</p>';
         if (!empty($data['message'])) {
             $html .= '<p style="margin:0 0 8px; font-size:14px; color:#333;"><strong style="color:#004E96;">Сообщение:</strong><br>' . $nl2brSafe($data['message']) . '</p>';
         }
@@ -418,7 +419,7 @@ class ResponseBuilder {
         $text .= "ФИО: " . $data['fullName'] . "\n";
         $text .= "Организация: " . $data['organization'] . "\n";
         $text .= "Email: " . $data['email'] . "\n";
-        $text .= "Тип отзыва: " . ($data['sentiment'] ?? 'не указан') . "\n"; // <-- ДОБАВЛЕНО
+        $text .= "Тип отзыва: " . ($data['sentiment'] ?? 'не указан') . "\n";
         if (!empty($data['message'])) $text .= "Сообщение: " . $data['message'] . "\n";
         if ($uploaded) {
             $text .= "\nПриложенные файлы:\n";

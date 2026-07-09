@@ -70,8 +70,8 @@ const ModalTemplates = {
         <div class="form-group-row">
           <div class="form-group-col">
             <label class="form-label" for="requestCategory">Категория запроса из договора <span class="required">*</span></label>
-            <input type="text" class="form-input" id="requestCategory" name="requestCategory" placeholder="Например, AOG" required minlength="2" maxlength="100">
-            <p class="error-message" id="requestCategoryError">Пожалуйста, введите категорию запроса</p>
+            <input type="text" class="form-input" id="requestCategory" name="requestCategory" placeholder="Например, AOG" required maxlength="20" 
+            pattern="[A-Za-zА-Яа-яЁё\s]+" title="Только буквы и пробелы">
           </div>
           <div class="form-group-col">
             <div class="form-group">
@@ -81,9 +81,11 @@ const ModalTemplates = {
             </div>
             <div class="form-group">
               <label class="form-label" for="desiredApprovalDate">Планируемая дата одобрения</label>
-              <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" required maxlength="10" autocomplete="off">
+              <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" maxlength="10" autocomplete="off">
               <p class="error-message" id="desiredApprovalDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
+            <!-- НОВЫЙ ЭЛЕМЕНТ ДЛЯ ОШИБКИ ПОРЯДКА ДАТ -->
+            <p class="error-message" id="dateOrderError">Планируемая дата одобрения не может быть раньше планируемой даты получения КП.</p>
           </div>
         </div>
 
