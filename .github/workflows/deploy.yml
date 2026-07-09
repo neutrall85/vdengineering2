@@ -2,8 +2,8 @@ name: Deploy Project
 
 on:
   push:
-    branches: [ main, master ] # Укажите вашу основную ветку
-  workflow_dispatch: # Позволяет запускать вручную
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -14,17 +14,22 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Deploy to production
+      - name: Deploy to production via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          # Опционально: исключить ненужные папки и файлы
           exclude: |
             **/.git*
-            **/.git*/**
             **/node_modules/**
             README.md
             .env
+            **/*.log
+            **/src/**          # если исходники лежат в src/ – их не надо на сервер
+            **/tests/**
+            package.json
+            package-lock.json
+            build.js
+            .github/
