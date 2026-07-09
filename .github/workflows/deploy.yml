@@ -22,14 +22,15 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           exclude: |
-            **/.git*
-            **/node_modules/**
-            README.md
+            .git/**
+            .github/**
+            node_modules/**
             .env
-            **/*.log
-            **/src/**          # если исходники лежат в src/ – их не надо на сервер
-            **/tests/**
-            package.json
-            package-lock.json
-            build.js
-            .github/
+            *.log
+            .idea/**
+            .vscode/**
+            .ftp-deploy-sync-state.json
+            private_uploads/**          # если не хотите загружать загрузки
+            logs/**
+            sessions/**
+            data/**
