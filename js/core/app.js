@@ -99,17 +99,6 @@ class Application {
                               }
                           }
                       }
-                      // ✅ Перерендер проектов при возвращении на вкладку отключён,
-                      //   потому что он сбрасывает состояние анимации.
-                      //   К тому же ProjectRenderer теперь имеет защиту от повторного рендера.
-                      /*
-                      if (window._projectsPageInitialized && window._projectsPageHandlers?.renderer) {
-                          const grid = document.querySelector('.projects-grid');
-                          if (grid) {
-                              window._projectsPageHandlers.renderer.render(grid);
-                          }
-                      }
-                      */
                   }
               });
               this._visibilityHandlerAdded = true;
@@ -170,7 +159,6 @@ class Application {
         this.services.feedbackFormManager = window.feedbackFormManager;
     }
 
-    // ===== ВОССТАНАВЛИВАЕМ КАЛЕНДАРЬ =====
     const dateInput = document.getElementById('desiredDate');
     if (dateInput && typeof DateInputHelper !== 'undefined') {
         DateInputHelper.initDateInput(dateInput);
@@ -250,7 +238,9 @@ class Application {
         { 
           if (window.feedbackFormManager) feedbackFormManager.resetForm(); 
         } 
-      }
+      },
+      { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
+      { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false } // ДОБАВЛЕНО
     ];
 
     modalsToRegister.forEach(({ key, overlayId, required, onClose, onOpen, focusSelector }) => {
@@ -294,8 +284,6 @@ class Application {
         widget.classList.toggle('active');
       }
     };
-
-    // обработчик для textarea удалён – используем field-sizing
 
     document.addEventListener('click', (e) => {
         const link = e.target.closest('#cookie-settings-link');
@@ -530,10 +518,16 @@ class Application {
       return;
     }
 
+    const decodedId = decodeURIComponent(id);
+
     if (type === 'project') {
-      modalManager.openProjectById(id);
+      modalManager.openProjectById(decodedId);
     } else if (type === 'news') {
-      modalManager.openNewsById(id);
+      modalManager.openNewsById(decodedId);
+    } else if (type === 'category') {
+      modalManager.openCategoryByName(decodedId);
+    } else if (type === 'project-category') { // ДОБАВЛЕНО
+      modalManager.openProjectCategoryByName(decodedId);
     }
   }
 
@@ -725,6 +719,17 @@ function initApp() {
       Logger.ERROR('Ошибка инициализации менеджеров новостей:', err);
     }
   }
+
+  // ========== ДОБАВЛЕНО: Создаём глобальный ProjectRenderer ==========
+  if (typeof PROJECTS_DATA !== 'undefined' && typeof ProjectRenderer !== 'undefined') {
+    try {
+      window.projectRenderer = new ProjectRenderer(PROJECTS_DATA);
+      Logger.INFO('projectRenderer создан глобально');
+    } catch (err) {
+      Logger.ERROR('Ошибка создания projectRenderer:', err);
+    }
+  }
+  // ===============================================================
 
   if (typeof initDocPreviews === 'function') {
     initDocPreviews();

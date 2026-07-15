@@ -1,150 +1,9 @@
 /**
- * ProjectRenderer – рендеринг карточек проектов
+ * Инициализация страницы проектов – без класса ProjectRenderer
  * ООО "Волга-Днепр Инжиниринг"
  */
-class ProjectRenderer {
-  constructor(PROJECTS_DATA) {
-    this.PROJECTS_DATA = {};
-    Object.entries(PROJECTS_DATA).forEach(([id, project]) => {
-      this.PROJECTS_DATA[id] = { ...project, id: id };
-    });
-    this.loaded = false;
-    this.cardStaggerMs = window.CONFIG?.ANIMATION?.CARD_STAGGER_MS || 50;
-    this.imageObserver = null;
-  }
 
-  render(container) {
-    // Защита от повторного рендера – предотвращает сброс анимаций
-    if (this.loaded) return;
-
-    if (!container) {
-      Logger?.WARN('ProjectRenderer: контейнер не найден');
-      return;
-    }
-
-    const projectsList = Object.values(this.PROJECTS_DATA);
-    if (projectsList.length === 0) {
-      container.innerHTML = '<p class="no-projects">Проекты временно недоступны</p>';
-      return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    projectsList.forEach((project, index) => {
-      const card = this._createProjectCard(project, index);
-      fragment.appendChild(card);
-    });
-
-    container.replaceChildren(fragment);
-    this._lazyLoadImages(container);
-
-    if (typeof animationManager !== 'undefined' && animationManager.observeNewElements) {
-      animationManager.observeNewElements(container);
-    } else if (window.animationManager?.observeNewElements) {
-      window.animationManager.observeNewElements(container);
-    }
-
-    this.loaded = true;
-    Logger?.INFO(`ProjectRenderer: отрендерено ${projectsList.length} проектов`);
-  }
-
-  _createProjectCard(project, index) {
-    const sanitizer = window.Utils?.Sanitizer;
-    const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
-    const safeCategory = sanitizer ? sanitizer.escapeHtml(project.category) : project.category;
-    const previewImage = (project.images && project.images[0]) || 'assets/images/placeholder.jpg';
-    const additionalDesc = project.shortDescription
-      ? (sanitizer ? sanitizer.escapeHtml(project.shortDescription) : project.shortDescription)
-      : '';
-
-    const article = document.createElement('article');
-    article.className = 'project-card card animate-on-scroll fade-up';
-    article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
-    article.dataset.modalOpen = 'project';
-    article.dataset.projectId = project.id;
-    article.dataset.once = 'true'; // ✅ предотвращает повторное появление анимации
-
-    const imgContainer = document.createElement('div');
-    imgContainer.className = 'project-image-container';
-    const img = document.createElement('img');
-    img.setAttribute('data-src', previewImage);
-    img.alt = safeTitle;
-    img.classList.add('project-img-cover');
-    if (index < 2) {
-      img.setAttribute('fetchpriority', 'high');
-    }
-    img.decoding = 'async';
-    img.addEventListener('error', () => {
-      img.src = 'assets/images/placeholder.jpg';
-    });
-    imgContainer.appendChild(img);
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'project-content-padding';
-
-    const categorySpan = document.createElement('span');
-    categorySpan.className = 'project-category-badge';
-    categorySpan.textContent = safeCategory;
-
-    const title = document.createElement('h3');
-    title.className = 'card-title';
-    title.textContent = safeTitle;
-
-    let additionalDescElem = null;
-    if (additionalDesc) {
-      additionalDescElem = document.createElement('p');
-      additionalDescElem.className = 'card-desc';
-      additionalDescElem.textContent = additionalDesc;
-    }
-
-    const btn = document.createElement('button');
-    btn.className = 'news-card-link';
-    btn.setAttribute('data-modal-open', 'project');
-    btn.setAttribute('data-project-id', project.id);
-    btn.innerHTML = 'Подробнее <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>';
-
-    contentDiv.appendChild(categorySpan);
-    contentDiv.appendChild(title);
-    if (additionalDescElem) contentDiv.appendChild(additionalDescElem);
-    contentDiv.appendChild(btn);
-
-    article.appendChild(imgContainer);
-    article.appendChild(contentDiv);
-
-    return article;
-  }
-
-  _lazyLoadImages(container) {
-    const images = container.querySelectorAll('.project-card img[data-src]');
-    if (!images.length) return;
-
-    this.imageObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target;
-          const src = img.getAttribute('data-src');
-          if (src && !img.src) {
-            img.src = src;
-            img.removeAttribute('data-src');
-            img.classList.add('loaded');
-          }
-          this.imageObserver.unobserve(img);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: '300px' });
-
-    images.forEach(img => this.imageObserver.observe(img));
-  }
-
-  destroy() {
-    if (this.imageObserver) {
-      this.imageObserver.disconnect();
-      this.imageObserver = null;
-    }
-    this.loaded = false;
-  }
-}
-
-// ========== Инициализация страницы проектов ==========
+// Хранилище для обработчиков
 const _projectsPageHandlers = {
   requestQuoteHandler: null,
   renderer: null
@@ -161,8 +20,8 @@ function initProjectsPage() {
   }
 
   gridContainer.innerHTML = '';
-  if (window.PROJECTS_DATA) {
-    _projectsPageHandlers.renderer = new ProjectRenderer(window.PROJECTS_DATA);
+  if (window.PROJECTS_DATA && typeof window.ProjectRenderer !== 'undefined') {
+    _projectsPageHandlers.renderer = new window.ProjectRenderer(window.PROJECTS_DATA);
     _projectsPageHandlers.renderer.render(gridContainer);
   } else {
     gridContainer.innerHTML = '<p class="no-projects">Данные проектов не загружены</p>';
@@ -181,6 +40,18 @@ function initProjectsPage() {
   }
 
   Logger.INFO('ProjectsPage инициализирована (динамический рендеринг)');
+}
+
+function destroyProjectsPage() {
+  const requestQuoteBtn = document.getElementById('projectsRequestQuoteBtn');
+  if (requestQuoteBtn && _projectsPageHandlers.requestQuoteHandler) {
+    requestQuoteBtn.removeEventListener('click', _projectsPageHandlers.requestQuoteHandler);
+  }
+  if (_projectsPageHandlers.renderer) {
+    _projectsPageHandlers.renderer.destroy();
+    _projectsPageHandlers.renderer = null;
+  }
+  window._projectsPageInitialized = false;
 }
 
 // ========== ГАЛЕРЕЯ ПРОЕКТОВ (с поддержкой свайпа и предзагрузкой) ==========
@@ -536,18 +407,7 @@ function createNavButton(className, ariaLabel, pathData) {
   return btn;
 }
 
-function destroyProjectsPage() {
-  const requestQuoteBtn = document.getElementById('projectsRequestQuoteBtn');
-  if (requestQuoteBtn && _projectsPageHandlers.requestQuoteHandler) {
-    requestQuoteBtn.removeEventListener('click', _projectsPageHandlers.requestQuoteHandler);
-  }
-  if (_projectsPageHandlers.renderer) {
-    _projectsPageHandlers.renderer.destroy();
-    _projectsPageHandlers.renderer = null;
-  }
-  window._projectsPageInitialized = false;
-}
-
+// Экспорт функций в глобальную область
 window.initProjectsPage = initProjectsPage;
 window.destroyProjectsPage = destroyProjectsPage;
 window.initProjectGallery = initProjectGallery;

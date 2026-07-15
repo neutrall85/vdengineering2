@@ -17,7 +17,9 @@ const ComponentLoader = {
         proposalModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.proposalModal : '',
         universalApplicationModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.universalApplicationModal : '',
         successModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.successModal : '',
-        feedbackModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.feedbackModal : ''
+        feedbackModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.feedbackModal : '',
+        categoryNewsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.categoryNewsModal : '',
+        projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : '' // ДОБАВЛЕНО
     },
 
     /**
@@ -119,6 +121,28 @@ const ComponentLoader = {
                 feedbackModalContainer.appendChild(node.cloneNode(true));
             });
             document.body.appendChild(feedbackModalContainer.firstElementChild);
+        }
+
+        // Загрузка модалки категории новостей
+        if (!document.getElementById('categoryNewsModalOverlay')) {
+            const categoryModalContainer = document.createElement('div');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(this.templates.categoryNewsModal, 'text/html');
+            Array.from(doc.body.childNodes).forEach(node => {
+                categoryModalContainer.appendChild(node.cloneNode(true));
+            });
+            document.body.appendChild(categoryModalContainer.firstElementChild);
+        }
+
+        // ========== ДОБАВЛЕНО: Загрузка модалки категории проектов ==========
+        if (!document.getElementById('projectCategoryModalOverlay')) {
+            const projectCategoryContainer = document.createElement('div');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(this.templates.projectCategoryModal, 'text/html');
+            Array.from(doc.body.childNodes).forEach(node => {
+                projectCategoryContainer.appendChild(node.cloneNode(true));
+            });
+            document.body.appendChild(projectCategoryContainer.firstElementChild);
         }
     },
 

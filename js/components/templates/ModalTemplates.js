@@ -24,7 +24,7 @@ const ModalTemplates = {
       <input type="hidden" id="csrfToken" name="csrf_token" value="">
 
       <div class="hp-field">
-        <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">>
+        <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       </div>
 
       <form id="proposalForm" novalidate>
@@ -90,7 +90,6 @@ const ModalTemplates = {
               <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" maxlength="10" autocomplete="off">
               <p class="error-message" id="desiredApprovalDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
-            <!-- НОВЫЙ ЭЛЕМЕНТ ДЛЯ ОШИБКИ ПОРЯДКА ДАТ -->
             <p class="error-message" id="dateOrderError">Планируемая дата одобрения не может быть раньше планируемой даты получения КП.</p>
           </div>
         </div>
@@ -104,7 +103,7 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="fileAttachment">Вложение (опционально)</label>
           <div class="form-file" id="fileDrop">
-            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" aria-label="Прикрепить файл" multiple>
+            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -143,7 +142,7 @@ const ModalTemplates = {
     </button>
     <div class="modal-header">
       <h2 class="modal-title" id="universalApplicationModalTitle">Отклик на вакансию</h2>
-      <p class="modal-subtitle" id="universalApplicationModalSubtitle">Заполните форму ниже, и мы рассмотрим вашу кандидатуру</p>
+      <p class="modal-subtitle" id="universalApplicationModalSubtitle">Заполните форму ниже и мы рассмотрим вашу кандидатуру</p>
       <p class="form-required-note">Поля, отмеченные звездочкой (*), обязательны для заполнения</p>
     </div>
     <div class="modal-body">
@@ -179,7 +178,7 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="fileAttachment">Резюме (файл) <span class="required">*</span></label>
           <div class="form-file" id="universalFileDrop">
-            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" aria-label="Прикрепить файл" required multiple>
+            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" required multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -226,7 +225,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-feedbackModal: `
+    feedbackModal: `
 <!-- Feedback Modal -->
 <div class="modal-overlay modal-overlay-feedback" id="feedbackModalOverlay" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
   <div class="modal-container modal-container-feedback">
@@ -297,7 +296,7 @@ feedbackModal: `
         <div class="form-group">
           <label class="form-label" for="feedbackFileAttachment">Вложение (опционально)</label>
           <div class="form-file" id="feedbackFileDrop">
-            <input type="file" id="feedbackFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" aria-label="Прикрепить файл" multiple>
+            <input type="file" id="feedbackFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -322,6 +321,42 @@ feedbackModal: `
           <span>Отправить</span>
         </button>
       </form>
+    </div>
+  </div>
+</div>`,
+
+    // ========== МОДАЛКА ДЛЯ КАТЕГОРИЙ НОВОСТЕЙ ==========
+    categoryNewsModal: `
+<!-- Category News Modal -->
+<div class="modal-overlay" id="categoryNewsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+  <div class="modal-container" style="max-width: 800px;">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-body" style="padding: 2rem;">
+      <h2 id="categoryModalTitle" style="color: var(--vd); font-weight: 700; margin-bottom: 1.5rem;">Новости категории</h2>
+      <div id="categoryNewsList" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>
+      <div id="categoryNewsEmpty" style="display: none; color: var(--metallic); text-align: center; padding: 2rem;">
+        В этой категории пока нет новостей.
+      </div>
+    </div>
+  </div>
+</div>`,
+
+    // ========== МОДАЛКА ДЛЯ КАТЕГОРИЙ ПРОЕКТОВ (НОВАЯ) ==========
+    projectCategoryModal: `
+<!-- Project Category Modal -->
+<div class="modal-overlay" id="projectCategoryModalOverlay" role="dialog" aria-modal="true" aria-labelledby="projectCategoryModalTitle">
+  <div class="modal-container" style="max-width: 800px;">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-body" style="padding: 2rem;">
+      <h2 id="projectCategoryModalTitle" style="color: var(--vd); font-weight: 700; margin-bottom: 1.5rem;">Проекты категории</h2>
+      <div id="projectCategoryList" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>
+      <div id="projectCategoryEmpty" style="display: none; color: var(--metallic); text-align: center; padding: 2rem;">
+        В этой категории пока нет проектов.
+      </div>
     </div>
   </div>
 </div>`

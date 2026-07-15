@@ -95,7 +95,6 @@ class NewsRenderer {
     }
   }
 
-  // ========== ИЗМЕНЕНИЕ: категория теперь в content, а не на изображении ==========
   _createNewsCard(news, index) {
     const article = document.createElement('article');
     article.classList.add('news-card', 'animate-on-scroll', 'fade-up');
@@ -118,19 +117,21 @@ class NewsRenderer {
       this.src = 'assets/images/placeholder.jpg';
     });
 
-    // КАТЕГОРИЯ БОЛЬШЕ НЕ ДОБАВЛЯЕТСЯ СЮДА – она будет в contentDiv
-
     imageContainer.appendChild(placeholder);
     imageContainer.appendChild(img);
-    // imageContainer.appendChild(category); // УДАЛЕНО
 
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('news-card-content');
 
-    // === КАТЕГОРИЯ ТЕПЕРЬ РАСПОЛАГАЕТСЯ НАД ДАТОЙ ===
+    // === КЛИКАБЕЛЬНАЯ ПЛАШКА КАТЕГОРИИ ===
     const category = document.createElement('span');
-    category.classList.add('news-card-category');
+    category.classList.add('news-card-category', 'category-trigger');
     category.textContent = Utils.Sanitizer.escapeHtml(news.category);
+    
+    // ДОБАВЛЯЕМ ОБА АТРИБУТА ДЛЯ РАБОТЫ ModalManager
+    category.dataset.modalOpen = 'category'; 
+    category.dataset.category = news.category;
+    
     contentDiv.appendChild(category);
 
     const dateDiv = document.createElement('div');
@@ -175,7 +176,6 @@ class NewsRenderer {
     article.appendChild(contentDiv);
     return article;
   }
-  // ===============================================================
 
   _addAccordionButton(container, totalNews, defaultVisible) {
     const existing = container.querySelector('.news-accordion-container');

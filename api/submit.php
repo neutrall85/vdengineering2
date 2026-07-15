@@ -394,7 +394,8 @@ if ($isFeedback) {
         if ($desiredDate !== '') {
             $dateParts = explode('.', $desiredDate);
             $timestamp = mktime(0, 0, 0, (int)$dateParts[1], (int)$dateParts[0], (int)$dateParts[2]);
-            if ($timestamp < time()) {
+            $todayStart = (new DateTime('today'))->getTimestamp(); // полночь сегодня
+            if ($timestamp < $todayStart) {
                 $errors[] = 'Дата получения КП должна быть не ранее сегодняшнего дня';
             }
         }

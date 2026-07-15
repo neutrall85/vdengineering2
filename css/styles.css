@@ -6175,3 +6175,15 @@ form.hidden-form {
   display: inline-block;
   width: 0.25em;
 }
+
+/* ==================== КЛИКАБЕЛЬНАЯ ПЛАШКА КАТЕГОРИИ ==================== */
+.category-trigger {
+  cursor: pointer;
+  will-change: transform;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.category-trigger:hover {
+  background-color: #dbeafe; /* Светло-синий оттенок, как в вашем дизайне */
+  transform: scale(0.97);    /* Приятный эффект лёгкого нажатия */
+}

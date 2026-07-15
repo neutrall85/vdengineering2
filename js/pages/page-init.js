@@ -149,6 +149,7 @@
   }
 
   // Вспомогательная функция создания карточки проекта (для превью на главной)
+  // ========== ИЗМЕНЕНИЕ: добавлена кликабельная плашка категории ==========
   function createProjectCard(project, index) {
     const sanitizer = window.Utils?.Sanitizer;
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
@@ -161,7 +162,7 @@
     article.style.animationDelay = `${index * 50}ms`;
     article.dataset.modalOpen = 'project';
     article.dataset.projectId = project.id;
-    article.dataset.once = 'true'; // ✅ предотвращает повторное появление анимации
+    article.dataset.once = 'true';
 
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';
@@ -177,9 +178,13 @@
     const contentDiv = document.createElement('div');
     contentDiv.className = 'project-content-padding';
 
+    // ===== ДОБАВЛЕНА КЛИКАБЕЛЬНАЯ ПЛАШКА КАТЕГОРИИ =====
     const categorySpan = document.createElement('span');
-    categorySpan.className = 'project-category-badge';
+    categorySpan.className = 'project-category-badge category-trigger';
     categorySpan.textContent = safeCategory;
+    categorySpan.dataset.modalOpen = 'project-category';
+    categorySpan.dataset.category = safeCategory;
+    contentDiv.appendChild(categorySpan);
 
     const title = document.createElement('h3');
     title.className = 'card-title';
@@ -198,7 +203,6 @@
     btn.setAttribute('data-project-id', project.id);
     btn.innerHTML = 'Подробнее <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>';
 
-    contentDiv.appendChild(categorySpan);
     contentDiv.appendChild(title);
     if (descElem) contentDiv.appendChild(descElem);
     contentDiv.appendChild(btn);
