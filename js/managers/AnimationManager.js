@@ -26,7 +26,7 @@ class AnimationManager {
   _initScrollAnimations() {
     const options = {
       threshold: window.CONFIG?.ANIMATION?.OBSERVER_THRESHOLD || 0.2,
-      rootMargin: window.CONFIG?.ANIMATION?.ROOT_MARGIN || '0px 0px 50px 0px'
+      rootMargin: window.CONFIG?.ANIMATION?.ROOT_MARGIN || '0px 0px 20px 0px'
     };
 
     this.scrollObserver = new IntersectionObserver((entries) => {

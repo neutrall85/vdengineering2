@@ -95,13 +95,14 @@ class NewsRenderer {
     }
   }
 
+  // ========== ИЗМЕНЕНИЕ: категория теперь в content, а не на изображении ==========
   _createNewsCard(news, index) {
     const article = document.createElement('article');
     article.classList.add('news-card', 'animate-on-scroll', 'fade-up');
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
-    // Централизованное открытие через ModalManager
     article.dataset.modalOpen = 'news';
     article.dataset.newsId = news.id;
+    article.dataset.once = 'true';
 
     const imageContainer = document.createElement('div');
     imageContainer.classList.add('news-card-image');
@@ -110,22 +111,27 @@ class NewsRenderer {
     placeholder.classList.add('image-placeholder');
 
     const img = document.createElement('img');
-    img.setAttribute('data-src', Utils.Sanitizer.escapeHtml(news.image));
+    const previewImage = (news.images && news.images[0]) || news.image || 'assets/images/placeholder.jpg';
+    img.setAttribute('data-src', Utils.Sanitizer.escapeHtml(previewImage));
     img.setAttribute('alt', Utils.Sanitizer.escapeHtml(news.title));
     img.addEventListener('error', function () {
       this.src = 'assets/images/placeholder.jpg';
     });
 
-    const category = document.createElement('span');
-    category.classList.add('news-card-category');
-    category.textContent = Utils.Sanitizer.escapeHtml(news.category);
+    // КАТЕГОРИЯ БОЛЬШЕ НЕ ДОБАВЛЯЕТСЯ СЮДА – она будет в contentDiv
 
     imageContainer.appendChild(placeholder);
     imageContainer.appendChild(img);
-    imageContainer.appendChild(category);
+    // imageContainer.appendChild(category); // УДАЛЕНО
 
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('news-card-content');
+
+    // === КАТЕГОРИЯ ТЕПЕРЬ РАСПОЛАГАЕТСЯ НАД ДАТОЙ ===
+    const category = document.createElement('span');
+    category.classList.add('news-card-category');
+    category.textContent = Utils.Sanitizer.escapeHtml(news.category);
+    contentDiv.appendChild(category);
 
     const dateDiv = document.createElement('div');
     dateDiv.classList.add('news-card-date');
@@ -169,6 +175,7 @@ class NewsRenderer {
     article.appendChild(contentDiv);
     return article;
   }
+  // ===============================================================
 
   _addAccordionButton(container, totalNews, defaultVisible) {
     const existing = container.querySelector('.news-accordion-container');

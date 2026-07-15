@@ -150,6 +150,36 @@ class NewsManager {
     }
   }
 
+  // ========== ИЗМЕНЕНИЕ: метод заполнения модалки с галереей ==========
+  _populateNewsModal(news) {
+    const titleEl = document.getElementById('newsModalTitle');
+    const categoryEl = document.getElementById('newsModalCategory');
+    const dateEl = document.getElementById('newsModalDate');
+    const contentEl = document.getElementById('newsModalContent');
+    const container = document.getElementById('newsModalImageContainer');
+    const imageEl = document.getElementById('newsModalImage');
+
+    if (titleEl) titleEl.textContent = news.title;
+    if (categoryEl) categoryEl.textContent = news.category;
+    if (dateEl) dateEl.textContent = news.date;
+    if (contentEl) {
+      const div = document.createElement('div');
+      div.className = 'news-full-content';
+      div.innerHTML = Utils.Sanitizer.sanitizeHtml(news.content);
+      contentEl.replaceChildren(div);
+    }
+    if (container && imageEl) {
+      const images = news.images || (news.image ? [news.image] : []);
+      if (typeof window.initNewsGallery === 'function') {
+        window.initNewsGallery(images, container, imageEl);
+      } else {
+        // fallback
+        imageEl.src = images[0] || 'assets/images/placeholder.jpg';
+        imageEl.alt = news.title;
+      }
+    }
+  }
+
   destroy() {
     if (this._lightboxModalClickHandler) {
       const modalImage = document.getElementById('newsModalImage');

@@ -69,9 +69,15 @@ const ModalTemplates = {
 
         <div class="form-group-row">
           <div class="form-group-col">
-            <label class="form-label" for="requestCategory">Категория запроса из договора <span class="required">*</span></label>
-            <input type="text" class="form-input" id="requestCategory" name="requestCategory" placeholder="Например, AOG" required maxlength="20" 
-            pattern="[A-Za-zА-Яа-яЁё\s]+" title="Только буквы и пробелы">
+            <label class="form-label" for="requestCategory">Категория запроса <span class="required">*</span></label>
+            <select class="form-select" id="requestCategory" name="requestCategory" required>
+              <option value="">Выберите категорию</option>
+              <option value="AOG">AOG</option>
+              <option value="CRIT">CRIT</option>
+              <option value="NORM">NORM</option>
+              <option value="ROUTINE">ROUTINE</option>
+            </select>
+            <p class="error-message" id="requestCategoryError">Пожалуйста, выберите категорию</p>
           </div>
           <div class="form-group-col">
             <div class="form-group">

@@ -84,6 +84,13 @@ class ResponseBuilder {
             if ($k === 'extension' && $v === '') continue;
             if ($k === 'desired_approval_date' && $v === '') continue;
 
+            // Преобразование для категории
+            if ($k === 'category') {
+                if ($v === 'NORM' || $v === 'ROUTINE') {
+                    $v = 'NORM, ROUTINE';
+                }
+            }
+
             $label = $esc($labels[$k] ?? $k);
             if (in_array($k, ['task', 'about'], true)) {
                 $html .= '<p style="margin:0 0 12px; font-size:14px; color:#333;"><strong style="color:#004E96;">' . $label . ':</strong><br>' . $nl2brSafe($v) . '</p>';
@@ -114,14 +121,15 @@ class ResponseBuilder {
             if (($k === 'vacancy_id' || $k === 'vacancy_title') && $v === '') continue;
             if ($k === 'extension' && $v === '') continue;
             if ($k === 'desired_approval_date' && $v === '') continue;
+
+            if ($k === 'category') {
+                if ($v === 'NORM' || $v === 'ROUTINE') {
+                    $v = 'NORM, ROUTINE';
+                }
+            }
+
             $label = $labels[$k] ?? $k;
             $text .= "$label: $v\n";
-        }
-        if ($uploaded) {
-            $text .= "\nПриложенные файлы:\n";
-            foreach ($uploaded as $f) {
-                $text .= "- {$f['original']} (" . round($f['size']/1024) . " KB)\n";
-            }
         }
 
         return ['html' => $html, 'text' => $text, 'subject' => $subject];

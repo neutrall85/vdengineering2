@@ -382,11 +382,9 @@ if ($isFeedback) {
     }
 
     $category = trim($_POST['requestCategory'] ?? '');
-    if (mb_strlen($category, 'UTF-8') > 20) {
-        $errors[] = 'Категория запроса не должна превышать 20 символов';
-    }
-    if (!preg_match('/^[A-Za-zА-Яа-яЁё\s]+$/u', $category)) {
-        $errors[] = 'Категория запроса должна содержать только буквы и пробелы';
+    $allowedCategories = ['AOG', 'CRIT', 'NORM', 'ROUTINE'];
+    if (!in_array($category, $allowedCategories, true)) {
+        $errors[] = 'Недопустимая категория запроса';
     }
 
     $desiredDate = trim($_POST['desiredDate'] ?? '');

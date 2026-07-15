@@ -1013,6 +1013,12 @@ const DateInputHelper = {
             if (picker) {
                 picker.classList.remove('visible');
                 isVisible = false;
+
+                // Удаляем обработчик resize, если есть
+                if (picker._resizeHandler) {
+                    window.removeEventListener('resize', picker._resizeHandler);
+                    picker._resizeHandler = null;
+                }
             }
             if (scrollCleanup) {
                 scrollCleanup();
@@ -1023,11 +1029,71 @@ const DateInputHelper = {
         const openPicker = () => {
             if (!picker) picker = createPicker();
             const rect = input.getBoundingClientRect();
-            picker.style.setProperty('--picker-top', (rect.bottom + window.scrollY + 5) + 'px');
-            picker.style.setProperty('--picker-left', (rect.left + window.scrollX) + 'px');
+            const isMobile = window.innerWidth <= 480;
+
+            // 1. Предварительно ставим календарь снизу от поля
+            let topPos = rect.bottom + window.scrollY + 5;
+            picker.style.setProperty('--picker-top', topPos + 'px');
+
+            // 2. Определяем положение по горизонтали
+            if (isMobile) {
+                picker.style.removeProperty('--picker-left');
+            } else {
+                picker.style.setProperty('--picker-left', (rect.left + window.scrollX) + 'px');
+            }
+
+            // 3. Измеряем высоту (невидимый → без прыжка)
+            const actualHeight = picker.offsetHeight;
+            const spaceBelow = window.innerHeight - rect.bottom - 5;
+
+            // 4. Если снизу не хватает места — поднимаем наверх (работает для всех устройств)
+            if (spaceBelow < actualHeight) {
+                let newTop = rect.top + window.scrollY - actualHeight - 5;
+                if (newTop < 10) newTop = 10;
+                picker.style.setProperty('--picker-top', newTop + 'px');
+            }
+
+            // 5. Плавно показываем календарь уже в правильной позиции
             picker.classList.add('visible');
             isVisible = true;
 
+            // ========== ОБРАБОТЧИК RESIZE (С DEBOUNCE 100 мс) ==========
+            let resizeTimeout = null;
+            const onResize = () => {
+                if (resizeTimeout) clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (!isVisible) return;
+
+                    const newRect = input.getBoundingClientRect();
+                    const newIsMobile = window.innerWidth <= 480;
+
+                    // Обновляем горизонталь
+                    if (newIsMobile) {
+                        picker.style.removeProperty('--picker-left');
+                    } else {
+                        picker.style.setProperty('--picker-left', (newRect.left + window.scrollX) + 'px');
+                    }
+
+                    // Пересчитываем вертикаль
+                    const newHeight = picker.offsetHeight;
+                    const spaceBelowNew = window.innerHeight - newRect.bottom - 5;
+
+                    let newTopPos = newRect.bottom + window.scrollY + 5;
+                    if (spaceBelowNew < newHeight) {
+                        let movedTop = newRect.top + window.scrollY - newHeight - 5;
+                        if (movedTop < 10) movedTop = 10;
+                        newTopPos = movedTop;
+                    }
+                    picker.style.setProperty('--picker-top', newTopPos + 'px');
+                    resizeTimeout = null;
+                }, 100); // Задержка 100 мс
+            };
+
+            window.addEventListener('resize', onResize);
+            picker._resizeHandler = onResize; // Сохраняем для последующей очистки
+            // ===========================================================
+
+            // ========== ОБРАБОТЧИКИ СКРОЛЛА (ваши существующие) ==========
             const scrollableParents = [];
             let parent = input.parentElement;
             while (parent) {
@@ -1055,6 +1121,7 @@ const DateInputHelper = {
                 });
                 handlers.length = 0;
             };
+            // ===========================================================
         };
 
         // Маска ввода

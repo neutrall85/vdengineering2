@@ -99,12 +99,17 @@ class Application {
                               }
                           }
                       }
+                      // ✅ Перерендер проектов при возвращении на вкладку отключён,
+                      //   потому что он сбрасывает состояние анимации.
+                      //   К тому же ProjectRenderer теперь имеет защиту от повторного рендера.
+                      /*
                       if (window._projectsPageInitialized && window._projectsPageHandlers?.renderer) {
                           const grid = document.querySelector('.projects-grid');
                           if (grid) {
                               window._projectsPageHandlers.renderer.render(grid);
                           }
                       }
+                      */
                   }
               });
               this._visibilityHandlerAdded = true;

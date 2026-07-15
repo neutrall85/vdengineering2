@@ -52,8 +52,8 @@ const CONFIG = {
     COUNTER_STEPS: 100,
     FADE_IN_THRESHOLD: 100,
     MODAL_CLOSE_DELAY_MS: 3000,
-    OBSERVER_THRESHOLD: 0.5,
-    ROOT_MARGIN: '50px',
+    OBSERVER_THRESHOLD: 0.4,          // уменьшен порог, чтобы срабатывало раньше
+    ROOT_MARGIN: '0px 0px 170px 0px',  // увеличен отступ снизу до 250px
     CARD_STAGGER_MS: 50
   },
   SECURITY: {
@@ -61,8 +61,7 @@ const CONFIG = {
     SESSION_STORAGE_KEY: 'form_submitted'
   },
   YANDEX: {
-    METRIKA_COUNTER_ID: '110278877',
-    MAPS_API_KEY: '4b80a36f-415c-4a3e-a4c1-458070e04049'
+    METRIKA_COUNTER_ID: '110278877'
   },
   
   MAP: {

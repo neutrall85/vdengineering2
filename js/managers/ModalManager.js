@@ -1,9 +1,6 @@
 /**
  * Управление модальными окнами – единая точка входа
  * ООО "Волга-Днепр Инжиниринг"
- * 
- * Добавлена поддержка глубоких ссылок (hash) для проектов и новостей.
- * Добавлена поддержка query-параметра ?modal=feedback для открытия модалки по прямой ссылке.
  */
 class ModalManager {
   constructor() {
@@ -16,9 +13,8 @@ class ModalManager {
     this._boundOpenHandler = null;
     this._boundFocusTrapHandler = null;
     this._handlersInitialized = false;
-    this.currentModalId = null; // id текущего открытого объекта (проекта или новости)
+    this.currentModalId = null;
     this._initGlobalHandlers();
-    // <-- ИЗМЕНЕНИЕ: при создании экземпляра проверяем параметр modal в URL
     this._openFromUrl();
   }
 
@@ -230,12 +226,14 @@ class ModalManager {
     this.open('news', { id: newsId });
   }
 
+  // ========== ИЗМЕНЕНИЕ: модалка новостей теперь идентична проектной ==========
   _populateNewsModal(news) {
     const titleEl = document.getElementById('newsModalTitle');
     const categoryEl = document.getElementById('newsModalCategory');
     const dateEl = document.getElementById('newsModalDate');
     const contentEl = document.getElementById('newsModalContent');
-    const imageEl = document.getElementById('newsModalImage');
+    const container = document.getElementById('newsModalImageContainer');
+    const mainImage = document.getElementById('newsModalImage');
 
     if (titleEl) titleEl.textContent = news.title;
     if (categoryEl) categoryEl.textContent = news.category;
@@ -246,11 +244,25 @@ class ModalManager {
       div.innerHTML = Utils.Sanitizer.sanitizeHtml(news.content);
       contentEl.replaceChildren(div);
     }
-    if (imageEl) {
-      imageEl.src = news.image || 'assets/images/placeholder.jpg';
-      imageEl.alt = news.title;
+
+    // Галерея: используем ту же функцию, что и для проектов
+    if (container && mainImage) {
+      const images = news.images || (news.image ? [news.image] : []);
+      if (images.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      container.style.display = 'flex';
+      if (typeof window.initProjectGallery === 'function') {
+        window.initProjectGallery(images, container, mainImage);
+      } else {
+        // fallback
+        mainImage.src = images[0];
+        mainImage.alt = news.title;
+      }
     }
   }
+  // =====================================================================
 
   _openUniversalApplication(trigger) {
     const vacancyId = trigger?.getAttribute('data-vacancy-id') || null;
@@ -260,48 +272,43 @@ class ModalManager {
     const modalSubtitle = document.getElementById('universalApplicationModalSubtitle');
     const submitBtnText = document.getElementById('universalSubmitBtnText');
     const successTitle = document.getElementById('universalSuccessTitle');
-
     const form = document.getElementById('universalApplicationForm');
 
     if (mode === 'application') {
-        if (modalTitle) modalTitle.textContent = 'Отправить заявку';
-        if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
-        if (successTitle) successTitle.textContent = 'Данные отправлены!';
-        if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы свяжемся с вами';
-        
-        if (form) {
-            this._setHiddenField(form, 'vacancy_id', '');
-            this._setHiddenField(form, 'vacancy_title', '');
-        }
+      if (modalTitle) modalTitle.textContent = 'Отправить заявку';
+      if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
+      if (successTitle) successTitle.textContent = 'Данные отправлены!';
+      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы свяжемся с вами';
+      if (form) {
+        this._setHiddenField(form, 'vacancy_id', '');
+        this._setHiddenField(form, 'vacancy_title', '');
+      }
     } else {
-        const vacancyCard = trigger?.closest('.vacancy-card');
-        const vacancyTitle = vacancyCard?.querySelector('.vacancy-title')?.textContent || '';
-        if (modalTitle) modalTitle.textContent = `Отклик на вакансию: ${vacancyTitle}`;
-        if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
-        if (successTitle) successTitle.textContent = 'Отклик отправлен!';
-        if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы рассмотрим вашу кандидатуру';
-        
-        if (form) {
-            this._setHiddenField(form, 'vacancy_id', vacancyId);
-            this._setHiddenField(form, 'vacancy_title', vacancyTitle);
-        }
+      const vacancyCard = trigger?.closest('.vacancy-card');
+      const vacancyTitle = vacancyCard?.querySelector('.vacancy-title')?.textContent || '';
+      if (modalTitle) modalTitle.textContent = `Отклик на вакансию: ${vacancyTitle}`;
+      if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
+      if (successTitle) successTitle.textContent = 'Отклик отправлен!';
+      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже, и мы рассмотрим вашу кандидатуру';
+      if (form) {
+        this._setHiddenField(form, 'vacancy_id', vacancyId);
+        this._setHiddenField(form, 'vacancy_title', vacancyTitle);
+      }
     }
-
     this.open('universal');
   }
 
   _setHiddenField(form, name, value) {
     let input = form.querySelector(`input[name="${name}"]`);
     if (!input) {
-        input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        form.appendChild(input);
+      input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      form.appendChild(input);
     }
     input.value = value;
   }
 
-  // ========== Публичные методы для глубоких ссылок ==========
   openProjectById(id) {
     if (!window.PROJECTS_DATA || !window.PROJECTS_DATA[id]) {
       Logger.WARN(`Проект с id ${id} не найден`);
@@ -326,9 +333,7 @@ class ModalManager {
     this.open('news', { id: id });
     return true;
   }
-  // ===================================================
 
-  // <-- ИЗМЕНЕНИЕ: метод для обновления URL (добавление/удаление параметра modal)
   _updateUrl(action, key) {
     const url = new URL(window.location.href);
     if (action === 'add') {
@@ -339,7 +344,6 @@ class ModalManager {
     window.history.replaceState({}, '', url.toString());
   }
 
-  // <-- ИЗМЕНЕНИЕ: при загрузке проверяем параметр modal и открываем соответствующую модалку
   _openFromUrl() {
     const url = new URL(window.location.href);
     const modalKey = url.searchParams.get('modal');
@@ -374,19 +378,15 @@ class ModalManager {
 
     setTimeout(() => {
       overlay.classList.add('active');
-
       this._initFocusTrap(overlay);
       if (config.onOpen) config.onOpen(overlay);
       if (options.onOpen) options.onOpen(overlay);
       if (window.Services?.eventBus) {
         window.Services.eventBus.emit('modal:opened', { key, overlay });
       }
-
-      // <-- ИЗМЕНЕНИЕ: добавляем параметр modal в URL для модалки feedback
       if (key === 'feedback') {
         this._updateUrl('add', key);
       }
-
       if (key === 'project' || key === 'news') {
         const id = options.id || this.currentModalId;
         if (id) {
@@ -400,12 +400,8 @@ class ModalManager {
 
   close(key) {
     const config = this.modals.get(key);
-    if (!config) {
-      return false;
-    }
-    if (this.activeModal !== key) {
-      return false;
-    }
+    if (!config) return false;
+    if (this.activeModal !== key) return false;
 
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return false;
@@ -413,11 +409,9 @@ class ModalManager {
     this._removeFocusTrap();
     overlay.classList.remove('active');
 
-    // <-- ИЗМЕНЕНИЕ: удаляем параметр modal из URL при закрытии feedback
     if (key === 'feedback') {
       this._updateUrl('remove');
     }
-
     if (key === 'project' || key === 'news') {
       this._clearHash();
       this.currentModalId = null;
@@ -435,7 +429,6 @@ class ModalManager {
     if (config.onClose) {
       config.onClose(overlay);
     }
-
     if (window.Services?.eventBus) {
       window.Services.eventBus.emit('modal:closed', { key });
     }
@@ -450,7 +443,6 @@ class ModalManager {
     this.modals.forEach((_, key) => this.close(key));
   }
 
-  // ========== Вспомогательные методы для хеша ==========
   _updateHash(key, id) {
     const hash = `${key}=${id}`;
     const currentHash = window.location.hash.slice(1);
@@ -464,7 +456,6 @@ class ModalManager {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }
-  // ===================================================
 
   _initFocusTrap(overlay) {
     if (!overlay) return;

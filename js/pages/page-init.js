@@ -148,7 +148,7 @@
     }, 100);
   }
 
-  // Вспомогательная функция создания карточки проекта
+  // Вспомогательная функция создания карточки проекта (для превью на главной)
   function createProjectCard(project, index) {
     const sanitizer = window.Utils?.Sanitizer;
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
@@ -159,9 +159,9 @@
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
     article.style.animationDelay = `${index * 50}ms`;
-    // Централизованное открытие через ModalManager
     article.dataset.modalOpen = 'project';
     article.dataset.projectId = project.id;
+    article.dataset.once = 'true'; // ✅ предотвращает повторное появление анимации
 
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';

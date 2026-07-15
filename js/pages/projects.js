@@ -14,6 +14,9 @@ class ProjectRenderer {
   }
 
   render(container) {
+    // Защита от повторного рендера – предотвращает сброс анимаций
+    if (this.loaded) return;
+
     if (!container) {
       Logger?.WARN('ProjectRenderer: контейнер не найден');
       return;
@@ -58,6 +61,7 @@ class ProjectRenderer {
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
     article.dataset.modalOpen = 'project';
     article.dataset.projectId = project.id;
+    article.dataset.once = 'true'; // ✅ предотвращает повторное появление анимации
 
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';
@@ -367,7 +371,6 @@ function initProjectGallery(images, container, mainImage) {
       const deltaY = touch.clientY - lbTouchStartY;
       if (Math.abs(deltaX) > 10) {
         lbIsSwiping = true;
-        // e.preventDefault() больше не нужен — управляется CSS touch-action
       }
     }
     function lbHandleTouchEnd(e) {
@@ -379,7 +382,6 @@ function initProjectGallery(images, container, mainImage) {
       const absDeltaY = Math.abs(deltaY);
 
       if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
-        // e.preventDefault() больше не нужен — управляется CSS touch-action
         if (deltaX > 0) navigateLightbox(-1);
         else navigateLightbox(1);
         lbIsSwiping = true;
@@ -442,7 +444,6 @@ function initProjectGallery(images, container, mainImage) {
     const deltaY = touch.clientY - touchStartY;
     if (Math.abs(deltaX) > 10) {
       isSwiping = true;
-      // e.preventDefault() больше не нужен — управляется CSS touch-action
     }
   }
   function handleTouchEnd(e) {
@@ -454,7 +455,6 @@ function initProjectGallery(images, container, mainImage) {
     const absDeltaY = Math.abs(deltaY);
 
     if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
-      // e.preventDefault() больше не нужен — управляется CSS touch-action
       if (deltaX > 0) navigate(-1);
       else navigate(1);
       isSwiping = true;
