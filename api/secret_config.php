@@ -13,7 +13,6 @@ header('X-Frame-Options: DENY');
 // ---- Загрузка .env ----
 require_once __DIR__ . '/env_loader.php';
 
-// ---- Корень сайта (исправлено для вашего хостинга) ----
 $siteRoot = dirname($_SERVER['DOCUMENT_ROOT']);
 
 // ---- Пути к служебным папкам (явно задаём абсолютные пути) ----
@@ -66,6 +65,8 @@ define('ADMIN_EMAILS_FEEDBACK', array_values(array_filter(array_map('trim', expl
 
 $adminAll = env('ADMIN_EMAILS', false);
 define('ADMIN_EMAILS', $adminAll ? array_values(array_filter(array_map('trim', explode(',', $adminAll)))) : []);
+$adminErrorEmail = env('ADMIN_ERROR_EMAIL', false);
+define('ADMIN_ERROR_EMAIL', $adminErrorEmail ?: 'admin@normacode.ru');
 
 // ---- Лимиты ----
 define('MAX_FILE_SIZE',     (int)(env('MAX_FILE_SIZE', false) ?: 24 * 1024 * 1024));

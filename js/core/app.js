@@ -80,6 +80,11 @@ class Application {
           this._initHashListener();
           this._initMapLoader();
   
+          // ========== Инициализация репортера ошибок ==========
+          if (typeof textSelectionReporter !== 'undefined') {
+              textSelectionReporter.init();
+          }
+  
           setTimeout(() => {
               this._openModalFromHash();
           }, 300);
@@ -240,7 +245,7 @@ class Application {
         } 
       },
       { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
-      { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false } // ДОБАВЛЕНО
+      { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false }
     ];
 
     modalsToRegister.forEach(({ key, overlayId, required, onClose, onOpen, focusSelector }) => {
@@ -311,12 +316,9 @@ class Application {
             
             img = document.createElement('img');
             img.id = 'staticMap';
+            img.className = 'static-map';
             img.src = staticUrl;
             img.alt = 'Карта проезда к офису';
-            img.style.width = '100%';
-            img.style.height = '350px';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '12px';
             img.loading = 'lazy';
             container.appendChild(img);
             
@@ -435,8 +437,6 @@ class Application {
   }
 
   _handleHashScroll() {
-    const isHomePage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
-    if (!isHomePage) return;
     const hash = window.location.hash;
     if (!hash || hash === '#') return;
     const targetId = hash.substring(1);
@@ -445,7 +445,11 @@ class Application {
 
     const scrollToTarget = () => {
       setTimeout(() => {
-        const offset = window.CONFIG?.NAVIGATION?.HASH_SCROLL_OFFSET || 80;
+        const navbar = document.querySelector('.navbar');
+        const headerHeight = navbar ? navbar.offsetHeight : 70;
+        const extraOffset = 5;
+        const offset = headerHeight + extraOffset;
+
         const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
         window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
       }, window.CONFIG?.PERFORMANCE?.HASH_SCROLL_DELAY_MS || 400);
@@ -526,7 +530,7 @@ class Application {
       modalManager.openNewsById(decodedId);
     } else if (type === 'category') {
       modalManager.openCategoryByName(decodedId);
-    } else if (type === 'project-category') { // ДОБАВЛЕНО
+    } else if (type === 'project-category') {
       modalManager.openProjectCategoryByName(decodedId);
     }
   }
@@ -571,33 +575,27 @@ class Application {
     if (errorContainer) {
       errorContainer.style.display = 'block';
       errorContainer.replaceChildren();
+
       const errorDiv = document.createElement('div');
-      errorDiv.className = 'error-message';
-      errorDiv.style.background = '#f8d7da';
-      errorDiv.style.color = '#721c24';
-      errorDiv.style.padding = '1rem';
-      errorDiv.style.margin = '1rem';
-      errorDiv.style.borderRadius = '8px';
+      errorDiv.className = 'app-error-message-block';
 
       const h2 = document.createElement('h2');
+      h2.className = 'app-error-title';
       h2.textContent = 'Ошибка загрузки приложения';
       errorDiv.appendChild(h2);
 
       const p1 = document.createElement('p');
+      p1.className = 'app-error-text';
       p1.textContent = 'Произошла ошибка при инициализации сайта. Пожалуйста, обновите страницу.';
       errorDiv.appendChild(p1);
 
       const p2 = document.createElement('p');
-      p2.style.fontSize = '0.85rem';
-      p2.style.marginTop = '0.5rem';
+      p2.className = 'app-error-detail';
       p2.textContent = Utils.Sanitizer.escapeHtml(error.message);
       errorDiv.appendChild(p2);
 
       const reloadBtn = document.createElement('button');
-      reloadBtn.id = 'reloadErrorBtn';
-      reloadBtn.style.marginTop = '0.5rem';
-      reloadBtn.style.padding = '0.5rem 1rem';
-      reloadBtn.style.cursor = 'pointer';
+      reloadBtn.className = 'app-error-reload-btn';
       reloadBtn.textContent = 'Обновить страницу';
       reloadBtn.addEventListener('click', function() {
         window.location.reload();
@@ -660,6 +658,9 @@ class Application {
     if (typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.destroy === 'function') {
       UniversalApplicationModalManager.destroy();
     }
+    if (typeof textSelectionReporter !== 'undefined' && typeof textSelectionReporter.destroy === 'function') {
+      textSelectionReporter.destroy();
+    }
 
     this._cleanupGlobals();
     this.modules = [];
@@ -720,7 +721,6 @@ function initApp() {
     }
   }
 
-  // ========== ДОБАВЛЕНО: Создаём глобальный ProjectRenderer ==========
   if (typeof PROJECTS_DATA !== 'undefined' && typeof ProjectRenderer !== 'undefined') {
     try {
       window.projectRenderer = new ProjectRenderer(PROJECTS_DATA);
@@ -729,7 +729,6 @@ function initApp() {
       Logger.ERROR('Ошибка создания projectRenderer:', err);
     }
   }
-  // ===============================================================
 
   if (typeof initDocPreviews === 'function') {
     initDocPreviews();

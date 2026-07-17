@@ -122,7 +122,7 @@ textarea:focus-visible,
   --navbar-height: 70px;
 
   font-size: 16px;
-  scroll-padding-top: 100px;
+  scroll-padding-top: 56px;
 }
 
 @font-face {
@@ -435,13 +435,21 @@ body.no-scroll-fixed {
 }
 
 .delay-100 { --animation-delay: 0.1s; }
+.delay-150 { --animation-delay: 0.15s; }
 .delay-200 { --animation-delay: 0.2s; }
+.delay-250 { --animation-delay: 0.25s; }
 .delay-300 { --animation-delay: 0.3s; }
+.delay-350 { --animation-delay: 0.35s; }
 .delay-400 { --animation-delay: 0.4s; }
+.delay-450 { --animation-delay: 0.45s; }
 .delay-500 { --animation-delay: 0.5s; }
+.delay-550 { --animation-delay: 0.55s; }
 .delay-600 { --animation-delay: 0.6s; }
+.delay-650 { --animation-delay: 0.65s; }
 .delay-700 { --animation-delay: 0.7s; }
+.delay-750 { --animation-delay: 0.75s; }
 .delay-800 { --animation-delay: 0.8s; }
+.delay-850 { --animation-delay: 0.85s; }
 .delay-900 { --animation-delay: 0.9s; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2119,6 +2127,10 @@ fieldset.radio-group-fieldset > legend.form-label {
   display: block;
   cursor: zoom-in;
   transition: opacity 0.2s ease;
+}
+
+#newsModalOverlay .modal-image-container {
+    margin-bottom: 1.5rem;
 }
 
 #policyModalOverlay .modal-body {
@@ -5674,11 +5686,22 @@ form.hidden-form {
 
   /* Формы - компактнее */
   .form-input,
-  .form-select,
+  .form-select {
+    font-size: 16px;
+    padding: 0.75rem 0.9rem;
+    white-space: nowrap;     /* запрещаем перенос */
+    overflow: hidden;        /* скрываем лишнее */
+    text-overflow: ellipsis; /* добавляем многоточие */
+  }
+
   .form-textarea {
     font-size: 16px;
-    /* Предотвращает масштабирование на iOS */
     padding: 0.75rem 0.9rem;
+    height: auto;            /* убираем фиксированную высоту */
+    min-height: 60px;        /* минимальная высота */
+    field-sizing: content;   /* высота подстраивается под текст */
+    resize: vertical;
+    white-space: pre-wrap;   /* разрешаем перенос строк */
   }
 
   .form-label {
@@ -6184,6 +6207,187 @@ form.hidden-form {
 }
 
 .category-trigger:hover {
-  background-color: #dbeafe; /* Светло-синий оттенок, как в вашем дизайне */
+  background-color: #dbeafe; /* Светло-синий оттенок, как в Вашем дизайне */
   transform: scale(0.97);    /* Приятный эффект лёгкого нажатия */
+}
+
+/* ===== ВЫРАВНИВАНИЕ МАРКЕРОВ СПИСКОВ В МОДАЛКАХ ===== */
+.modal-content ul,
+.modal-content ol,
+.news-full-content ul,
+.news-full-content ol {
+  list-style-position: outside;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.modal-content ul li,
+.modal-content ol li,
+.news-full-content ul li,
+.news-full-content ol li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+/* Модалка категории новостей / проектов */
+.modal-category-container {
+    max-width: 800px;
+}
+
+.modal-category-body {
+    padding: 2rem;
+}
+
+.modal-category-title {
+    color: var(--vd);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.modal-category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.modal-category-empty {
+    display: none;
+    color: var(--metallic);
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Если нужно показать пустое состояние — используем модификатор */
+.modal-category-empty.visible {
+    display: block;
+}
+
+/* ===== БЛОК ОШИБКИ ПРИЛОЖЕНИЯ (дополнение) ===== */
+#appError h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+#appError p {
+  margin-bottom: 0.5rem;
+}
+
+#appError .error-detail {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  word-break: break-word;
+}
+
+#appError .reload-btn {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background: #721c24;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+#appError .reload-btn:hover {
+  background: #5a151b;
+}
+
+.error-banner {
+  position: fixed;
+  top: 70px;
+  right: 30px;                       /* дальше от края, чтобы не наезжать */
+  z-index: 999;
+  max-width: 320px;
+  width: auto;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px 12px 18px;      /* больше отступы */
+  font-size: 15px;                   /* больше шрифт */
+  font-family: inherit;
+  color: #1a1a1a;
+  transform: translateX(calc(100% + 40px));
+  transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.5s ease;
+  opacity: 0;
+  pointer-events: none;
+  /* не перекрывает важный контент: даём зазор справа */
+  margin-right: 0;
+}
+
+.error-banner.active {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.error-banner.hiding {
+  transform: translateX(calc(100% + 40px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.5s ease;
+}
+
+.navbar.scrolled ~ .error-banner {
+  top: 60px;
+}
+
+.error-banner-icon {
+  font-size: 20px;                   /* увеличенная иконка */
+  flex-shrink: 0;
+  color: #1a1a1a;
+}
+
+.error-banner-text {
+  flex: 1;
+  line-height: 1.5;
+  color: #1a1a1a;
+  font-size: 15px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.error-banner-text kbd {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  padding: 0 8px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.error-banner-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #1a1a1a;
+  padding: 0 6px;
+  flex-shrink: 0;
+  transition: transform 0.2s, background 0.2s;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-banner-close:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+  .error-banner {
+    display: none;
+  }
 }

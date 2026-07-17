@@ -32,6 +32,11 @@ ServerSignature Off
     LimitRequestBody 1024
 </Files>
 
+<Files "report-error.php">
+    Require all granted
+    LimitRequestBody 1024
+</Files>
+
 # ============================================================
 # 3. БЕЗОПАСНЫЕ HTTP-ЗАГОЛОВКИ
 # ============================================================

@@ -40,7 +40,7 @@ class NewsManager {
         }
       };
       modalImage.addEventListener('click', this._lightboxModalClickHandler);
-      modalImage.style.cursor = 'zoom-in';
+      modalImage.classList.add('zoom-in');
     }
 
     if (closeBtn) {

@@ -9,16 +9,18 @@ function initServiceGallery(images) {
   const mainImage = document.getElementById('serviceModalImage');
   if (!container || !mainImage) return;
 
-  container.style.display = 'none';
+  container.classList.add('hidden');
 
   if (!images || images.length === 0) {
     mainImage.src = 'assets/images/placeholder.jpg';
     mainImage.alt = 'Изображение услуги';
-    mainImage.style.cursor = 'default';
+    mainImage.classList.remove('zoom-in');
+    mainImage.classList.add('cursor-default');
     return;
   }
 
-  container.style.display = 'flex';
+  container.classList.remove('hidden');
+  container.classList.add('flex');
   container.innerHTML = '';
   container.appendChild(mainImage);
 

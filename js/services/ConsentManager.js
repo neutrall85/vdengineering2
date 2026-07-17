@@ -109,10 +109,10 @@ const ConsentManager = {
       <div id="user-notice-banner" class="user-notice-banner" role="dialog" aria-modal="true" aria-labelledby="user-notice-title">
         <div class="user-notice-content">
           <div class="user-notice-level-1" id="user-notice-level-1">
-            <h3 id="user-notice-title" class="user-notice-title">Уважение к вашей конфиденциальности</h3>
+            <h3 id="user-notice-title" class="user-notice-title">Уважение к Вашей конфиденциальности</h3>
             <p class="user-notice-text">
               Мы используем файлы cookie для улучшения работы сайта. Технические cookie необходимы для функционирования сайта.
-              Аналитические cookie (Яндекс.Метрика) собирают обезличенную статистику посещений – они включаются только с вашего разрешения.
+              Аналитические cookie (Яндекс.Метрика) собирают обезличенную статистику посещений – они включаются только с Вашего разрешения.
             </p>
             <div class="user-consent-details" id="user-consent-details">
               <div class="user-consent-category">

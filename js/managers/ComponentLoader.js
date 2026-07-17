@@ -19,7 +19,7 @@ const ComponentLoader = {
         successModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.successModal : '',
         feedbackModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.feedbackModal : '',
         categoryNewsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.categoryNewsModal : '',
-        projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : '' // ДОБАВЛЕНО
+        projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : ''
     },
 
     /**
@@ -134,7 +134,7 @@ const ComponentLoader = {
             document.body.appendChild(categoryModalContainer.firstElementChild);
         }
 
-        // ========== ДОБАВЛЕНО: Загрузка модалки категории проектов ==========
+        // Загрузка модалки категории проектов
         if (!document.getElementById('projectCategoryModalOverlay')) {
             const projectCategoryContainer = document.createElement('div');
             const parser = new DOMParser();

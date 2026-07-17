@@ -221,8 +221,8 @@ function initProjectGallery(images, container, mainImage) {
       lightboxOverlay.querySelector('.lightbox-content').appendChild(nextBtn);
     }
     const showNav = images.length > 1;
-    prevBtn.style.display = showNav ? 'flex' : 'none';
-    nextBtn.style.display = showNav ? 'flex' : 'none';
+    prevBtn.classList.toggle('visible', showNav);
+    nextBtn.classList.toggle('visible', showNav);
 
     const prevHandler = () => navigateLightbox(-1);
     const nextHandler = () => navigateLightbox(1);

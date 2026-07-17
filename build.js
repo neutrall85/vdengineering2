@@ -6,15 +6,15 @@ const cheerio = require('cheerio');
 
 // Конфигурация
 const CONFIG = {
-  jsSrc: 'js/**/*.js',              // все исходники
+  jsSrc: 'js/**/*.js',
   cssSrc: 'css/styles.css',
-  jsDest: 'js/bundle.min.js',       // бандл в папке js/
-  cssDest: 'css/styles.min.css',    // бандл в папке css/
+  jsDest: 'js/bundle.min.js',
+  cssDest: 'css/styles.min.css',
   htmlFiles: '*.html',
   version: Date.now(),
 };
 
-// Очистка старых бандлов (если есть)
+// Очистка старых бандлов
 function cleanBundles() {
   if (fs.existsSync(CONFIG.jsDest)) {
     fs.unlinkSync(CONFIG.jsDest);
@@ -26,7 +26,7 @@ function cleanBundles() {
   }
 }
 
-// Сборка JS с правильным порядком
+// Сборка JS
 async function buildJS() {
   console.log('🔨 Сборка JS...');
   const order = [
@@ -93,59 +93,52 @@ function replaceWithBundles() {
     const content = fs.readFileSync(file, 'utf8');
     const $ = cheerio.load(content, { decodeEntities: false });
 
-    // Находим первый локальный скрипт
+    // Удаляем все локальные скрипты (не внешние)
     const localScripts = $('script[src]').filter((i, el) => {
       const src = $(el).attr('src');
       return src && !src.startsWith('http://') && !src.startsWith('https://');
     });
-    const firstScript = localScripts.first();
-    const prevScriptSibling = firstScript.length ? firstScript.prev() : null;
-
-    // Находим preload для вставки CSS
-    const preloadLink = $('link[rel="preload"][as="font"][type="font/woff2"][crossorigin]').first();
-    let targetPreload = preloadLink.length ? preloadLink : $('link[rel="preload"]').first();
-
-    // Удаляем все локальные скрипты и стили
     localScripts.remove();
+
+    // Удаляем все локальные стили (не внешние)
     const localLinks = $('link[rel="stylesheet"][href]').filter((i, el) => {
       const href = $(el).attr('href');
       return href && !href.startsWith('http://') && !href.startsWith('https://');
     });
     localLinks.remove();
 
-    // Вставляем JS-бандл на место первого удалённого скрипта
-    if (firstScript.length) {
-      const newScript = `<script src="${jsBundle}"></script>`;
-      if (prevScriptSibling && prevScriptSibling.length) {
-        prevScriptSibling.after(newScript);
-      } else {
-        firstScript.parent().prepend(newScript);
-      }
-    } else {
-      $('body').append(`<script src="${jsBundle}"></script>`);
-    }
-
-    // Вставляем CSS-бандл после preload (или в head)
+    // Вставляем CSS-бандл в <head> после preload (или в конец head)
     const newLink = `<link rel="stylesheet" href="${cssBundle}">`;
+    const preloadLink = $('link[rel="preload"][as="font"][type="font/woff2"][crossorigin]').first();
+    const targetPreload = preloadLink.length ? preloadLink : $('link[rel="preload"]').first();
     if (targetPreload.length) {
       targetPreload.after(newLink);
     } else {
       $('head').append(newLink);
     }
 
-    // Удаляем только пустые строки
-    let html = $.html();
-    html = html.split('\n').filter(line => line.trim() !== '').join('\n');
+    // Получаем HTML как строку
+    let html = $.html({ decodeEntities: false });
+
+    // Вставляем JS-бандл перед закрывающим </body>.
+    // Удаляем все пробельные символы перед </body>, вставляем скрипт с отступом (4 пробела),
+    // после скрипта ставим перенос строки, затем </body> без отступа.
+    const scriptTag = `    <script src="${jsBundle}"><\/script>`;
+    html = html.replace(/\s*<\/body>/i, `\n${scriptTag}\n</body>`);
+
+    // Убеждаемся, что </html> не слиплось с </body> и тоже без отступа
+    html = html.replace(/<\/body>\s*<\/html>/i, `</body>\n</html>`);
+
     fs.writeFileSync(file, html, 'utf8');
   }
 
   console.log(`✅ Все HTML-файлы обновлены (версия ${version})`);
 }
 
-// Главная функция
+// Главная
 async function build() {
   console.log('🚀 Начало сборки...\n');
-  cleanBundles();   // удаляем старые бандлы
+  cleanBundles();
   await buildJS();
   buildCSS();
   replaceWithBundles();

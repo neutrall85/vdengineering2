@@ -261,10 +261,11 @@ class ModalManager {
     if (container && mainImage) {
       const images = news.images || (news.image ? [news.image] : []);
       if (images.length === 0) {
-        container.style.display = 'none';
+        container.classList.add('hidden');
         return;
       }
-      container.style.display = 'flex';
+      container.classList.remove('hidden');
+      container.classList.add('flex');
       if (typeof window.initProjectGallery === 'function') {
         window.initProjectGallery(images, container, mainImage);
       } else {
@@ -290,13 +291,14 @@ class ModalManager {
     }
 
     listEl.innerHTML = '';
-    emptyEl.style.display = 'none';
+    emptyEl.classList.add('hidden');
     titleEl.textContent = `Новости категории: ${category}`;
 
     if (!window.newsRenderer) {
       Logger.WARN('window.newsRenderer не найден.');
       emptyEl.textContent = 'Новости временно недоступны.';
-      emptyEl.style.display = 'block';
+      emptyEl.classList.remove('hidden');
+      emptyEl.classList.add('block');
       this.currentCategory = category;
       this.open('category', { id: category });
       return;
@@ -307,7 +309,8 @@ class ModalManager {
     filteredNews.sort((a, b) => b.id - a.id);
 
     if (filteredNews.length === 0) {
-      emptyEl.style.display = 'block';
+      emptyEl.classList.remove('hidden');
+      emptyEl.classList.add('block');
     } else {
       const fragment = document.createDocumentFragment();
       const renderer = window.newsRenderer;
@@ -356,13 +359,14 @@ class ModalManager {
     }
 
     listEl.innerHTML = '';
-    emptyEl.style.display = 'none';
+    emptyEl.classList.add('hidden');
     titleEl.textContent = `Проекты категории: ${category}`;
 
     if (!window.projectRenderer) {
       Logger.WARN('window.projectRenderer не найден.');
       emptyEl.textContent = 'Проекты временно недоступны.';
-      emptyEl.style.display = 'block';
+      emptyEl.classList.remove('hidden');
+      emptyEl.classList.add('block');
       this.currentProjectCategory = category;
       this.open('project-category', { id: category });
       return;
@@ -372,7 +376,8 @@ class ModalManager {
     const filteredProjects = allProjects.filter(project => project.category.includes(category));
 
     if (filteredProjects.length === 0) {
-      emptyEl.style.display = 'block';
+      emptyEl.classList.remove('hidden');
+      emptyEl.classList.add('block');
     } else {
       const fragment = document.createDocumentFragment();
       const renderer = window.projectRenderer;
@@ -419,7 +424,7 @@ class ModalManager {
       if (modalTitle) modalTitle.textContent = 'Отправить заявку';
       if (submitBtnText) submitBtnText.textContent = 'Отправить информацию';
       if (successTitle) successTitle.textContent = 'Данные отправлены!';
-      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже и мы свяжемся с вами';
+      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже и мы свяжемся с Вами';
       if (form) {
         this._setHiddenField(form, 'vacancy_id', '');
         this._setHiddenField(form, 'vacancy_title', '');
@@ -430,7 +435,7 @@ class ModalManager {
       if (modalTitle) modalTitle.textContent = `Отклик на вакансию: ${vacancyTitle}`;
       if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
       if (successTitle) successTitle.textContent = 'Отклик отправлен!';
-      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже и мы рассмотрим вашу кандидатуру';
+      if (modalSubtitle) modalSubtitle.textContent = 'Заполните форму ниже и мы рассмотрим Вашу кандидатуру';
       if (form) {
         this._setHiddenField(form, 'vacancy_id', vacancyId);
         this._setHiddenField(form, 'vacancy_title', vacancyTitle);
@@ -495,7 +500,7 @@ class ModalManager {
     }
   }
 
-  // ===== ИСПРАВЛЕНИЕ: не вызываем ScrollManager.lock() при восстановлении (skipStack=true) =====
+  // ==================== ИСПРАВЛЕННЫЙ МЕТОД open ====================
   open(key, options = {}) {
     const config = this.modals.get(key);
     if (!config) {
@@ -506,26 +511,36 @@ class ModalManager {
     const keepParentModal = options.keepParentModal === true;
     const skipStack = options.skipStack === true;
 
-    // Если skipStack=true, не пытаемся закрыть активную модалку (это предотвращает рекурсию при восстановлении)
-    if (this.activeModal && this.activeModal !== key && !keepParentModal && !skipStack) {
-      this.close(this.activeModal);
-    } else if (this.activeModal && this.activeModal !== key && keepParentModal) {
-      if (!skipStack) {
-        this.activeModalStack.push(this.activeModal);
+    // 1. Закрываем текущую активную модалку, если нужно
+    if (this.activeModal && this.activeModal !== key) {
+      if (!keepParentModal && !skipStack) {
+        // Просто закрываем текущую (она будет заменена новой)
+        this.close(this.activeModal);
+      } else if (keepParentModal) {
+        // Сохраняем родительскую в стеке
+        if (!skipStack) {
+          this.activeModalStack.push(this.activeModal);
+        }
       }
     }
 
+    // 2. Если не сохраняем родительскую и не пропускаем стек, очищаем стек и сбрасываем activeModal
+    if (!keepParentModal && !skipStack) {
+      this.activeModalStack = [];
+      this.activeModal = null;
+    }
+
+    // 3. Открываем новую модалку
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return false;
 
-    // Перемещаем дочернюю модалку в конец body, чтобы она перекрывала родительскую
     if (keepParentModal) {
+      // Если открываем поверх, не меняем z-index – всё уже управляется через классы
       document.body.appendChild(overlay);
     }
 
     this.activeModal = key;
     
-    // ===== КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: не блокируем скролл при восстановлении =====
     if (!skipStack) {
       ScrollManager.lock();
     }
@@ -576,13 +591,17 @@ class ModalManager {
     const previousModal = this.activeModalStack.length > 0 ? this.activeModalStack.pop() : null;
     if (!previousModal) {
       ScrollManager.unlock();
+      this.activeModal = null;
     } else {
       ScrollManager.state.lockCount--;
-      // Восстанавливаем родительскую модалку. skipStack=true предотвращает зацикливание закрытия и лишнюю блокировку.
-      this.open(previousModal, { keepParentModal: false, skipStack: true });
+      const parentConfig = this.modals.get(previousModal);
+      if (parentConfig && document.getElementById(parentConfig.overlayId)) {
+        this.open(previousModal, { keepParentModal: false, skipStack: true });
+      } else {
+        ScrollManager.unlock();
+        this.activeModal = null;
+      }
     }
-
-    // this.open уже установит this.activeModal = previousModal, поэтому не переопределяем здесь.
 
     if (config.onClose) {
       config.onClose(overlay);

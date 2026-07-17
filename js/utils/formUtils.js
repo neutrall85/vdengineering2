@@ -776,7 +776,7 @@ class ModalFormHandler {
       const formats = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'ZIP', 'PPT', 'PPTX', 'JPG', 'PNG', 'GIF'];
       userMessage = `Неподдерживаемый формат файла. Разрешены: ${formats.map(f => f.toUpperCase()).join(', ')}.`;
     } else if (msg.includes('сервера') || msg.includes('позже')) {
-      userMessage = 'Ошибка на сервере. Пожалуйста, попробуйте позже.';
+      userMessage = 'Ошибка на сервере. Пожалуйста, попробуйте позже или обратитесь к администратору admin@vdenginiring.ru';
     }
 
     const warning = this.form.querySelector('.rate-limit-warning');
@@ -992,7 +992,7 @@ const DateInputHelper = {
       if (!overlay) {
         overlay = document.createElement('div');
         overlay.className = 'date-picker-overlay';
-        overlay.style.display = 'none';
+        overlay.classList.add('hidden');
         document.body.appendChild(overlay);
         overlay.addEventListener('click', function(e) {
           e.stopPropagation();
@@ -1090,7 +1090,7 @@ const DateInputHelper = {
       }
       if (overlay) {
         overlay.classList.remove('active');
-        overlay.style.display = 'none';
+        overlay.classList.add('hidden');
       }
       if (scrollCleanup) {
         scrollCleanup();
@@ -1118,7 +1118,7 @@ const DateInputHelper = {
 
       // Оверлей
       ensureOverlay();
-      overlay.style.display = 'block';
+      overlay.classList.remove('hidden');
       requestAnimationFrame(() => {
         overlay.classList.add('active');
       });

@@ -37,19 +37,19 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="contactPerson">Контактное лицо <span class="required">*</span></label>
           <input type="text" class="form-input" id="contactPerson" name="contactPerson" placeholder="Ваше полное имя" required minlength="2" maxlength="100" autocomplete="name">
-          <p class="error-message" id="contactPersonError">Пожалуйста, введите ваше имя</p>
+          <p class="error-message" id="contactPersonError">Пожалуйста, введите Ваше имя</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="proposalEmail">Электронная почта <span class="required">*</span></label>
-          <input type="email" class="form-input" id="proposalEmail" name="email" placeholder="ваш.email@company.com" required maxlength="255" autocomplete="email">
+          <input type="email" class="form-input" id="proposalEmail" name="email" placeholder="Ваш.email@company.com" required maxlength="255" autocomplete="email">
           <p class="error-message" id="emailError">Пожалуйста, введите корректный email</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="phone-proposal">Телефон <span class="required">*</span></label>
           <div class="form-phone-group">
-            <input type="tel" class="form-input form-input-phone" id="phone-proposal" name="phone" placeholder="Введите номер без кода страны, например, 9990001122" required maxlength="20" autocomplete="tel">
+            <input type="tel" class="form-input form-input-phone" id="phone-proposal" name="phone" placeholder="9990001122" required maxlength="20" autocomplete="tel">
             <input type="text" class="form-input form-input-extension" id="extension" name="extension" placeholder="доб." autocomplete="off">
           </div>
           <p class="error-message" id="phoneError">Пожалуйста, введите корректный номер телефона</p>
@@ -57,13 +57,13 @@ const ModalTemplates = {
 
         <div class="form-group">
           <label class="form-label" for="aircraftType">Тип воздушного судна <span class="required">*</span></label>
-          <input type="text" class="form-input" id="aircraftType" name="aircraftType" placeholder="Введите тип воздушного судна (например, Boeing 777)" required minlength="2" maxlength="100" autocomplete="off">
+          <input type="text" class="form-input" id="aircraftType" name="aircraftType" placeholder="Например, Boeing 777" required minlength="2" maxlength="100" autocomplete="off">
           <p class="error-message" id="aircraftTypeError">Пожалуйста, введите тип воздушного судна</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="serviceType">Требуемая услуга <span class="required">*</span></label>
-          <input type="text" class="form-input" id="serviceType" name="serviceType" placeholder="Введите тип услуги (например, модификация систем управления)" required minlength="2" maxlength="100" autocomplete="off">
+          <input type="text" class="form-input" id="serviceType" name="serviceType" placeholder="Например, модификация систем" required minlength="2" maxlength="100" autocomplete="off">
           <p class="error-message" id="serviceTypeError">Пожалуйста, выберите тип услуги</p>
         </div>
 
@@ -97,7 +97,7 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="taskDescription">Краткое описание задачи <span class="required">*</span></label>
           <textarea class="form-textarea" id="taskDescription" name="taskDescription" placeholder="Пожалуйста, опишите требования к заявке, сроки и любые конкретные детали" required minlength="10" maxlength="2000"></textarea>
-          <p class="error-message" id="taskDescriptionError">Пожалуйста, опишите вашу задачу (минимум 10 символов)</p>
+          <p class="error-message" id="taskDescriptionError">Пожалуйста, опишите Вашу задачу (минимум 10 символов)</p>
         </div>
 
         <div class="form-group">
@@ -113,7 +113,6 @@ const ModalTemplates = {
           </div>
         </div>
 
-        <!-- ЧЕКБОКС СОГЛАСИЯ (имя = consent, значение = true) -->
         <div class="form-agreement form-agreement-checkbox">
           <label class="checkbox-label">
             <input type="checkbox" id="personalDataConsent" name="personalDataConsent" value="true" required>
@@ -142,7 +141,7 @@ const ModalTemplates = {
     </button>
     <div class="modal-header">
       <h2 class="modal-title" id="universalApplicationModalTitle">Отклик на вакансию</h2>
-      <p class="modal-subtitle" id="universalApplicationModalSubtitle">Заполните форму ниже и мы рассмотрим вашу кандидатуру</p>
+      <p class="modal-subtitle" id="universalApplicationModalSubtitle">Заполните форму ниже и мы рассмотрим Вашу кандидатуру</p>
       <p class="form-required-note">Поля, отмеченные звездочкой (*), обязательны для заполнения</p>
     </div>
     <div class="modal-body">
@@ -153,25 +152,25 @@ const ModalTemplates = {
       <form id="universalApplicationForm" novalidate>
         <div class="form-group">
           <label class="form-label" for="fullName">ФИО <span class="required">*</span></label>
-          <input type="text" class="form-input" id="fullName" name="fullName" placeholder="Введите ваши ФИО полностью" required minlength="2" maxlength="200" autocomplete="name">
+          <input type="text" class="form-input" id="fullName" name="fullName" placeholder="Введите Ваши ФИО полностью" required minlength="2" maxlength="200" autocomplete="name">
           <p class="error-message" id="fullNameError">Пожалуйста, введите корректное ФИО</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="phone-universal">Номер телефона <span class="required">*</span></label>
-          <input type="tel" class="form-input" id="phone-universal" name="phone" placeholder="Введите номер без кода" required maxlength="20" autocomplete="tel">
+          <input type="tel" class="form-input" id="phone-universal" name="phone" placeholder="9990001122" required maxlength="20" autocomplete="tel">
           <p class="error-message" id="phoneError">Пожалуйста, введите корректный номер телефона</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="universalEmail">Адрес e-mail <span class="required">*</span></label>
-          <input type="email" class="form-input" id="universalEmail" name="email" placeholder="ваш.email@example.com" required maxlength="255" autocomplete="email">
+          <input type="email" class="form-input" id="universalEmail" name="email" placeholder="Ваш.email@example.com" required maxlength="255" autocomplete="email">
           <p class="error-message" id="emailError">Пожалуйста, введите корректный email</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="about">Расскажите о себе <span class="required">*</span></label>
-          <textarea class="form-textarea" id="about" name="about" placeholder="Расскажите о вашем опыте, навыках и почему вы хотите работать у нас..." required minlength="10" maxlength="2000"></textarea>
+          <textarea class="form-textarea" id="about" name="about" placeholder="Расскажите о Вашем опыте, навыках и почему вы хотите работать у нас..." required minlength="10" maxlength="2000"></textarea>
           <p class="error-message" id="aboutError">Пожалуйста, расскажите о себе (минимум 10 символов)</p>
         </div>
 
@@ -189,7 +188,6 @@ const ModalTemplates = {
           <p class="error-message" id="fileAttachmentError">Пожалуйста, прикрепите резюме</p>
         </div>
 
-        <!-- ЧЕКБОКС СОГЛАСИЯ (имя = consent, значение = true) -->
         <div class="form-agreement form-agreement-checkbox">
           <label class="checkbox-label">
             <input type="checkbox" id="consent" name="consent" value="true" required>
@@ -219,7 +217,7 @@ const ModalTemplates = {
           <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
         <h3 class="success-title" id="successModalTitle">Заявка отправлена!</h3>
-        <p class="success-text" id="successModalText">Благодарим за ваш запрос!</p>
+        <p class="success-text" id="successModalText">Благодарим за Ваш запрос!</p>
       </div>
     </div>
   </div>
@@ -252,7 +250,7 @@ const ModalTemplates = {
       <form id="feedbackForm" novalidate>
         <div class="form-group">
           <label class="form-label" for="feedbackFullName">ФИО <span class="required">*</span></label>
-          <input type="text" class="form-input" id="feedbackFullName" name="fullName" placeholder="Введите ваши ФИО" required minlength="2" maxlength="200" autocomplete="name">
+          <input type="text" class="form-input" id="feedbackFullName" name="fullName" placeholder="Введите Ваши ФИО" required minlength="2" maxlength="200" autocomplete="name">
           <p class="error-message" id="feedbackFullNameError">Пожалуйста, введите корректное ФИО</p>
         </div>
 
@@ -264,11 +262,10 @@ const ModalTemplates = {
 
         <div class="form-group">
           <label class="form-label" for="feedbackEmail">Электронная почта <span class="required">*</span></label>
-          <input type="email" class="form-input" id="feedbackEmail" name="email" placeholder="ваш.email@example.com" required maxlength="255" autocomplete="email">
+          <input type="email" class="form-input" id="feedbackEmail" name="email" placeholder="Ваш.email@example.com" required maxlength="255" autocomplete="email">
           <p class="error-message" id="feedbackEmailError">Пожалуйста, введите корректный email</p>
         </div>
 
-        <!-- БЛОК РАДИОКНОПОК (без инлайн-стилей) -->
         <div class="form-group">
           <fieldset class="radio-group-fieldset">
             <legend class="form-label">Тип отзыва <span class="required">*</span></legend>
@@ -325,38 +322,32 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    // ========== МОДАЛКА ДЛЯ КАТЕГОРИЙ НОВОСТЕЙ ==========
     categoryNewsModal: `
 <!-- Category News Modal -->
 <div class="modal-overlay" id="categoryNewsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
-  <div class="modal-container" style="max-width: 800px;">
+  <div class="modal-container modal-category-container">
     <button class="modal-close" aria-label="Закрыть">
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
-    <div class="modal-body" style="padding: 2rem;">
-      <h2 id="categoryModalTitle" style="color: var(--vd); font-weight: 700; margin-bottom: 1.5rem;">Новости категории</h2>
-      <div id="categoryNewsList" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>
-      <div id="categoryNewsEmpty" style="display: none; color: var(--metallic); text-align: center; padding: 2rem;">
-        В этой категории пока нет новостей.
-      </div>
+    <div class="modal-body modal-category-body">
+      <h2 id="categoryModalTitle" class="modal-category-title">Новости категории</h2>
+      <div id="categoryNewsList" class="modal-category-list"></div>
+      <div id="categoryNewsEmpty" class="modal-category-empty">В этой категории пока нет новостей.</div>
     </div>
   </div>
 </div>`,
 
-    // ========== МОДАЛКА ДЛЯ КАТЕГОРИЙ ПРОЕКТОВ (НОВАЯ) ==========
     projectCategoryModal: `
 <!-- Project Category Modal -->
 <div class="modal-overlay" id="projectCategoryModalOverlay" role="dialog" aria-modal="true" aria-labelledby="projectCategoryModalTitle">
-  <div class="modal-container" style="max-width: 800px;">
+  <div class="modal-container modal-category-container">
     <button class="modal-close" aria-label="Закрыть">
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
-    <div class="modal-body" style="padding: 2rem;">
-      <h2 id="projectCategoryModalTitle" style="color: var(--vd); font-weight: 700; margin-bottom: 1.5rem;">Проекты категории</h2>
-      <div id="projectCategoryList" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>
-      <div id="projectCategoryEmpty" style="display: none; color: var(--metallic); text-align: center; padding: 2rem;">
-        В этой категории пока нет проектов.
-      </div>
+    <div class="modal-body modal-category-body">
+      <h2 id="projectCategoryModalTitle" class="modal-category-title">Проекты категории</h2>
+      <div id="projectCategoryList" class="modal-category-list"></div>
+      <div id="projectCategoryEmpty" class="modal-category-empty">В этой категории пока нет проектов.</div>
     </div>
   </div>
 </div>`

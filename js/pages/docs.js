@@ -61,7 +61,7 @@ function initDocsPage() {
       placeholder.appendChild(svg);
       placeholder.appendChild(span);
       this.parentElement.appendChild(placeholder);
-      this.style.display = 'none';
+      this.classList.add('hidden');
     };
     img.addEventListener('error', errorHandler);
     errorHandlerMap.set(img, errorHandler);
