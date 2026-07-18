@@ -150,20 +150,20 @@ Options -Indexes -MultiViews
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^news/([^/]+)$ /news.html?modal=news&id=$1 [L,QSA]
 
-    # Перенаправляем /projects/ads-b-out → /projects.html?modal=project&id=ads-b-out
+    # Перенаправляем /project/ads-b-out → /projects.html?modal=project&id=ads-b-out
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^projects/([^/]+)$ /projects.html?modal=project&id=$1 [L,QSA]
+    RewriteRule ^project/([^/]+)$ /projects.html?modal=project&id=$1 [L,QSA]
 
     # Перенаправляем /category/События → /news.html?modal=category&id=События
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^category/([^/]+)$ /news.html?modal=category&id=$1 [L,QSA]
 
-    # Перенаправляем /projects-category/Модернизация → /projects.html?modal=project-category&id=Модернизация
+    # Перенаправляем /project-category/Модернизация → /projects.html?modal=project-category&id=Модернизация
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^projects-category/([^/]+)$ /projects.html?modal=project-category&id=$1 [L,QSA]
+    RewriteRule ^project-category/([^/]+)$ /projects.html?modal=project-category&id=$1 [L,QSA]
 </IfModule>
 
 # ============================================================
