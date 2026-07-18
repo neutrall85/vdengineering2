@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Запрещаем индексацию служебных и технических каталогов
+# (CSS и JS намеренно оставлены открытыми для корректного рендеринга)
+Disallow: /api/
+Disallow: /vendor/
+Disallow: /node_modules/
+Disallow: /tmp/
+Disallow: /logs/
+Disallow: /backup/
+
+# Запрещаем индексацию дублей и страниц с GET-параметрами
+Disallow: /*?*
+Disallow: /index.html
+
+# Указываем путь к карте сайта
+Sitemap: https://vdengineering.ru/sitemap.xml
+
+# Главное зеркало (только домен, без https://)
+# Рекомендация: также проверьте настройки главного зеркала в Яндекс.Вебмастере
+Host: vdengineering.ru

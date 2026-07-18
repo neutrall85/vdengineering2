@@ -60,6 +60,17 @@ if (!window._galleryImageCache) {
   window._galleryImageCache = {};
 }
 
+/**
+ * Нормализация пути для картинок в галерее
+ */
+function _normalizePath(path) {
+  if (!path) return '/assets/images/placeholder.jpg';
+  if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  return '/' + path;
+}
+
 function initProjectGallery(images, container, mainImage) {
   const sanitizer = window.Utils?.Sanitizer;
   if (container) container.replaceChildren();
@@ -73,15 +84,18 @@ function initProjectGallery(images, container, mainImage) {
   }
 
   if (!images || images.length === 0) {
-    newMainImage.src = 'assets/images/placeholder.jpg';
+    newMainImage.src = '/assets/images/placeholder.jpg';
     newMainImage.alt = 'Изображение проекта';
     return;
   }
 
+  // Нормализуем все пути
+  const normalizedImages = images.map(img => _normalizePath(img));
+
   const cache = window._galleryImageCache;
 
   function preloadAllImages() {
-    images.forEach(src => {
+    normalizedImages.forEach(src => {
       if (!cache[src]) {
         const img = new Image();
         img.decoding = 'async';
@@ -93,7 +107,7 @@ function initProjectGallery(images, container, mainImage) {
 
   setTimeout(preloadAllImages, 50);
 
-  const firstSrc = images[0];
+  const firstSrc = normalizedImages[0];
   if (firstSrc && !document.querySelector(`link[href="${firstSrc}"]`)) {
     const link = document.createElement('link');
     link.rel = 'preload';
@@ -109,7 +123,7 @@ function initProjectGallery(images, container, mainImage) {
   let isTransitioning = false;
 
   function updateMainImage(index) {
-    const src = images[index];
+    const src = normalizedImages[index];
     if (!src) return;
 
     const cachedImg = cache[src];
@@ -117,7 +131,7 @@ function initProjectGallery(images, container, mainImage) {
       newMainImage.src = src;
     } else {
       newMainImage.src = src;
-      if (!cachedImg) {
+      if (!cache[src]) {
         const img = new Image();
         img.src = src;
         cache[src] = img;
@@ -128,10 +142,10 @@ function initProjectGallery(images, container, mainImage) {
   }
 
   function preloadAdjacent(index) {
-    const prev = (index - 1 + images.length) % images.length;
-    const next = (index + 1) % images.length;
+    const prev = (index - 1 + normalizedImages.length) % normalizedImages.length;
+    const next = (index + 1) % normalizedImages.length;
     [prev, next].forEach(i => {
-      const src = images[i];
+      const src = normalizedImages[i];
       if (!cache[src]) {
         const img = new Image();
         img.src = src;
@@ -143,7 +157,7 @@ function initProjectGallery(images, container, mainImage) {
   function navigate(direction) {
     if (isTransitioning) return;
     isTransitioning = true;
-    const newIndex = (currentIndex + direction + images.length) % images.length;
+    const newIndex = (currentIndex + direction + normalizedImages.length) % normalizedImages.length;
     currentIndex = newIndex;
     updateMainImage(currentIndex);
     preloadAdjacent(currentIndex);
@@ -155,13 +169,72 @@ function initProjectGallery(images, container, mainImage) {
     const lightboxImage = document.getElementById('lightboxImage');
     if (!lightboxOverlay || !lightboxImage) return;
 
+    // Удаляем старые кнопки и индикаторы, если они есть
+    const oldPrevBtn = document.getElementById('lightboxPrevBtn');
+    const oldNextBtn = document.getElementById('lightboxNextBtn');
+    const oldIndicators = document.getElementById('lightboxIndicators');
+    if (oldPrevBtn) oldPrevBtn.remove();
+    if (oldNextBtn) oldNextBtn.remove();
+    if (oldIndicators) oldIndicators.remove();
+
+    // Если изображений больше одного — создаём навигацию
+    const hasMultiple = normalizedImages.length > 1;
+
+    let prevBtn = null;
+    let nextBtn = null;
+    let indicatorsContainer = null;
+
+    if (hasMultiple) {
+      // Создаём кнопки
+      prevBtn = document.createElement('button');
+      prevBtn.className = 'lightbox-nav lightbox-prev';
+      prevBtn.id = 'lightboxPrevBtn';
+      prevBtn.setAttribute('aria-label', 'Предыдущее изображение');
+      prevBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
+      prevBtn.addEventListener('click', () => navigateLightbox(-1));
+      lightboxOverlay.querySelector('.lightbox-content').appendChild(prevBtn);
+
+      nextBtn = document.createElement('button');
+      nextBtn.className = 'lightbox-nav lightbox-next';
+      nextBtn.id = 'lightboxNextBtn';
+      nextBtn.setAttribute('aria-label', 'Следующее изображение');
+      nextBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>`;
+      nextBtn.addEventListener('click', () => navigateLightbox(1));
+      lightboxOverlay.querySelector('.lightbox-content').appendChild(nextBtn);
+
+      // Создаём индикаторы
+      indicatorsContainer = document.createElement('div');
+      indicatorsContainer.className = 'lightbox-indicators';
+      indicatorsContainer.id = 'lightboxIndicators';
+      normalizedImages.forEach((_, idx) => {
+        const dot = document.createElement('button');
+        dot.className = 'lightbox-indicator';
+        dot.setAttribute('aria-label', `Изображение ${idx + 1}`);
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          lbCurrentIndex = idx;
+          updateLightboxImage(lbCurrentIndex);
+          // Обновляем активный индикатор
+          indicatorsContainer.querySelectorAll('.lightbox-indicator').forEach((el, i) => {
+            el.classList.toggle('active', i === idx);
+          });
+        });
+        indicatorsContainer.appendChild(dot);
+      });
+      lightboxOverlay.querySelector('.lightbox-content').appendChild(indicatorsContainer);
+    } else {
+      // Если одно изображение — ничего не создаём, все элементы уже удалены
+      // Также снимаем класс single-image, если он был (но он не нужен)
+      lightboxOverlay.classList.remove('single-image');
+    }
+
     let lbCurrentIndex = currentIndex;
     let lbTouchStartX = 0;
     let lbTouchStartY = 0;
     let lbIsSwiping = false;
 
     function updateLightboxImage(index) {
-      const src = images[index];
+      const src = normalizedImages[index];
       const cached = cache[src];
       if (cached && cached.complete && cached.naturalWidth > 0) {
         lightboxImage.src = src;
@@ -173,62 +246,23 @@ function initProjectGallery(images, container, mainImage) {
           cache[src] = img;
         }
       }
-      const indicators = document.getElementById('lightboxIndicators');
-      if (indicators) {
-        indicators.querySelectorAll('.lightbox-indicator').forEach((el, i) => {
+      // Обновляем индикаторы
+      if (indicatorsContainer) {
+        indicatorsContainer.querySelectorAll('.lightbox-indicator').forEach((el, i) => {
           el.classList.toggle('active', i === index);
         });
       }
     }
 
     function navigateLightbox(direction) {
-      lbCurrentIndex = (lbCurrentIndex + direction + images.length) % images.length;
+      lbCurrentIndex = (lbCurrentIndex + direction + normalizedImages.length) % normalizedImages.length;
       updateLightboxImage(lbCurrentIndex);
     }
 
-    let indicatorsContainer = document.getElementById('lightboxIndicators');
-    if (!indicatorsContainer) {
-      indicatorsContainer = document.createElement('div');
-      indicatorsContainer.className = 'lightbox-indicators';
-      indicatorsContainer.id = 'lightboxIndicators';
-      lightboxOverlay.querySelector('.lightbox-content').appendChild(indicatorsContainer);
-    }
-    indicatorsContainer.replaceChildren();
-    if (images.length > 1) {
-      images.forEach((_, idx) => {
-        const dot = document.createElement('button');
-        dot.className = 'lightbox-indicator' + (idx === lbCurrentIndex ? ' active' : '');
-        dot.setAttribute('aria-label', `Изображение ${idx + 1}`);
-        dot.addEventListener('click', (e) => {
-          e.stopPropagation();
-          lbCurrentIndex = idx;
-          updateLightboxImage(lbCurrentIndex);
-        });
-        indicatorsContainer.appendChild(dot);
-      });
-    }
+    // Обработчики для кнопок (если они есть, мы уже добавили ранее)
+    // Но если мы пересоздали кнопки, то обработчики уже висят, ничего не делаем.
 
-    let prevBtn = document.getElementById('lightboxPrevBtn');
-    let nextBtn = document.getElementById('lightboxNextBtn');
-    if (!prevBtn) {
-      prevBtn = createNavButton('lightbox-nav lightbox-prev', 'Предыдущее', 'M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z');
-      prevBtn.id = 'lightboxPrevBtn';
-      lightboxOverlay.querySelector('.lightbox-content').appendChild(prevBtn);
-    }
-    if (!nextBtn) {
-      nextBtn = createNavButton('lightbox-nav lightbox-next', 'Следующее', 'M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z');
-      nextBtn.id = 'lightboxNextBtn';
-      lightboxOverlay.querySelector('.lightbox-content').appendChild(nextBtn);
-    }
-    const showNav = images.length > 1;
-    prevBtn.classList.toggle('visible', showNav);
-    nextBtn.classList.toggle('visible', showNav);
-
-    const prevHandler = () => navigateLightbox(-1);
-    const nextHandler = () => navigateLightbox(1);
-    prevBtn.onclick = prevHandler;
-    nextBtn.onclick = nextHandler;
-
+    // Touch-обработчики для свайпа
     function lbHandleTouchStart(e) {
       const touch = e.touches[0];
       lbTouchStartX = touch.clientX;
@@ -252,7 +286,7 @@ function initProjectGallery(images, container, mainImage) {
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
 
-      if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
+      if (hasMultiple && absDeltaX > 50 && absDeltaX > absDeltaY) {
         if (deltaX > 0) navigateLightbox(-1);
         else navigateLightbox(1);
         lbIsSwiping = true;
@@ -269,7 +303,10 @@ function initProjectGallery(images, container, mainImage) {
     lbContent.addEventListener('touchmove', lbHandleTouchMove, { passive: true });
     lbContent.addEventListener('touchend', lbHandleTouchEnd, { passive: true });
 
+    // Устанавливаем первое изображение и обновляем индикаторы
     updateLightboxImage(lbCurrentIndex);
+
+    // Показываем лайтбокс
     lightboxOverlay.classList.add('active');
     if (window.ScrollManager && !ScrollManager.isLocked()) {
       ScrollManager.lock();
@@ -284,8 +321,9 @@ function initProjectGallery(images, container, mainImage) {
         lbContent.removeEventListener('touchstart', lbHandleTouchStart);
         lbContent.removeEventListener('touchmove', lbHandleTouchMove);
         lbContent.removeEventListener('touchend', lbHandleTouchEnd);
-        prevBtn.onclick = null;
-        nextBtn.onclick = null;
+        // Удаляем обработчики кнопок (чтобы не осталось висячих)
+        if (prevBtn) prevBtn.removeEventListener('click', () => navigateLightbox(-1));
+        if (nextBtn) nextBtn.removeEventListener('click', () => navigateLightbox(1));
         lightboxOverlay.onclick = null;
         document.removeEventListener('keydown', escapeHandler);
       }, 300);
@@ -302,6 +340,7 @@ function initProjectGallery(images, container, mainImage) {
     document.addEventListener('keydown', escapeHandler);
   }
 
+  // Обработчики для свайпа в модалке (не в лайтбоксе)
   function handleTouchStart(e) {
     const touch = e.touches[0];
     touchStartX = touch.clientX;
@@ -325,7 +364,7 @@ function initProjectGallery(images, container, mainImage) {
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
 
-    if (images.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
+    if (normalizedImages.length > 1 && absDeltaX > 50 && absDeltaX > absDeltaY) {
       if (deltaX > 0) navigate(-1);
       else navigate(1);
       isSwiping = true;
@@ -359,36 +398,37 @@ function initProjectGallery(images, container, mainImage) {
   wrapper.addEventListener('touchmove', handleTouchMove, { passive: true });
   wrapper.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-  if (images.length === 1) {
-    updateMainImage(0);
-    return;
+  // Если изображений больше одного, добавляем навигацию в модалку
+  if (normalizedImages.length > 1) {
+    const prevBtn = createNavButton('gallery-nav gallery-nav-prev', 'Предыдущее изображение', 'M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z');
+    prevBtn.addEventListener('click', () => navigate(-1));
+    newContainer.appendChild(prevBtn);
+
+    const nextBtn = createNavButton('gallery-nav gallery-nav-next', 'Следующее изображение', 'M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z');
+    nextBtn.addEventListener('click', () => navigate(1));
+    newContainer.appendChild(nextBtn);
+
+    const indicatorsContainer = document.createElement('div');
+    indicatorsContainer.className = 'gallery-indicators';
+    normalizedImages.forEach((_, index) => {
+      const indicator = document.createElement('button');
+      indicator.className = 'gallery-indicator' + (index === 0 ? ' active' : '');
+      indicator.setAttribute('aria-label', `Изображение ${index + 1}`);
+      indicator.addEventListener('click', () => {
+        currentIndex = index;
+        updateMainImage(currentIndex);
+        preloadAdjacent(currentIndex);
+      });
+      indicatorsContainer.appendChild(indicator);
+    });
+    newContainer.appendChild(indicatorsContainer);
   }
 
-  const prevBtn = createNavButton('gallery-nav gallery-nav-prev', 'Предыдущее изображение', 'M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z');
-  prevBtn.addEventListener('click', () => navigate(-1));
-  newContainer.appendChild(prevBtn);
-
-  const nextBtn = createNavButton('gallery-nav gallery-nav-next', 'Следующее изображение', 'M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z');
-  nextBtn.addEventListener('click', () => navigate(1));
-  newContainer.appendChild(nextBtn);
-
-  const indicatorsContainer = document.createElement('div');
-  indicatorsContainer.className = 'gallery-indicators';
-  images.forEach((_, index) => {
-    const indicator = document.createElement('button');
-    indicator.className = 'gallery-indicator' + (index === 0 ? ' active' : '');
-    indicator.setAttribute('aria-label', `Изображение ${index + 1}`);
-    indicator.addEventListener('click', () => {
-      currentIndex = index;
-      updateMainImage(currentIndex);
-      preloadAdjacent(currentIndex);
-    });
-    indicatorsContainer.appendChild(indicator);
-  });
-  newContainer.appendChild(indicatorsContainer);
-
+  // Если изображение одно, просто показываем его
   updateMainImage(0);
-  preloadAdjacent(0);
+  if (normalizedImages.length === 1) {
+    preloadAdjacent(0);
+  }
 
   newMainImage.fetchPriority = 'high';
   newMainImage.decoding = 'async';

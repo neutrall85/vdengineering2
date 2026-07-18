@@ -1358,12 +1358,12 @@ body.app-ready>footer {
 }
 
 .cta-block .btn-primary {
-  background: var(--vd);
+  background: #2a6bb0;
   color: white;
 }
 
 .cta-block .btn-primary:hover {
-  background: var(--vd-dark);
+  background: var(--vd);
 }
 
 

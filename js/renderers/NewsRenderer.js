@@ -2,12 +2,21 @@
  * Рендеринг новостей
  * ООО "Волга-Днепр Инжиниринг"
  */
-
 class NewsRenderer {
   constructor(newsData) {
     this.newsData = newsData;
     this.loadedYears = new Set();
     this.cardStaggerMs = window.CONFIG?.ANIMATION?.CARD_STAGGER_MS || 50;
+  }
+
+  /**
+   * Приводит путь к абсолютному (добавляет / в начале, если нет)
+   */
+  _normalizePath(path) {
+    if (!path) return '/assets/images/placeholder.jpg';
+    if (path.startsWith('/')) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '/' + path;
   }
 
   renderPreview(container, count = 3) {
@@ -111,10 +120,11 @@ class NewsRenderer {
 
     const img = document.createElement('img');
     const previewImage = (news.images && news.images[0]) || news.image || 'assets/images/placeholder.jpg';
-    img.setAttribute('data-src', Utils.Sanitizer.escapeHtml(previewImage));
+    const normalizedSrc = this._normalizePath(previewImage);
+    img.setAttribute('data-src', Utils.Sanitizer.escapeHtml(normalizedSrc));
     img.setAttribute('alt', Utils.Sanitizer.escapeHtml(news.title));
     img.addEventListener('error', function () {
-      this.src = 'assets/images/placeholder.jpg';
+      this.src = '/assets/images/placeholder.jpg';
     });
 
     imageContainer.appendChild(placeholder);
@@ -123,12 +133,9 @@ class NewsRenderer {
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('news-card-content');
 
-    // === КЛИКАБЕЛЬНАЯ ПЛАШКА КАТЕГОРИИ ===
     const category = document.createElement('span');
     category.classList.add('news-card-category', 'category-trigger');
     category.textContent = Utils.Sanitizer.escapeHtml(news.category);
-    
-    // ДОБАВЛЯЕМ ОБА АТРИБУТА ДЛЯ РАБОТЫ ModalManager
     category.dataset.modalOpen = 'category'; 
     category.dataset.category = news.category;
     
@@ -256,7 +263,7 @@ class NewsRenderer {
               };
               const onErrorHandler = () => {
                 Logger.WARN('Failed to load image:', src);
-                img.src = 'assets/images/placeholder.jpg';
+                img.src = '/assets/images/placeholder.jpg';
                 img.classList.add('loaded');
                 img.removeEventListener('load', onLoadHandler);
                 img.removeEventListener('error', onErrorHandler);

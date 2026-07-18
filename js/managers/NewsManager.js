@@ -68,14 +68,27 @@ class NewsManager {
   openLightbox(imageSrc, imageAlt) {
     if (!this.lightboxOverlay || !this.lightboxImage) return;
 
+    // Удаляем старые кнопки и индикаторы (если они есть)
+    const oldPrevBtn = document.getElementById('lightboxPrevBtn');
+    const oldNextBtn = document.getElementById('lightboxNextBtn');
+    const oldIndicators = document.getElementById('lightboxIndicators');
+    if (oldPrevBtn) oldPrevBtn.remove();
+    if (oldNextBtn) oldNextBtn.remove();
+    if (oldIndicators) oldIndicators.remove();
+
+    // В новостях всегда одно изображение, поэтому не создаём навигацию
+    // Устанавливаем изображение
     this.lightboxImage.src = imageSrc;
     this.lightboxImage.alt = imageAlt || 'Изображение новости';
+
+    // Показываем оверлей
     this.lightboxOverlay.classList.add('active');
 
     if (window.ScrollManager && !window.ScrollManager.isLocked()) {
       ScrollManager.lock();
     }
 
+    // Обработчик клика по изображению для закрытия
     this._lightboxImageClickHandler = () => this.closeLightbox();
     this.lightboxImage.addEventListener('click', this._lightboxImageClickHandler);
 
@@ -150,7 +163,6 @@ class NewsManager {
     }
   }
 
-  // ========== ИЗМЕНЕНИЕ: метод заполнения модалки с галереей ==========
   _populateNewsModal(news) {
     const titleEl = document.getElementById('newsModalTitle');
     const categoryEl = document.getElementById('newsModalCategory');
@@ -170,8 +182,8 @@ class NewsManager {
     }
     if (container && imageEl) {
       const images = news.images || (news.image ? [news.image] : []);
-      if (typeof window.initNewsGallery === 'function') {
-        window.initNewsGallery(images, container, imageEl);
+      if (typeof window.initProjectGallery === 'function') {
+        window.initProjectGallery(images, container, imageEl);
       } else {
         // fallback
         imageEl.src = images[0] || 'assets/images/placeholder.jpg';

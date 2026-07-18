@@ -11,7 +11,6 @@ class Application {
     this.scrollProgressElements = null;
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
-    this._boundHashChangeHandler = null;
   }
 
   async init() {
@@ -58,7 +57,8 @@ class Application {
           }
   
           this._initFormManagers();
-          this._openModalFromUrl();
+          // Модалка из URL открывается автоматически через ModalManager._openFromUrl()
+          // дополнительный вызов не нужен
   
           const pageInitMap = {
               'projects': 'initProjectsPage',
@@ -75,19 +75,14 @@ class Application {
           this._initFloatingCTA();
           this._initImageLazyLoading();
           this._initPrefersReducedMotion();
-          this._handleHashScroll();
+          this._handleHashScroll(); // для якорей на странице (без модалок)
           this._initScrollProgressBar();
-          this._initHashListener();
           this._initMapLoader();
   
           // ========== Инициализация репортера ошибок ==========
           if (typeof textSelectionReporter !== 'undefined') {
               textSelectionReporter.init();
           }
-  
-          setTimeout(() => {
-              this._openModalFromHash();
-          }, 300);
   
           if (!this._visibilityHandlerAdded) {
               document.addEventListener('visibilitychange', () => {
@@ -499,52 +494,6 @@ class Application {
     }
   }
 
-  _initHashListener() {
-    this._boundHashChangeHandler = () => {
-      this._openModalFromHash();
-    };
-    window.addEventListener('hashchange', this._boundHashChangeHandler);
-  }
-
-  _openModalFromHash() {
-    const hash = window.location.hash.slice(1);
-    if (!hash) return;
-    const [type, id] = hash.split('=');
-    if (!type || !id) return;
-
-    const modalManager = this.services.modalManager;
-    if (!modalManager) {
-      Logger.WARN('ModalManager not available for hash handling');
-      return;
-    }
-
-    if (modalManager.activeModal === type && modalManager.currentModalId === id) {
-      return;
-    }
-
-    const decodedId = decodeURIComponent(id);
-
-    if (type === 'project') {
-      modalManager.openProjectById(decodedId);
-    } else if (type === 'news') {
-      modalManager.openNewsById(decodedId);
-    } else if (type === 'category') {
-      modalManager.openCategoryByName(decodedId);
-    } else if (type === 'project-category') {
-      modalManager.openProjectCategoryByName(decodedId);
-    }
-  }
-
-  _openModalFromUrl() {
-    const url = new URL(window.location.href);
-    const modalKey = url.searchParams.get('modal');
-    if (modalKey && this.services.modalManager) {
-      setTimeout(() => {
-        this.services.modalManager.open(modalKey);
-      }, 300);
-    }
-  }
-
   _initMapLoader() {
     const container = document.getElementById('mapContainer');
     if (!container) return;
@@ -625,11 +574,6 @@ class Application {
       this.imageObserver = null;
     }
     this._destroyScrollProgressBar();
-
-    if (this._boundHashChangeHandler) {
-      window.removeEventListener('hashchange', this._boundHashChangeHandler);
-      this._boundHashChangeHandler = null;
-    }
 
     if (this.services.navigationManager && typeof this.services.navigationManager.destroy === 'function') {
       this.services.navigationManager.destroy();

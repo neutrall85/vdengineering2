@@ -155,6 +155,7 @@
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
     const safeCategory = sanitizer ? sanitizer.escapeHtml(project.category) : project.category;
     const previewImage = (project.images && project.images[0]) || 'assets/images/placeholder.jpg';
+    const normalizedSrc = previewImage.startsWith('/') ? previewImage : '/' + previewImage;
     const shortDesc = project.shortDescription || '';
 
     const article = document.createElement('article');

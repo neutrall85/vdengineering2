@@ -13,6 +13,16 @@ class ProjectRenderer {
     this.imageObserver = null;
   }
 
+  /**
+   * Приводит путь к абсолютному (добавляет / в начале, если нет)
+   */
+  _normalizePath(path) {
+    if (!path) return '/assets/images/placeholder.jpg';
+    if (path.startsWith('/')) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '/' + path;
+  }
+
   render(container) {
     if (this.loaded) return;
     if (!container) {
@@ -50,6 +60,7 @@ class ProjectRenderer {
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
     const safeCategory = sanitizer ? sanitizer.escapeHtml(project.category) : project.category;
     const previewImage = (project.images && project.images[0]) || 'assets/images/placeholder.jpg';
+    const normalizedSrc = this._normalizePath(previewImage);
     const additionalDesc = project.shortDescription
       ? (sanitizer ? sanitizer.escapeHtml(project.shortDescription) : project.shortDescription)
       : '';
@@ -57,16 +68,14 @@ class ProjectRenderer {
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
     article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
-    
-    // ===== КЛЮЧЕВЫЕ АТРИБУТЫ ДЛЯ ОТКРЫТИЯ МОДАЛКИ ПРОЕКТА =====
-    article.dataset.modalOpen = 'project';          // открывает модалку проекта
-    article.dataset.projectId = project.id;         // ID проекта
+    article.dataset.modalOpen = 'project';
+    article.dataset.projectId = project.id;
     article.dataset.once = 'true';
 
     const imgContainer = document.createElement('div');
     imgContainer.className = 'project-image-container';
     const img = document.createElement('img');
-    img.setAttribute('data-src', previewImage);
+    img.setAttribute('data-src', normalizedSrc);
     img.alt = safeTitle;
     img.classList.add('project-img-cover');
     if (index < 2) {
@@ -74,14 +83,13 @@ class ProjectRenderer {
     }
     img.decoding = 'async';
     img.addEventListener('error', () => {
-      img.src = 'assets/images/placeholder.jpg';
+      img.src = '/assets/images/placeholder.jpg';
     });
     imgContainer.appendChild(img);
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'project-content-padding';
 
-    // ===== КЛИКАБЕЛЬНАЯ ПЛАШКА КАТЕГОРИИ (открывает категорийную модалку) =====
     const categorySpan = document.createElement('span');
     categorySpan.className = 'project-category-badge category-trigger';
     categorySpan.textContent = safeCategory;
@@ -103,7 +111,7 @@ class ProjectRenderer {
     const btn = document.createElement('button');
     btn.className = 'news-card-link';
     btn.setAttribute('data-modal-open', 'project');
-    btn.setAttribute('data-project-id', project.id); // дублируем для надёжности
+    btn.setAttribute('data-project-id', project.id);
     btn.innerHTML = 'Подробнее <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>';
 
     contentDiv.appendChild(title);
@@ -147,7 +155,6 @@ class ProjectRenderer {
   }
 }
 
-// Экспортируем класс в глобальную область для доступа из app.js и страниц
 if (typeof window !== 'undefined') {
   window.ProjectRenderer = ProjectRenderer;
 }

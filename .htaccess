@@ -129,25 +129,50 @@ Options -Indexes -MultiViews
 </IfModule>
 
 # ============================================================
-# 4. ЧПУ (ЧЕЛОВЕКО-ПОНИМАЕМЫЕ URL)
+# 4. ЧПУ ДЛЯ СТРАНИЦ (убираем .html)
 # ============================================================
 <IfModule mod_rewrite.c>
     # Если запрошенный файл или папка не существуют,
     # ищем файл с таким же именем и расширением .html
-   RewriteCond %{REQUEST_URI} !\.html$ [NC]
-   RewriteCond %{REQUEST_FILENAME} !-f
-   RewriteCond %{REQUEST_FILENAME} !-d
-   RewriteCond %{REQUEST_URI} !^/api/ [NC]
-   RewriteRule ^([^.]+)$ $1.html [L]
+    RewriteCond %{REQUEST_URI} !\.html$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/api/ [NC]
+    RewriteRule ^([^.]+)$ $1.html [L]
 </IfModule>
 
 # ============================================================
-# 5. ОГРАНИЧЕНИЕ РАЗМЕРА ЗАПРОСА (защита от DoS)
+# 5. ЧПУ ДЛЯ МОДАЛЬНЫХ ОКОН (без #, ?, &)
+# ============================================================
+<IfModule mod_rewrite.c>
+    # Перенаправляем /news/123 → /news.html?modal=news&id=123
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^news/([^/]+)$ /news.html?modal=news&id=$1 [L,QSA]
+
+    # Перенаправляем /project/ads-b-out → /projects.html?modal=project&id=ads-b-out
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^project/([^/]+)$ /projects.html?modal=project&id=$1 [L,QSA]
+
+    # Перенаправляем /category/События → /news.html?modal=category&id=События
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^category/([^/]+)$ /news.html?modal=category&id=$1 [L,QSA]
+
+    # Перенаправляем /project-category/Модернизация → /projects.html?modal=project-category&id=Модернизация
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^project-category/([^/]+)$ /projects.html?modal=project-category&id=$1 [L,QSA]
+</IfModule>
+
+# ============================================================
+# 6. ОГРАНИЧЕНИЕ РАЗМЕРА ЗАПРОСА (защита от DoS)
 # ============================================================
 LimitRequestBody 35000000
 
 # ============================================================
-# 6. СЖАТИЕ (ускорение загрузки)
+# 7. СЖАТИЕ (ускорение загрузки)
 # ============================================================
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/xml text/xml image/svg+xml application/font-woff application/font-woff2
@@ -155,7 +180,7 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 7. КЭШИРОВАНИЕ СТАТИКИ (управляется через Cache-Control)
+# 8. КЭШИРОВАНИЕ СТАТИКИ (управляется через Cache-Control)
 # ============================================================
 <IfModule mod_headers.c>
     # ---- HTML (не кэшировать) ----
@@ -202,7 +227,7 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 8. ЗАЩИТА ОТ ГОРЯЧИХ ССЫЛОК (Hotlinking)
+# 9. ЗАЩИТА ОТ ГОРЯЧИХ ССЫЛОК (Hotlinking)
 # ============================================================
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_REFERER} !^$
@@ -212,7 +237,7 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 9. ЗАЩИТА ОТ СПАМ-БОТОВ (по User-Agent)
+# 10. ЗАЩИТА ОТ СПАМ-БОТОВ (по User-Agent)
 # ============================================================
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_USER_AGENT} (havij|libwww-perl|wget|python|nikto|scan|java|winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC,OR]
@@ -221,7 +246,7 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 10. ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА
+# 11. ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА
 # ============================================================
 # Запрет выполнения PHP в папке загрузок
 <IfModule mod_rewrite.c>
