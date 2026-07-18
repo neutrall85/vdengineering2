@@ -1,7 +1,11 @@
 /**
- * Главный файл инициализации приложения
- * ООО "Волга-Днепр Инжиниринг"
- */
+Главный файл инициализации приложения
+ООО "Волга-Днепр Инжиниринг"
+*/
+
+// ========== ИМПОРТ SEO-МОДУЛЯ ==========
+import { initDynamicSEO, handleModalOpen } from './utils/seo.js';
+
 class Application {
   constructor() {
     this.initialized = false;
@@ -11,109 +15,124 @@ class Application {
     this.scrollProgressElements = null;
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
+    this._boundPopstateHandler = null;
   }
 
   async init() {
-      try {
-          if (typeof ConsentManager === 'undefined') {
-              throw new Error('ConsentManager is not loaded - critical security module missing');
-          }
-  
-          const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
-          const componentsLoadedPromise = new Promise((resolve) => {
-              const onComponentsLoaded = () => {
-                  document.removeEventListener('components:loaded', onComponentsLoaded);
-                  resolve();
-              };
-              document.addEventListener('components:loaded', onComponentsLoaded);
-  
-              if (typeof ComponentLoader !== 'undefined') {
-                  ComponentLoader.init({
-                      loadNavbar: true,
-                      loadFooter: true,
-                      loadModal: true,
-                      activePage: currentPage === 'index' ? '' : currentPage
-                  });
-              } else {
-                  resolve();
-              }
-          });
-          await componentsLoadedPromise;
-  
-          this._hidePageLoader();
-          this._initGlobalHelpers();
-          this._setCurrentYear();
-          this._registerModules();
-          this._registerModals();
-  
-          for (const module of this.modules) {
-              try {
-                  if (module && typeof module.init === 'function') {
-                      await module.init();
-                  }
-              } catch (err) {
-                  this.errors.push(`Module ${module.constructor?.name || 'unknown'} init failed: ${err.message}`);
-              }
-          }
-  
-          this._initFormManagers();
-          // Модалка из URL открывается автоматически через ModalManager._openFromUrl()
-          // дополнительный вызов не нужен
-  
-          const pageInitMap = {
-              'projects': 'initProjectsPage',
-              'services': 'initServicesPage',
-              'vacancies': 'initVacanciesPage'
-          };
-          if (pageInitMap[currentPage]) {
-              const initFn = window[pageInitMap[currentPage]];
-              if (typeof initFn === 'function') {
-                  initFn();
-              }
-          }
-  
-          this._initFloatingCTA();
-          this._initImageLazyLoading();
-          this._initPrefersReducedMotion();
-          this._handleHashScroll(); // для якорей на странице (без модалок)
-          this._initScrollProgressBar();
-          this._initMapLoader();
-  
-          // ========== Инициализация репортера ошибок ==========
-          if (typeof textSelectionReporter !== 'undefined') {
-              textSelectionReporter.init();
-          }
-  
-          if (!this._visibilityHandlerAdded) {
-              document.addEventListener('visibilitychange', () => {
-                  if (!document.hidden) {
-                      if (window.newsManager) {
-                          const activeTab = document.querySelector('.news-tab.active');
-                          if (activeTab) {
-                              const year = activeTab.dataset.year || activeTab.dataset.tab;
-                              if (year) {
-                                  const container = document.getElementById(`newsGrid-${year}`);
-                                  if (container && window.newsRenderer) {
-                                      window.newsRenderer.render(year, container);
-                                  }
-                              }
-                          }
-                      }
-                  }
-              });
-              this._visibilityHandlerAdded = true;
-          }
-  
-          this.initialized = true;
-          if (this.errors.length > 0) {
-              Logger.WARN('Application initialized with errors:', this.errors);
-          }
-          if (window.Services?.eventBus) {
-              window.Services.eventBus.emit('app:ready');
-          }
-      } catch (error) {
-          this._showError(error);
+    try {
+      if (typeof ConsentManager === 'undefined') {
+        throw new Error('ConsentManager is not loaded - critical security module missing');
       }
+
+      // ========== ИНИЦИАЛИЗАЦИЯ SEO ==========
+      try {
+        initDynamicSEO();
+        
+        // Сохраняем ссылку на обработчик для корректного удаления
+        this._boundPopstateHandler = () => initDynamicSEO();
+        window.addEventListener('popstate', this._boundPopstateHandler);
+      } catch (seoError) {
+        console.warn('SEO initialization failed:', seoError);
+        // Не прерываем работу приложения
+      }
+
+      const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      
+      const componentsLoadedPromise = new Promise((resolve) => {
+        const onComponentsLoaded = () => {
+          document.removeEventListener('components:loaded', onComponentsLoaded);
+          resolve();
+        };
+        document.addEventListener('components:loaded', onComponentsLoaded);
+        
+        if (typeof ComponentLoader !== 'undefined') {
+          ComponentLoader.init({
+            loadNavbar: true,
+            loadFooter: true,
+            loadModal: true,
+            activePage: currentPage === 'index' ? '' : currentPage
+          });
+        } else {
+          resolve();
+        }
+      });
+      
+      await componentsLoadedPromise;
+      
+      this._hidePageLoader();
+      this._initGlobalHelpers();
+      this._setCurrentYear();
+      this._registerModules();
+      this._registerModals();
+      
+      for (const module of this.modules) {
+        try {
+          if (module && typeof module.init === 'function') {
+            await module.init();
+          }
+        } catch (err) {
+          this.errors.push(`Module ${module.constructor?.name || 'unknown'} init failed: ${err.message}`);
+        }
+      }
+      
+      this._initFormManagers();
+      
+      const pageInitMap = {
+        'projects': 'initProjectsPage',
+        'services': 'initServicesPage',
+        'vacancies': 'initVacanciesPage'
+      };
+      
+      if (pageInitMap[currentPage]) {
+        const initFn = window[pageInitMap[currentPage]];
+        if (typeof initFn === 'function') {
+          initFn();
+        }
+      }
+      
+      this._initFloatingCTA();
+      this._initImageLazyLoading();
+      this._initPrefersReducedMotion();
+      this._handleHashScroll();
+      this._initScrollProgressBar();
+      this._initMapLoader();
+      
+      if (typeof textSelectionReporter !== 'undefined') {
+        textSelectionReporter.init();
+      }
+      
+      if (!this._visibilityHandlerAdded) {
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) {
+            if (window.newsManager) {
+              const activeTab = document.querySelector('.news-tab.active');
+              if (activeTab) {
+                const year = activeTab.dataset.year || activeTab.dataset.tab;
+                if (year) {
+                  const container = document.getElementById(`newsGrid-${year}`);
+                  if (container && window.newsRenderer) {
+                    window.newsRenderer.render(year, container);
+                  }
+                }
+              }
+            }
+          }
+        });
+        this._visibilityHandlerAdded = true;
+      }
+      
+      this.initialized = true;
+      
+      if (this.errors.length > 0) {
+        Logger.WARN('Application initialized with errors:', this.errors);
+      }
+      
+      if (window.Services?.eventBus) {
+        window.Services.eventBus.emit('app:ready');
+      }
+    } catch (error) {
+      this._showError(error);
+    }
   }
 
   _initFormManagers() {
@@ -129,73 +148,80 @@ class Application {
     } else {
       Logger.WARN('Form #proposalForm not found, FormManager not created');
     }
-
+    
     if (typeof UniversalApplicationModalManager !== 'undefined') {
       UniversalApplicationModalManager.init();
       this.services.universalModalManager = UniversalApplicationModalManager;
     } else {
       Logger.WARN('UniversalApplicationModalManager not available');
     }
-
+    
     const feedbackForm = document.getElementById('feedbackForm');
     if (feedbackForm) {
-        const rateLimiter = new Utils.RateLimiter(window.Services.storage);
-        window.feedbackFormManager = new ModalFormHandler({
-            formId: 'feedbackForm',
-            successSelector: '#feedbackSuccessMessage',
-            fileDropSelector: '.form-file',
-            apiClient: window.Services.apiClient,
-            rateLimiter: rateLimiter,
-            modalKey: 'feedback',
-            fileOptions: { maxFiles: 10, maxTotalSize: 24 * 1024 * 1024 },
-            messages: {
-                required: 'Это поле обязательно для заполнения',
-                email: 'Введите корректный email адрес',
-                consent: 'Необходимо согласие на обработку данных'
-            },
-            onSuccess: null
-        });
-        window.feedbackFormManager.init();
-        this.services.feedbackFormManager = window.feedbackFormManager;
+      const rateLimiter = new Utils.RateLimiter(window.Services.storage);
+      window.feedbackFormManager = new ModalFormHandler({
+        formId: 'feedbackForm',
+        successSelector: '#feedbackSuccessMessage',
+        fileDropSelector: '.form-file',
+        apiClient: window.Services.apiClient,
+        rateLimiter: rateLimiter,
+        modalKey: 'feedback',
+        fileOptions: { maxFiles: 10, maxTotalSize: 24 * 1024 * 1024 },
+        messages: {
+          required: 'Это поле обязательно для заполнения',
+          email: 'Введите корректный email адрес',
+          consent: 'Необходимо согласие на обработку данных'
+        },
+        onSuccess: null
+      });
+      window.feedbackFormManager.init();
+      this.services.feedbackFormManager = window.feedbackFormManager;
     }
-
+    
     const dateInput = document.getElementById('desiredDate');
     if (dateInput && typeof DateInputHelper !== 'undefined') {
-        DateInputHelper.initDateInput(dateInput);
+      DateInputHelper.initDateInput(dateInput);
     }
+    
     const approvalDateInput = document.getElementById('desiredApprovalDate');
     if (approvalDateInput && typeof DateInputHelper !== 'undefined') {
-        DateInputHelper.initDateInput(approvalDateInput);
+      DateInputHelper.initDateInput(approvalDateInput);
     }
   }
 
   _registerModules() {
     const modulesToRegister = [];
+    
     if (typeof navigationManager !== 'undefined') {
       this.services.navigationManager = navigationManager;
       modulesToRegister.push(navigationManager);
     }
+    
     if (typeof animationManager !== 'undefined') {
       this.services.animationManager = animationManager;
       modulesToRegister.push(animationManager);
     }
+    
     if (typeof newsManager !== 'undefined') {
       this.services.newsManager = newsManager;
       modulesToRegister.push(newsManager);
     }
+    
     if (typeof newsRenderer !== 'undefined') {
       this.services.newsRenderer = newsRenderer;
     }
+    
     if (typeof modalManager !== 'undefined') {
       this.services.modalManager = modalManager;
     }
+    
     this.modules = modulesToRegister;
   }
 
   _registerModals() {
     if (typeof modalManager === 'undefined') return;
     if (this._modalsRegistered) return;
-
+    
     const modalsToRegister = [
       { key: 'about', overlayId: 'aboutModalOverlay', required: false },
       { key: 'details', overlayId: 'detailsModalOverlay', required: false },
@@ -234,15 +260,14 @@ class Application {
         key: 'feedback', 
         overlayId: 'feedbackModalOverlay', 
         required: false, 
-        onClose: () => 
-        { 
+        onClose: () => { 
           if (window.feedbackFormManager) feedbackFormManager.resetForm(); 
         } 
       },
       { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
       { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false }
     ];
-
+    
     modalsToRegister.forEach(({ key, overlayId, required, onClose, onOpen, focusSelector }) => {
       const overlay = document.getElementById(overlayId);
       if (overlay) {
@@ -251,7 +276,7 @@ class Application {
         Logger.WARN(`Required modal "${key}" not found`);
       }
     });
-
+    
     this._modalsRegistered = true;
   }
 
@@ -259,12 +284,15 @@ class Application {
     window.scrollToTop = () => {
       if (navigationManager) navigationManager.scrollToTop();
     };
+    
     window.toggleMobileMenu = () => {
       if (navigationManager) navigationManager.toggleMobileMenu();
     };
+    
     window.closeMobileMenu = () => {
       if (navigationManager) navigationManager.closeMobileMenu();
     };
+    
     window.removeFile = (event, index) => {
       if (event) {
         event.stopPropagation();
@@ -278,47 +306,47 @@ class Application {
         window.feedbackFormManager.removeFile(index);
       }
     };
+    
     window.toggleWidget = (header) => {
       const widget = header.closest('.certificate-widget');
       if (widget) {
         widget.classList.toggle('active');
       }
     };
-
+    
     document.addEventListener('click', (e) => {
-        const link = e.target.closest('#cookie-settings-link');
-        if (!link) return;
+      const link = e.target.closest('#cookie-settings-link');
+      if (!link) return;
+      
+      e.preventDefault();
+      const storage = window.Services?.storage;
+      if (storage && typeof ConsentManager?.withdrawConsent === 'function') {
+        ConsentManager.withdrawConsent(storage);
+      }
+      
+      setTimeout(() => {
+        const container = document.getElementById('mapContainer');
+        if (!container) return;
         
-        e.preventDefault();
+        const staticUrl = window.CONFIG?.MAP?.STATIC_URL;
+        if (!staticUrl) return;
         
-        const storage = window.Services?.storage;
-        if (storage && typeof ConsentManager?.withdrawConsent === 'function') {
-            ConsentManager.withdrawConsent(storage);
-        }
+        const iframe = container.querySelector('iframe');
+        if (iframe) iframe.remove();
         
-        setTimeout(() => {
-            const container = document.getElementById('mapContainer');
-            if (!container) return;
-            
-            const staticUrl = window.CONFIG?.MAP?.STATIC_URL;
-            if (!staticUrl) return;
-            
-            const iframe = container.querySelector('iframe');
-            if (iframe) iframe.remove();
-            
-            let img = container.querySelector('img');
-            if (img) return;
-            
-            img = document.createElement('img');
-            img.id = 'staticMap';
-            img.className = 'static-map';
-            img.src = staticUrl;
-            img.alt = 'Карта проезда к офису';
-            img.loading = 'lazy';
-            container.appendChild(img);
-            
-            Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
-        }, 150);
+        let img = container.querySelector('img');
+        if (img) return;
+        
+        img = document.createElement('img');
+        img.id = 'staticMap';
+        img.className = 'static-map';
+        img.src = staticUrl;
+        img.alt = 'Карта проезда к офису';
+        img.loading = 'lazy';
+        container.appendChild(img);
+        
+        Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
+      }, 150);
     });
   }
 
@@ -345,22 +373,23 @@ class Application {
   _initFloatingCTA() {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
-
+    
     const currentPath = window.location.pathname;
-
+    
     if (currentPath === '/partners.html' || currentPath === '/contacts.html') {
       floatingBtn.classList.add('visible');
       return;
     }
-
+    
     const isHomePage = currentPath === '/' ||
                        currentPath.endsWith('index.html') ||
                        currentPath === '';
+    
     if (!isHomePage) {
       floatingBtn.remove();
       return;
     }
-
+    
     const heroSection = document.querySelector('.hero');
     if (heroSection) {
       this._heroObserver = new IntersectionObserver((entries) => {
@@ -389,6 +418,7 @@ class Application {
 
   _initImageLazyLoading() {
     const lazyImages = document.querySelectorAll('img[data-src]');
+    
     if ('IntersectionObserver' in window) {
       this.imageObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -404,6 +434,7 @@ class Application {
           }
         });
       }, { rootMargin: '100px' });
+      
       lazyImages.forEach(img => this.imageObserver.observe(img));
     } else {
       lazyImages.forEach(img => {
@@ -418,9 +449,11 @@ class Application {
 
   _initPrefersReducedMotion() {
     this._prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    
     if (this._prefersReducedMotion.matches) {
       document.body.classList.add('reduced-motion');
     }
+    
     this._boundMotionChangeHandler = (e) => {
       if (e.matches) {
         document.body.classList.add('reduced-motion');
@@ -428,53 +461,60 @@ class Application {
         document.body.classList.remove('reduced-motion');
       }
     };
+    
     this._prefersReducedMotion.addEventListener('change', this._boundMotionChangeHandler);
   }
 
   _handleHashScroll() {
     const hash = window.location.hash;
     if (!hash || hash === '#') return;
+    
     const targetId = hash.substring(1);
     const targetElement = document.getElementById(targetId);
     if (!targetElement) return;
-
+    
     const scrollToTarget = () => {
       setTimeout(() => {
         const navbar = document.querySelector('.navbar');
         const headerHeight = navbar ? navbar.offsetHeight : 70;
         const extraOffset = 5;
         const offset = headerHeight + extraOffset;
-
+        
         const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
         window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
       }, window.CONFIG?.PERFORMANCE?.HASH_SCROLL_DELAY_MS || 400);
     };
-
+    
     document.addEventListener('components:loaded', scrollToTarget, { once: true });
     setTimeout(scrollToTarget, 800);
   }
 
   _initScrollProgressBar() {
     if (this.scrollProgressElements) return;
+    
     const container = document.createElement('div');
     container.className = 'scroll-progress-container';
+    
     const bar = document.createElement('div');
     bar.className = 'scroll-progress-bar';
     container.appendChild(bar);
+    
     document.body.appendChild(container);
     this.scrollProgressElements = { container, bar };
-
+    
     const updateProgress = () => {
       const winScroll = window.scrollY;
       const height = document.documentElement.scrollHeight - window.innerHeight;
       const scrolled = (winScroll / height) * 100;
+      
       requestAnimationFrame(() => {
         bar.style.setProperty('--progress', scrolled + '%');
       });
     };
-
+    
     this._boundProgressHandler = updateProgress;
     this._boundResizeHandler = updateProgress;
+    
     window.addEventListener('scroll', this._boundProgressHandler);
     window.addEventListener('resize', this._boundResizeHandler);
     updateProgress();
@@ -486,6 +526,7 @@ class Application {
       if (container && container.parentNode) container.parentNode.removeChild(container);
       this.scrollProgressElements = null;
     }
+    
     if (this._boundProgressHandler) {
       window.removeEventListener('scroll', this._boundProgressHandler);
       window.removeEventListener('resize', this._boundResizeHandler);
@@ -497,24 +538,27 @@ class Application {
   _initMapLoader() {
     const container = document.getElementById('mapContainer');
     if (!container) return;
-
+    
     const staticUrl = window.CONFIG?.MAP?.STATIC_URL;
     const mapPageUrl = window.CONFIG?.MAP?.MAP_PAGE_URL;
-
+    
     if (!staticUrl || !mapPageUrl) {
       Logger.WARN('Map static URL or page URL not configured');
       return;
     }
-
+    
     container.innerHTML = '';
+    
     const img = document.createElement('img');
     img.className = 'static-map';
     img.src = staticUrl;
     img.alt = 'Карта проезда к офису';
     img.loading = 'lazy';
+    
     img.addEventListener('click', () => {
       window.open(mapPageUrl, '_blank');
     });
+    
     container.appendChild(img);
     Logger.INFO('Статическая карта загружена');
   }
@@ -524,25 +568,25 @@ class Application {
     if (errorContainer) {
       errorContainer.style.display = 'block';
       errorContainer.replaceChildren();
-
+      
       const errorDiv = document.createElement('div');
       errorDiv.className = 'app-error-message-block';
-
+      
       const h2 = document.createElement('h2');
       h2.className = 'app-error-title';
       h2.textContent = 'Ошибка загрузки приложения';
       errorDiv.appendChild(h2);
-
+      
       const p1 = document.createElement('p');
       p1.className = 'app-error-text';
       p1.textContent = 'Произошла ошибка при инициализации сайта. Пожалуйста, обновите страницу.';
       errorDiv.appendChild(p1);
-
+      
       const p2 = document.createElement('p');
       p2.className = 'app-error-detail';
       p2.textContent = Utils.Sanitizer.escapeHtml(error.message);
       errorDiv.appendChild(p2);
-
+      
       const reloadBtn = document.createElement('button');
       reloadBtn.className = 'app-error-reload-btn';
       reloadBtn.textContent = 'Обновить страницу';
@@ -550,7 +594,7 @@ class Application {
         window.location.reload();
       });
       errorDiv.appendChild(reloadBtn);
-
+      
       errorContainer.appendChild(errorDiv);
     } else {
       alert('Ошибка загрузки приложения: ' + Utils.Sanitizer.escapeHtml(error.message));
@@ -558,54 +602,73 @@ class Application {
   }
 
   destroy() {
+    // Удаляем SEO обработчик
+    if (this._boundPopstateHandler) {
+      window.removeEventListener('popstate', this._boundPopstateHandler);
+      this._boundPopstateHandler = null;
+    }
+    
     if (this._prefersReducedMotion && this._boundMotionChangeHandler) {
       this._prefersReducedMotion.removeEventListener('change', this._boundMotionChangeHandler);
     }
+    
     if (this._heroObserver) {
       this._heroObserver.disconnect();
       this._heroObserver = null;
     }
+    
     if (this._boundFloatingScrollHandler) {
       window.removeEventListener('scroll', this._boundFloatingScrollHandler);
       this._boundFloatingScrollHandler = null;
     }
+    
     if (this.imageObserver) {
       this.imageObserver.disconnect();
       this.imageObserver = null;
     }
+    
     this._destroyScrollProgressBar();
-
+    
     if (this.services.navigationManager && typeof this.services.navigationManager.destroy === 'function') {
       this.services.navigationManager.destroy();
     }
+    
     if (this.services.animationManager && typeof this.services.animationManager.destroy === 'function') {
       this.services.animationManager.destroy();
     }
+    
     if (this.services.modalManager && typeof this.services.modalManager.destroy === 'function') {
       this.services.modalManager.destroy();
     }
+    
     if (this.services.newsManager && typeof this.services.newsManager.destroy === 'function') {
       this.services.newsManager.destroy();
     }
+    
     if (this.services.newsRenderer && typeof this.services.newsRenderer.destroy === 'function') {
       this.services.newsRenderer.destroy();
     }
+    
     if (this.services.formManager && typeof this.services.formManager.destroy === 'function') {
       this.services.formManager.destroy();
     }
+    
     if (this.services.consentManager && typeof this.services.consentManager.destroy === 'function') {
       this.services.consentManager.destroy();
     }
+    
     if (this.services.feedbackFormManager && typeof this.services.feedbackFormManager.destroy === 'function') {
       this.services.feedbackFormManager.destroy();
     }
+    
     if (typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.destroy === 'function') {
       UniversalApplicationModalManager.destroy();
     }
+    
     if (typeof textSelectionReporter !== 'undefined' && typeof textSelectionReporter.destroy === 'function') {
       textSelectionReporter.destroy();
     }
-
+    
     this._cleanupGlobals();
     this.modules = [];
     this.errors = [];
@@ -631,6 +694,7 @@ class Application {
       'openApplicationModal',
       'closeUniversalApplicationModal'
     ];
+    
     globalFunctions.forEach(fnName => {
       if (typeof window[fnName] === 'function') {
         delete window[fnName];
@@ -645,12 +709,12 @@ function initApp() {
   const hasConfig = typeof window.CONFIG !== 'undefined';
   const hasServices = typeof window.Services !== 'undefined';
   const hasUtils = typeof window.Utils !== 'undefined';
-
+  
   if (!hasConfig || !hasServices || !hasUtils) {
     setTimeout(() => initApp(), window.CONFIG?.PERFORMANCE?.INIT_APP_DELAY_MS || 100);
     return;
   }
-
+  
   if (typeof NEWS_DATA !== 'undefined') {
     try {
       if (typeof NewsRenderer !== 'undefined' && typeof NewsManager !== 'undefined') {
@@ -664,7 +728,7 @@ function initApp() {
       Logger.ERROR('Ошибка инициализации менеджеров новостей:', err);
     }
   }
-
+  
   if (typeof PROJECTS_DATA !== 'undefined' && typeof ProjectRenderer !== 'undefined') {
     try {
       window.projectRenderer = new ProjectRenderer(PROJECTS_DATA);
@@ -673,14 +737,14 @@ function initApp() {
       Logger.ERROR('Ошибка создания projectRenderer:', err);
     }
   }
-
+  
   if (typeof initDocPreviews === 'function') {
     initDocPreviews();
   }
-
+  
   const app = new Application();
   window.App = app;
-
+  
   if (typeof ConsentManager !== 'undefined') {
     try {
       ConsentManager.init();
@@ -689,7 +753,7 @@ function initApp() {
       Logger.ERROR('Failed to initialize ConsentManager:', err);
     }
   }
-
+  
   app.init();
 }
 
