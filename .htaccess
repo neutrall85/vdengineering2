@@ -232,6 +232,7 @@ LimitRequestBody 35000000
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_REFERER} !^$
     RewriteCond %{HTTP_REFERER} !^https?://(www\.)?normacode\.ru [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?vdengineering\.ru [NC]
     RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
     RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F,NC,L]
 </IfModule>
