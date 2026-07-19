@@ -11,7 +11,6 @@ class Application {
     this.errors = [];
     this.services = {};
     
-    // Ссылки на обработчики для корректного удаления (предотвращение утечек памяти)
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
     this._boundPopstateHandler = null;
@@ -38,7 +37,6 @@ class Application {
         throw new Error('ConsentManager is not loaded - critical security module missing');
       }
 
-      // ========== ИНИЦИАЛИЗАЦИЯ SEO ==========
       if (typeof initDynamicSEO === 'function') {
         try {
           initDynamicSEO();
@@ -108,14 +106,12 @@ class Application {
     }
   }
 
-  // ========== SEO & HISTORY ==========
   _handlePopState() {
     if (typeof initDynamicSEO === 'function') {
       initDynamicSEO();
     }
   }
 
-  // ========== COMPONENTS LOADED ==========
   _resolveOnComponentsLoaded(resolve) {
     const onComponentsLoaded = function() {
       document.removeEventListener('components:loaded', onComponentsLoaded);
@@ -136,7 +132,6 @@ class Application {
     }
   }
 
-  // ========== MODULES INITIALIZATION ==========
   async _initAllModules() {
     for (let i = 0; i < this.modules.length; i++) {
       const module = this.modules[i];
@@ -151,7 +146,6 @@ class Application {
     }
   }
 
-  // ========== FORMS ==========
   _initFormManagers() {
     const proposalForm = document.getElementById('proposalForm');
     if (proposalForm) {
@@ -206,7 +200,6 @@ class Application {
     }
   }
 
-  // ========== MODULES & MODALS ==========
   _registerModules() {
     const modulesToRegister = [];
     
@@ -294,7 +287,6 @@ class Application {
     }
   }
 
-  // ========== GLOBAL HELPERS ==========
   _initGlobalHelpers() {
     window.scrollToTop = this._globalScrollToTop.bind(this);
     window.toggleMobileMenu = this._globalToggleMobileMenu.bind(this);
@@ -382,7 +374,6 @@ class Application {
     Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
   }
 
-  // ========== UI & DOM ==========
   _hidePageLoader() {
     const loader = document.getElementById('pageLoader');
     if (loader) {
@@ -413,7 +404,6 @@ class Application {
     }
   }
 
-  // ========== OBSERVERS & SCROLL ==========
   _initFloatingCTA() {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
@@ -636,7 +626,6 @@ class Application {
     window.open(url, '_blank');
   }
 
-  // ========== VISIBILITY & ERRORS ==========
   _handleVisibilityChange() {
     if (!document.hidden && window.newsManager) {
       const activeTab = document.querySelector('.news-tab.active');
@@ -692,7 +681,6 @@ class Application {
     window.location.reload();
   }
 
-  // ========== CLEANUP ==========
   destroy() {
     if (this._boundPopstateHandler) window.removeEventListener('popstate', this._boundPopstateHandler);
     if (this._boundVisibilityHandler) document.removeEventListener('visibilitychange', this._boundVisibilityHandler);

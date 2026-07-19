@@ -188,6 +188,24 @@ class ModalManager {
         imageEl.alt = project.title;
       }
     }
+
+    // ===== SEO: ДОБАВЛЯЕМ JSON-LD ДЛЯ ПОИСКОВИКОВ =====
+    const existingScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb]');
+    if (existingScript) existingScript.remove();
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-breadcrumb', 'true');
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://vdengineering.ru/" },
+        { "@type": "ListItem", "position": 2, "name": "Проекты", "item": "https://vdengineering.ru/projects" },
+        { "@type": "ListItem", "position": 3, "name": project.title, "item": `https://vdengineering.ru/project/${project.id}` }
+      ]
+    });
+    document.head.appendChild(script);
   }
 
   _openService(trigger) {
@@ -283,6 +301,24 @@ class ModalManager {
         mainImage.alt = news.title;
       }
     }
+
+    // ===== SEO: ДОБАВЛЯЕМ JSON-LD ДЛЯ ПОИСКОВИКОВ =====
+    const existingScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb]');
+    if (existingScript) existingScript.remove();
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-breadcrumb', 'true');
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://vdengineering.ru/" },
+        { "@type": "ListItem", "position": 2, "name": "Новости", "item": "https://vdengineering.ru/news" },
+        { "@type": "ListItem", "position": 3, "name": news.title, "item": `https://vdengineering.ru/news/${news.id}` }
+      ]
+    });
+    document.head.appendChild(script);
   }
 
   openCategoryByName(category) {
@@ -490,21 +526,14 @@ class ModalManager {
     return true;
   }
 
-  /**
-   * Нормализация пути к изображению (делает абсолютным)
-   */
   _normalizePath(path) {
     if (!path) return '/assets/images/placeholder.jpg';
     if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
-    // Добавляем / в начале, если путь не абсолютный
     return '/' + path;
   }
 
-  /**
-   * Обновление URL с ЧПУ-путём
-   */
   _updateUrl(key, id) {
     if (!key) return;
     let path;
@@ -518,61 +547,58 @@ class ModalManager {
     window.history.pushState({ modal: key, id: id || null }, '', path);
   }
 
-  /**
-   * Открытие модалки при загрузке страницы на основе pathname
-   */
-    _openFromUrl() {
-      const path = window.location.pathname;
-      const match = path.match(/^\/(news|project|category|project-category|feedback)(?:\/(.+))?$/);
-      if (match) {
-        const [, key, id] = match;
-        
-        // 1. Для feedback ID не нужен
-        if (key === 'feedback') {
-          setTimeout(() => this.open('feedback', { skipUrlUpdate: true }), 300);
-          return;
-        }
-
-        // 2. Если ID не передан — просто ничего не делаем и выходим.
-        // Никаких логов в консоль.
-        const decodedId = id ? decodeURIComponent(id) : null;
-        if (!decodedId) return;
-
-        // 3. Если ID есть, открываем как обычно
-        setTimeout(() => {
-          if (key === 'project') {
-            const project = window.PROJECTS_DATA?.[decodedId];
-            if (project) {
-              this._populateProjectModal(project);
-              this.currentModalId = decodedId;
-              this.open('project', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
-            }
-          } else if (key === 'news') {
-            const allNews = Object.values(window.NEWS_DATA || {}).flat();
-            const news = allNews.find(n => String(n.id) === String(decodedId));
-            if (news) {
-              this._populateNewsModal(news);
-              this.currentModalId = decodedId;
-              this.open('news', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
-            }
-          } else if (key === 'category') {
-            this.openCategoryByName(decodedId);
-          } else if (key === 'project-category') {
-            this.openProjectCategoryByName(decodedId);
-          }
-        }, 300);
+  _openFromUrl() {
+    const path = window.location.pathname;
+    const match = path.match(/^\/(news|project|category|project-category|feedback)(?:\/(.+))?$/);
+    if (match) {
+      const [, key, id] = match;
+      
+      if (key === 'feedback') {
+        setTimeout(() => this.open('feedback', { skipUrlUpdate: true }), 300);
+        return;
       }
-    }
 
-  /**
-   * Обработчик события popstate (кнопка "Назад"/"Вперёд")
-   */
+      const decodedId = id ? decodeURIComponent(id) : null;
+      if (!decodedId) {
+        return; 
+      }
+
+      setTimeout(() => {
+        if (key === 'project') {
+          const project = window.PROJECTS_DATA?.[decodedId];
+          if (project) {
+            this._populateProjectModal(project);
+            this.currentModalId = decodedId;
+            this.open('project', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
+          }
+        } else if (key === 'news') {
+          const allNews = Object.values(window.NEWS_DATA || {}).flat();
+          const news = allNews.find(n => String(n.id) === String(decodedId));
+          if (news) {
+            this._populateNewsModal(news);
+            this.currentModalId = decodedId;
+            this.open('news', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
+          }
+        } else if (key === 'category') {
+          this.openCategoryByName(decodedId);
+        } else if (key === 'project-category') {
+          this.openProjectCategoryByName(decodedId);
+        }
+      }, 300);
+    }
+  }
+
   _initPopstate() {
     window.addEventListener('popstate', (event) => {
       const state = event.state;
       if (state && state.modal) {
         const { modal, id } = state;
-        // При восстановлении состояния не обновляем URL
+        
+        if (!id && modal !== 'feedback') {
+            this.closeAll();
+            return;
+        }
+
         if (modal === 'feedback') {
           this.open('feedback', { skipUrlUpdate: true });
         } else if (modal === 'project') {
@@ -614,9 +640,7 @@ class ModalManager {
           this.open(modal, { skipUrlUpdate: true });
         }
       } else {
-        // Если состояние пустое, закрываем все модалки
         this.closeAll();
-        // Возвращаем базовый URL (корень)
         if (window.location.pathname !== '/') {
           window.history.replaceState({}, '', '/');
         }
@@ -624,7 +648,6 @@ class ModalManager {
     });
   }
 
-  // ==================== МЕТОДЫ ОТКРЫТИЯ/ЗАКРЫТИЯ ====================
   open(key, options = {}) {
     const config = this.modals.get(key);
     if (!config) {
@@ -636,7 +659,6 @@ class ModalManager {
     const skipStack = options.skipStack === true;
     const skipUrlUpdate = options.skipUrlUpdate === true;
 
-    // Если открывается первая модалка (нет активной), сохраняем исходный путь
     if (this.activeModal === null && !skipUrlUpdate) {
       this.originalPath = window.location.pathname + window.location.search + window.location.hash;
     }
@@ -678,7 +700,6 @@ class ModalManager {
         window.Services.eventBus.emit('modal:opened', { key, overlay });
       }
 
-      // Обновление URL для поддержки ЧПУ (если не запрещено)
       if (!skipUrlUpdate) {
         if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback') {
           if (key === 'feedback') {
@@ -715,14 +736,11 @@ class ModalManager {
 
     const previousModal = this.activeModalStack.length > 0 ? this.activeModalStack.pop() : null;
     if (previousModal) {
-      // Восстанавливаем URL родителя
       const parentId = this._getParentId(previousModal);
       if (parentId) {
         const parentPath = `/${previousModal}/${encodeURIComponent(parentId)}`;
         window.history.replaceState({ modal: previousModal, id: parentId }, '', parentPath);
       } else {
-        // Если у родителя нет ID, возвращаемся на корень или на исходный путь?
-        // Лучше использовать исходный путь, если он есть
         if (this.originalPath) {
           window.history.replaceState({}, '', this.originalPath);
         } else {
@@ -734,13 +752,13 @@ class ModalManager {
       this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
       this.activeModal = previousModal;
     } else {
-      // Нет родительской модалки — восстанавливаем исходный путь или корень
       if (this.originalPath) {
         window.history.replaceState({}, '', this.originalPath);
         this.originalPath = null;
       } else {
         window.history.replaceState({}, '', '/');
       }
+      
       ScrollManager.unlock();
       this.activeModal = null;
     }
@@ -754,9 +772,6 @@ class ModalManager {
     return true;
   }
 
-  /**
-   * Вспомогательный метод для получения ID родительской модалки
-   */
   _getParentId(modalKey) {
     if (modalKey === 'category') return this.currentCategory;
     if (modalKey === 'project-category') return this.currentProjectCategory;
