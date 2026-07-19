@@ -1,10 +1,8 @@
 /**
-Главный файл инициализации приложения
-ООО "Волга-Днепр Инжиниринг"
-*/
-
-// ========== ИМПОРТ SEO-МОДУЛЯ ==========
-import { initDynamicSEO, handleModalOpen } from './utils/seo.js';
+ * Главный файл инициализации приложения
+ * ООО "Волга-Днепр Инжиниринг"
+ * Строгий ООП стиль: нулевое использование инлайновых коллбэков
+ */
 
 class Application {
   constructor() {
@@ -12,10 +10,26 @@ class Application {
     this.modules = [];
     this.errors = [];
     this.services = {};
-    this.scrollProgressElements = null;
+    
+    // Ссылки на обработчики для корректного удаления (предотвращение утечек памяти)
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
     this._boundPopstateHandler = null;
+    this._boundVisibilityHandler = null;
+    this._boundHeroObserver = null;
+    this._boundFloatingScrollHandler = null;
+    this._boundImageObserver = null;
+    this._boundMotionChangeHandler = null;
+    this._boundCookieClickHandler = null;
+    this._boundComponentsLoadedScrollHandler = null;
+    this._boundHashScrollTimeout = null;
+
+    this.scrollProgressElements = null;
+    this._heroObserverInstance = null;
+    this._imageObserverInstance = null;
+    this._prefersReducedMotion = null;
+    this._modalsRegistered = false;
+    this._visibilityHandlerAdded = false;
   }
 
   async init() {
@@ -25,38 +39,19 @@ class Application {
       }
 
       // ========== ИНИЦИАЛИЗАЦИЯ SEO ==========
-      try {
-        initDynamicSEO();
-        
-        // Сохраняем ссылку на обработчик для корректного удаления
-        this._boundPopstateHandler = () => initDynamicSEO();
-        window.addEventListener('popstate', this._boundPopstateHandler);
-      } catch (seoError) {
-        console.warn('SEO initialization failed:', seoError);
-        // Не прерываем работу приложения
+      if (typeof initDynamicSEO === 'function') {
+        try {
+          initDynamicSEO();
+          this._boundPopstateHandler = this._handlePopState.bind(this);
+          window.addEventListener('popstate', this._boundPopstateHandler);
+        } catch (seoError) {
+          Logger.WARN('SEO initialization failed:', seoError);
+        }
       }
 
       const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
       
-      const componentsLoadedPromise = new Promise((resolve) => {
-        const onComponentsLoaded = () => {
-          document.removeEventListener('components:loaded', onComponentsLoaded);
-          resolve();
-        };
-        document.addEventListener('components:loaded', onComponentsLoaded);
-        
-        if (typeof ComponentLoader !== 'undefined') {
-          ComponentLoader.init({
-            loadNavbar: true,
-            loadFooter: true,
-            loadModal: true,
-            activePage: currentPage === 'index' ? '' : currentPage
-          });
-        } else {
-          resolve();
-        }
-      });
-      
+      const componentsLoadedPromise = new Promise(this._resolveOnComponentsLoaded.bind(this));
       await componentsLoadedPromise;
       
       this._hidePageLoader();
@@ -65,15 +60,7 @@ class Application {
       this._registerModules();
       this._registerModals();
       
-      for (const module of this.modules) {
-        try {
-          if (module && typeof module.init === 'function') {
-            await module.init();
-          }
-        } catch (err) {
-          this.errors.push(`Module ${module.constructor?.name || 'unknown'} init failed: ${err.message}`);
-        }
-      }
+      await this._initAllModules();
       
       this._initFormManagers();
       
@@ -102,22 +89,8 @@ class Application {
       }
       
       if (!this._visibilityHandlerAdded) {
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden) {
-            if (window.newsManager) {
-              const activeTab = document.querySelector('.news-tab.active');
-              if (activeTab) {
-                const year = activeTab.dataset.year || activeTab.dataset.tab;
-                if (year) {
-                  const container = document.getElementById(`newsGrid-${year}`);
-                  if (container && window.newsRenderer) {
-                    window.newsRenderer.render(year, container);
-                  }
-                }
-              }
-            }
-          }
-        });
+        this._boundVisibilityHandler = this._handleVisibilityChange.bind(this);
+        document.addEventListener('visibilitychange', this._boundVisibilityHandler);
         this._visibilityHandlerAdded = true;
       }
       
@@ -127,7 +100,7 @@ class Application {
         Logger.WARN('Application initialized with errors:', this.errors);
       }
       
-      if (window.Services?.eventBus) {
+      if (window.Services && window.Services.eventBus) {
         window.Services.eventBus.emit('app:ready');
       }
     } catch (error) {
@@ -135,10 +108,54 @@ class Application {
     }
   }
 
+  // ========== SEO & HISTORY ==========
+  _handlePopState() {
+    if (typeof initDynamicSEO === 'function') {
+      initDynamicSEO();
+    }
+  }
+
+  // ========== COMPONENTS LOADED ==========
+  _resolveOnComponentsLoaded(resolve) {
+    const onComponentsLoaded = function() {
+      document.removeEventListener('components:loaded', onComponentsLoaded);
+      resolve();
+    };
+    document.addEventListener('components:loaded', onComponentsLoaded);
+    
+    if (typeof ComponentLoader !== 'undefined') {
+      const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      ComponentLoader.init({
+        loadNavbar: true,
+        loadFooter: true,
+        loadModal: true,
+        activePage: currentPage === 'index' ? '' : currentPage
+      });
+    } else {
+      resolve();
+    }
+  }
+
+  // ========== MODULES INITIALIZATION ==========
+  async _initAllModules() {
+    for (let i = 0; i < this.modules.length; i++) {
+      const module = this.modules[i];
+      try {
+        if (module && typeof module.init === 'function') {
+          await module.init();
+        }
+      } catch (err) {
+        const moduleName = (module.constructor && module.constructor.name) || 'unknown';
+        this.errors.push('Module ' + moduleName + ' init failed: ' + err.message);
+      }
+    }
+  }
+
+  // ========== FORMS ==========
   _initFormManagers() {
     const proposalForm = document.getElementById('proposalForm');
     if (proposalForm) {
-      if (typeof FormManager !== 'undefined' && window.Services?.apiClient) {
+      if (typeof FormManager !== 'undefined' && window.Services && window.Services.apiClient) {
         const rateLimiter = new Utils.RateLimiter(window.Services.storage);
         window.formManager = new FormManager(window.Services.apiClient, rateLimiter);
         this.services.formManager = window.formManager;
@@ -189,6 +206,7 @@ class Application {
     }
   }
 
+  // ========== MODULES & MODALS ==========
   _registerModules() {
     const modulesToRegister = [];
     
@@ -196,21 +214,17 @@ class Application {
       this.services.navigationManager = navigationManager;
       modulesToRegister.push(navigationManager);
     }
-    
     if (typeof animationManager !== 'undefined') {
       this.services.animationManager = animationManager;
       modulesToRegister.push(animationManager);
     }
-    
     if (typeof newsManager !== 'undefined') {
       this.services.newsManager = newsManager;
       modulesToRegister.push(newsManager);
     }
-    
     if (typeof newsRenderer !== 'undefined') {
       this.services.newsRenderer = newsRenderer;
     }
-    
     if (typeof modalManager !== 'undefined') {
       this.services.modalManager = modalManager;
     }
@@ -219,147 +233,176 @@ class Application {
   }
 
   _registerModals() {
-    if (typeof modalManager === 'undefined') return;
-    if (this._modalsRegistered) return;
+    if (typeof modalManager === 'undefined' || this._modalsRegistered) return;
     
     const modalsToRegister = [
       { key: 'about', overlayId: 'aboutModalOverlay', required: false },
       { key: 'details', overlayId: 'detailsModalOverlay', required: false },
       { key: 'news', overlayId: 'newsModalOverlay', required: false },
-      {
-        key: 'proposal',
-        overlayId: 'proposalModalOverlay',
-        required: false,
-        focusSelector: '#companyName',
-        onClose: () => {
-          if (window.formManager) {
-            window.formManager.resetForm();
-          } else {
-            Logger.WARN('formManager not available on proposal close');
-          }
-        }
-      },
-      {
-        key: 'universal',
-        overlayId: 'universalApplicationModalOverlay',
-        required: false,
-        focusSelector: 'input[type="text"], input[type="email"], textarea',
-        onClose: () => {
-          if (typeof UniversalApplicationModalManager !== 'undefined') {
-            UniversalApplicationModalManager.resetForm();
-          } else {
-            Logger.WARN('UniversalApplicationModalManager not available on universal close');
-          }
-        }
-      },
+      { key: 'proposal', overlayId: 'proposalModalOverlay', required: false, focusSelector: '#companyName', onClose: this._handleProposalClose.bind(this) },
+      { key: 'universal', overlayId: 'universalApplicationModalOverlay', required: false, focusSelector: 'input[type="text"], input[type="email"], textarea', onClose: this._handleUniversalClose.bind(this) },
       { key: 'project', overlayId: 'projectModalOverlay', required: false },
       { key: 'service', overlayId: 'serviceModalOverlay', required: false },
       { key: 'policy', overlayId: 'policyModalOverlay', required: false },
       { key: 'success', overlayId: 'successModalOverlay', required: false },
-      { 
-        key: 'feedback', 
-        overlayId: 'feedbackModalOverlay', 
-        required: false, 
-        onClose: () => { 
-          if (window.feedbackFormManager) feedbackFormManager.resetForm(); 
-        } 
-      },
+      { key: 'feedback', overlayId: 'feedbackModalOverlay', required: false, onClose: this._handleFeedbackClose.bind(this) },
       { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
       { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false }
     ];
     
-    modalsToRegister.forEach(({ key, overlayId, required, onClose, onOpen, focusSelector }) => {
-      const overlay = document.getElementById(overlayId);
-      if (overlay) {
-        modalManager.register(key, { overlayId, onClose, onOpen, focusSelector });
-      } else if (required) {
-        Logger.WARN(`Required modal "${key}" not found`);
-      }
-    });
-    
+    for (let i = 0; i < modalsToRegister.length; i++) {
+      this._processModalRegistration(modalsToRegister[i]);
+    }
     this._modalsRegistered = true;
   }
 
-  _initGlobalHelpers() {
-    window.scrollToTop = () => {
-      if (navigationManager) navigationManager.scrollToTop();
-    };
+  _processModalRegistration(config) {
+    const key = config.key;
+    const overlayId = config.overlayId;
+    const required = config.required;
+    const onClose = config.onClose;
+    const onOpen = config.onOpen;
+    const focusSelector = config.focusSelector;
     
-    window.toggleMobileMenu = () => {
-      if (navigationManager) navigationManager.toggleMobileMenu();
-    };
-    
-    window.closeMobileMenu = () => {
-      if (navigationManager) navigationManager.closeMobileMenu();
-    };
-    
-    window.removeFile = (event, index) => {
-      if (event) {
-        event.stopPropagation();
-        event.preventDefault();
-      }
-      if (window.formManager && typeof window.formManager.removeFile === 'function') {
-        window.formManager.removeFile(index);
-      } else if (typeof UniversalApplicationModalManager !== 'undefined' && UniversalApplicationModalManager.removeFile) {
-        UniversalApplicationModalManager.removeFile(index);
-      } else if (window.feedbackFormManager && typeof window.feedbackFormManager.removeFile === 'function') {
-        window.feedbackFormManager.removeFile(index);
-      }
-    };
-    
-    window.toggleWidget = (header) => {
-      const widget = header.closest('.certificate-widget');
-      if (widget) {
-        widget.classList.toggle('active');
-      }
-    };
-    
-    document.addEventListener('click', (e) => {
-      const link = e.target.closest('#cookie-settings-link');
-      if (!link) return;
-      
-      e.preventDefault();
-      const storage = window.Services?.storage;
-      if (storage && typeof ConsentManager?.withdrawConsent === 'function') {
-        ConsentManager.withdrawConsent(storage);
-      }
-      
-      setTimeout(() => {
-        const container = document.getElementById('mapContainer');
-        if (!container) return;
-        
-        const staticUrl = window.CONFIG?.MAP?.STATIC_URL;
-        if (!staticUrl) return;
-        
-        const iframe = container.querySelector('iframe');
-        if (iframe) iframe.remove();
-        
-        let img = container.querySelector('img');
-        if (img) return;
-        
-        img = document.createElement('img');
-        img.id = 'staticMap';
-        img.className = 'static-map';
-        img.src = staticUrl;
-        img.alt = 'Карта проезда к офису';
-        img.loading = 'lazy';
-        container.appendChild(img);
-        
-        Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
-      }, 150);
-    });
+    const overlay = document.getElementById(overlayId);
+    if (overlay) {
+      modalManager.register(key, { overlayId: overlayId, onClose: onClose, onOpen: onOpen, focusSelector: focusSelector });
+    } else if (required) {
+      Logger.WARN('Required modal "' + key + '" not found');
+    }
   }
 
+  _handleProposalClose() {
+    if (window.formManager) {
+      window.formManager.resetForm();
+    } else {
+      Logger.WARN('formManager not available on proposal close');
+    }
+  }
+
+  _handleUniversalClose() {
+    if (typeof UniversalApplicationModalManager !== 'undefined') {
+      UniversalApplicationModalManager.resetForm();
+    } else {
+      Logger.WARN('UniversalApplicationModalManager not available on universal close');
+    }
+  }
+
+  _handleFeedbackClose() {
+    if (window.feedbackFormManager) {
+      window.feedbackFormManager.resetForm();
+    }
+  }
+
+  // ========== GLOBAL HELPERS ==========
+  _initGlobalHelpers() {
+    window.scrollToTop = this._globalScrollToTop.bind(this);
+    window.toggleMobileMenu = this._globalToggleMobileMenu.bind(this);
+    window.closeMobileMenu = this._globalCloseMobileMenu.bind(this);
+    window.removeFile = this._globalRemoveFile.bind(this);
+    window.toggleWidget = this._globalToggleWidget.bind(this);
+    
+    this._boundCookieClickHandler = this._handleCookieSettingsClick.bind(this);
+    document.addEventListener('click', this._boundCookieClickHandler);
+  }
+
+  _globalScrollToTop() {
+    if (typeof navigationManager !== 'undefined') {
+      navigationManager.scrollToTop();
+    }
+  }
+
+  _globalToggleMobileMenu() {
+    if (typeof navigationManager !== 'undefined') {
+      navigationManager.toggleMobileMenu();
+    }
+  }
+
+  _globalCloseMobileMenu() {
+    if (typeof navigationManager !== 'undefined') {
+      navigationManager.closeMobileMenu();
+    }
+  }
+
+  _globalRemoveFile(event, index) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (window.formManager && typeof window.formManager.removeFile === 'function') {
+      window.formManager.removeFile(index);
+    } else if (typeof UniversalApplicationModalManager !== 'undefined' && UniversalApplicationModalManager.removeFile) {
+      UniversalApplicationModalManager.removeFile(index);
+    } else if (window.feedbackFormManager && typeof window.feedbackFormManager.removeFile === 'function') {
+      window.feedbackFormManager.removeFile(index);
+    }
+  }
+
+  _globalToggleWidget(header) {
+    const widget = header.closest('.certificate-widget');
+    if (widget) {
+      widget.classList.toggle('active');
+    }
+  }
+
+  _handleCookieSettingsClick(e) {
+    const link = e.target.closest('#cookie-settings-link');
+    if (!link) return;
+    
+    e.preventDefault();
+    const storage = window.Services && window.Services.storage;
+    if (storage && typeof ConsentManager.withdrawConsent === 'function') {
+      ConsentManager.withdrawConsent(storage);
+    }
+    
+    setTimeout(this._switchMapToStatic.bind(this), 150);
+  }
+
+  _switchMapToStatic() {
+    const container = document.getElementById('mapContainer');
+    if (!container) return;
+    
+    const staticUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.STATIC_URL;
+    if (!staticUrl) return;
+    
+    const iframe = container.querySelector('iframe');
+    if (iframe) iframe.remove();
+    
+    let img = container.querySelector('img');
+    if (img) return;
+    
+    img = document.createElement('img');
+    img.id = 'staticMap';
+    img.className = 'static-map';
+    img.src = staticUrl;
+    img.alt = 'Карта проезда к офису';
+    img.loading = 'lazy';
+    container.appendChild(img);
+    
+    Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
+  }
+
+  // ========== UI & DOM ==========
   _hidePageLoader() {
     const loader = document.getElementById('pageLoader');
     if (loader) {
       document.body.classList.add('app-ready');
-      setTimeout(() => {
-        loader.classList.add('hidden');
-        setTimeout(() => {
-          loader.style.display = 'none';
-        }, 300);
-      }, 100);
+      setTimeout(this._finishHideLoader.bind(this), 100);
+    }
+  }
+
+  _finishHideLoader() {
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+      loader.classList.add('hidden');
+      setTimeout(this._completelyHideLoader.bind(this), 300);
+    }
+  }
+
+  _completelyHideLoader() {
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+      loader.style.display = 'none';
     }
   }
 
@@ -370,6 +413,7 @@ class Application {
     }
   }
 
+  // ========== OBSERVERS & SCROLL ==========
   _initFloatingCTA() {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
@@ -381,10 +425,7 @@ class Application {
       return;
     }
     
-    const isHomePage = currentPath === '/' ||
-                       currentPath.endsWith('index.html') ||
-                       currentPath === '';
-    
+    const isHomePage = currentPath === '/' || currentPath.endsWith('index.html') || currentPath === '';
     if (!isHomePage) {
       floatingBtn.remove();
       return;
@@ -392,27 +433,39 @@ class Application {
     
     const heroSection = document.querySelector('.hero');
     if (heroSection) {
-      this._heroObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.intersectionRatio < 0.5) {
-            floatingBtn.classList.add('visible');
-          } else {
-            floatingBtn.classList.remove('visible');
-          }
-        });
-      }, { threshold: [0, 0.5, 1] });
-      this._heroObserver.observe(heroSection);
+      this._boundHeroObserver = this._handleHeroIntersection.bind(this);
+      this._heroObserverInstance = new IntersectionObserver(this._boundHeroObserver, { threshold: [0, 0.5, 1] });
+      this._heroObserverInstance.observe(heroSection);
     } else {
       const SCROLL_THRESHOLD = 150;
-      this._boundFloatingScrollHandler = () => {
-        if (window.scrollY > SCROLL_THRESHOLD) {
-          floatingBtn.classList.add('visible');
-        } else {
-          floatingBtn.classList.remove('visible');
-        }
-      };
+      this._boundFloatingScrollHandler = this._handleFloatingScroll.bind(this, SCROLL_THRESHOLD, floatingBtn);
       window.addEventListener('scroll', this._boundFloatingScrollHandler);
       this._boundFloatingScrollHandler();
+    }
+  }
+
+  _handleHeroIntersection(entries) {
+    const floatingBtn = document.querySelector('.floating-cta-btn');
+    if (!floatingBtn) return;
+    
+    for (let i = 0; i < entries.length; i++) {
+      this._processHeroEntry(floatingBtn, entries[i]);
+    }
+  }
+
+  _processHeroEntry(btn, entry) {
+    if (entry.intersectionRatio < 0.5) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
+    }
+  }
+
+  _handleFloatingScroll(threshold, btn) {
+    if (window.scrollY > threshold) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
     }
   }
 
@@ -420,30 +473,46 @@ class Application {
     const lazyImages = document.querySelectorAll('img[data-src]');
     
     if ('IntersectionObserver' in window) {
-      this.imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            const src = img.getAttribute('data-src');
-            if (src) {
-              img.src = src;
-              img.removeAttribute('data-src');
-              img.classList.add('loaded');
-            }
-            this.imageObserver.unobserve(img);
-          }
-        });
-      }, { rootMargin: '100px' });
-      
-      lazyImages.forEach(img => this.imageObserver.observe(img));
+      this._boundImageObserver = this._handleImageIntersection.bind(this);
+      this._imageObserverInstance = new IntersectionObserver(this._boundImageObserver, { rootMargin: '100px' });
+      for (let i = 0; i < lazyImages.length; i++) {
+        this._observeImage(lazyImages[i]);
+      }
     } else {
-      lazyImages.forEach(img => {
-        const src = img.getAttribute('data-src');
-        if (src) {
-          img.src = src;
-          img.removeAttribute('data-src');
-        }
-      });
+      for (let i = 0; i < lazyImages.length; i++) {
+        this._loadImageImmediately(lazyImages[i]);
+      }
+    }
+  }
+
+  _observeImage(img) {
+    this._imageObserverInstance.observe(img);
+  }
+
+  _handleImageIntersection(entries) {
+    for (let i = 0; i < entries.length; i++) {
+      this._processImageEntry(entries[i]);
+    }
+  }
+
+  _processImageEntry(entry) {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      const src = img.getAttribute('data-src');
+      if (src) {
+        img.src = src;
+        img.removeAttribute('data-src');
+        img.classList.add('loaded');
+      }
+      this._imageObserverInstance.unobserve(img);
+    }
+  }
+
+  _loadImageImmediately(img) {
+    const src = img.getAttribute('data-src');
+    if (src) {
+      img.src = src;
+      img.removeAttribute('data-src');
     }
   }
 
@@ -454,15 +523,16 @@ class Application {
       document.body.classList.add('reduced-motion');
     }
     
-    this._boundMotionChangeHandler = (e) => {
-      if (e.matches) {
-        document.body.classList.add('reduced-motion');
-      } else {
-        document.body.classList.remove('reduced-motion');
-      }
-    };
-    
+    this._boundMotionChangeHandler = this._handleMotionChange.bind(this);
     this._prefersReducedMotion.addEventListener('change', this._boundMotionChangeHandler);
+  }
+
+  _handleMotionChange(e) {
+    if (e.matches) {
+      document.body.classList.add('reduced-motion');
+    } else {
+      document.body.classList.remove('reduced-motion');
+    }
   }
 
   _handleHashScroll() {
@@ -473,20 +543,22 @@ class Application {
     const targetElement = document.getElementById(targetId);
     if (!targetElement) return;
     
-    const scrollToTarget = () => {
-      setTimeout(() => {
-        const navbar = document.querySelector('.navbar');
-        const headerHeight = navbar ? navbar.offsetHeight : 70;
-        const extraOffset = 5;
-        const offset = headerHeight + extraOffset;
-        
-        const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
-      }, window.CONFIG?.PERFORMANCE?.HASH_SCROLL_DELAY_MS || 400);
-    };
-    
-    document.addEventListener('components:loaded', scrollToTarget, { once: true });
-    setTimeout(scrollToTarget, 800);
+    this._boundComponentsLoadedScrollHandler = this._scrollToTarget.bind(this, targetElement);
+    document.addEventListener('components:loaded', this._boundComponentsLoadedScrollHandler, { once: true });
+    this._boundHashScrollTimeout = setTimeout(this._boundComponentsLoadedScrollHandler, 800);
+  }
+
+  _scrollToTarget(targetElement) {
+    const delay = (window.CONFIG && window.CONFIG.PERFORMANCE && window.CONFIG.PERFORMANCE.HASH_SCROLL_DELAY_MS) || 400;
+    setTimeout(this._performScrollToTarget.bind(this, targetElement), delay);
+  }
+
+  _performScrollToTarget(targetElement) {
+    const navbar = document.querySelector('.navbar');
+    const headerHeight = navbar ? navbar.offsetHeight : 70;
+    const offset = headerHeight + 5;
+    const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
   }
 
   _initScrollProgressBar() {
@@ -494,35 +566,35 @@ class Application {
     
     const container = document.createElement('div');
     container.className = 'scroll-progress-container';
-    
     const bar = document.createElement('div');
     bar.className = 'scroll-progress-bar';
     container.appendChild(bar);
-    
     document.body.appendChild(container);
-    this.scrollProgressElements = { container, bar };
     
-    const updateProgress = () => {
-      const winScroll = window.scrollY;
-      const height = document.documentElement.scrollHeight - window.innerHeight;
-      const scrolled = (winScroll / height) * 100;
-      
-      requestAnimationFrame(() => {
-        bar.style.setProperty('--progress', scrolled + '%');
-      });
-    };
+    this.scrollProgressElements = { container: container, bar: bar };
     
-    this._boundProgressHandler = updateProgress;
-    this._boundResizeHandler = updateProgress;
+    this._boundProgressHandler = this._updateScrollProgress.bind(this, bar);
+    this._boundResizeHandler = this._updateScrollProgress.bind(this, bar);
     
     window.addEventListener('scroll', this._boundProgressHandler);
     window.addEventListener('resize', this._boundResizeHandler);
-    updateProgress();
+    this._updateScrollProgress(bar);
+  }
+
+  _updateScrollProgress(bar) {
+    const winScroll = window.scrollY;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = (winScroll / height) * 100;
+    requestAnimationFrame(this._applyScrollProgress.bind(this, bar, scrolled));
+  }
+
+  _applyScrollProgress(bar, scrolled) {
+    bar.style.setProperty('--progress', scrolled + '%');
   }
 
   _destroyScrollProgressBar() {
     if (this.scrollProgressElements) {
-      const { container, bar } = this.scrollProgressElements;
+      const container = this.scrollProgressElements.container;
       if (container && container.parentNode) container.parentNode.removeChild(container);
       this.scrollProgressElements = null;
     }
@@ -539,8 +611,8 @@ class Application {
     const container = document.getElementById('mapContainer');
     if (!container) return;
     
-    const staticUrl = window.CONFIG?.MAP?.STATIC_URL;
-    const mapPageUrl = window.CONFIG?.MAP?.MAP_PAGE_URL;
+    const staticUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.STATIC_URL;
+    const mapPageUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.MAP_PAGE_URL;
     
     if (!staticUrl || !mapPageUrl) {
       Logger.WARN('Map static URL or page URL not configured');
@@ -555,12 +627,29 @@ class Application {
     img.alt = 'Карта проезда к офису';
     img.loading = 'lazy';
     
-    img.addEventListener('click', () => {
-      window.open(mapPageUrl, '_blank');
-    });
-    
+    img.addEventListener('click', this._handleMapClick.bind(this, mapPageUrl));
     container.appendChild(img);
     Logger.INFO('Статическая карта загружена');
+  }
+
+  _handleMapClick(url) {
+    window.open(url, '_blank');
+  }
+
+  // ========== VISIBILITY & ERRORS ==========
+  _handleVisibilityChange() {
+    if (!document.hidden && window.newsManager) {
+      const activeTab = document.querySelector('.news-tab.active');
+      if (activeTab) {
+        const year = activeTab.dataset.year || activeTab.dataset.tab;
+        if (year) {
+          const container = document.getElementById('newsGrid-' + year);
+          if (container && window.newsRenderer) {
+            window.newsRenderer.render(year, container);
+          }
+        }
+      }
+    }
   }
 
   _showError(error) {
@@ -590,9 +679,7 @@ class Application {
       const reloadBtn = document.createElement('button');
       reloadBtn.className = 'app-error-reload-btn';
       reloadBtn.textContent = 'Обновить страницу';
-      reloadBtn.addEventListener('click', function() {
-        window.location.reload();
-      });
+      reloadBtn.addEventListener('click', this._handleReloadClick.bind(this));
       errorDiv.appendChild(reloadBtn);
       
       errorContainer.appendChild(errorDiv);
@@ -601,105 +688,73 @@ class Application {
     }
   }
 
+  _handleReloadClick() {
+    window.location.reload();
+  }
+
+  // ========== CLEANUP ==========
   destroy() {
-    // Удаляем SEO обработчик
-    if (this._boundPopstateHandler) {
-      window.removeEventListener('popstate', this._boundPopstateHandler);
-      this._boundPopstateHandler = null;
-    }
+    if (this._boundPopstateHandler) window.removeEventListener('popstate', this._boundPopstateHandler);
+    if (this._boundVisibilityHandler) document.removeEventListener('visibilitychange', this._boundVisibilityHandler);
+    if (this._boundCookieClickHandler) document.removeEventListener('click', this._boundCookieClickHandler);
+    if (this._boundMotionChangeHandler && this._prefersReducedMotion) this._prefersReducedMotion.removeEventListener('change', this._boundMotionChangeHandler);
+    if (this._boundComponentsLoadedScrollHandler) document.removeEventListener('components:loaded', this._boundComponentsLoadedScrollHandler);
+    if (this._boundHashScrollTimeout) clearTimeout(this._boundHashScrollTimeout);
     
-    if (this._prefersReducedMotion && this._boundMotionChangeHandler) {
-      this._prefersReducedMotion.removeEventListener('change', this._boundMotionChangeHandler);
-    }
-    
-    if (this._heroObserver) {
-      this._heroObserver.disconnect();
-      this._heroObserver = null;
-    }
-    
-    if (this._boundFloatingScrollHandler) {
-      window.removeEventListener('scroll', this._boundFloatingScrollHandler);
-      this._boundFloatingScrollHandler = null;
-    }
-    
-    if (this.imageObserver) {
-      this.imageObserver.disconnect();
-      this.imageObserver = null;
-    }
+    if (this._heroObserverInstance) this._heroObserverInstance.disconnect();
+    if (this._imageObserverInstance) this._imageObserverInstance.disconnect();
+    if (this._boundFloatingScrollHandler) window.removeEventListener('scroll', this._boundFloatingScrollHandler);
     
     this._destroyScrollProgressBar();
     
-    if (this.services.navigationManager && typeof this.services.navigationManager.destroy === 'function') {
-      this.services.navigationManager.destroy();
-    }
+    const servicesToDestroy = [
+      'navigationManager', 'animationManager', 'modalManager', 
+      'newsManager', 'newsRenderer', 'formManager', 'consentManager', 'feedbackFormManager'
+    ];
     
-    if (this.services.animationManager && typeof this.services.animationManager.destroy === 'function') {
-      this.services.animationManager.destroy();
-    }
-    
-    if (this.services.modalManager && typeof this.services.modalManager.destroy === 'function') {
-      this.services.modalManager.destroy();
-    }
-    
-    if (this.services.newsManager && typeof this.services.newsManager.destroy === 'function') {
-      this.services.newsManager.destroy();
-    }
-    
-    if (this.services.newsRenderer && typeof this.services.newsRenderer.destroy === 'function') {
-      this.services.newsRenderer.destroy();
-    }
-    
-    if (this.services.formManager && typeof this.services.formManager.destroy === 'function') {
-      this.services.formManager.destroy();
-    }
-    
-    if (this.services.consentManager && typeof this.services.consentManager.destroy === 'function') {
-      this.services.consentManager.destroy();
-    }
-    
-    if (this.services.feedbackFormManager && typeof this.services.feedbackFormManager.destroy === 'function') {
-      this.services.feedbackFormManager.destroy();
+    for (let i = 0; i < servicesToDestroy.length; i++) {
+      this._destroyService(servicesToDestroy[i]);
     }
     
     if (typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.destroy === 'function') {
       UniversalApplicationModalManager.destroy();
     }
-    
     if (typeof textSelectionReporter !== 'undefined' && typeof textSelectionReporter.destroy === 'function') {
       textSelectionReporter.destroy();
     }
     
     this._cleanupGlobals();
+    
     this.modules = [];
     this.errors = [];
     this.services = {};
     this.initialized = false;
   }
 
+  _destroyService(serviceName) {
+    const service = this.services[serviceName];
+    if (service && typeof service.destroy === 'function') {
+      service.destroy();
+    }
+  }
+
   _cleanupGlobals() {
     const globalFunctions = [
-      'scrollToTop',
-      'toggleMobileMenu',
-      'closeModal',
-      'removeFile',
-      'closeMobileMenu',
-      'closeAboutModal',
-      'closeDetailsModal',
-      'closeNewsModal',
-      'closePolicyModal',
-      'toggleWidget',
-      'openDetailsModal',
-      'openProjectModal',
-      'initProjectGallery',
-      'openApplicationModal',
-      'closeUniversalApplicationModal'
+      'scrollToTop', 'toggleMobileMenu', 'closeModal', 'removeFile', 'closeMobileMenu',
+      'closeAboutModal', 'closeDetailsModal', 'closeNewsModal', 'closePolicyModal',
+      'toggleWidget', 'openDetailsModal', 'openProjectModal', 'initProjectGallery',
+      'openApplicationModal', 'closeUniversalApplicationModal'
     ];
     
-    globalFunctions.forEach(fnName => {
-      if (typeof window[fnName] === 'function') {
-        delete window[fnName];
-      }
-    });
+    for (let i = 0; i < globalFunctions.length; i++) {
+      this._cleanupGlobalFunction(globalFunctions[i]);
+    }
+  }
+
+  _cleanupGlobalFunction(fnName) {
+    if (typeof window[fnName] === 'function') {
+      delete window[fnName];
+    }
   }
 }
 
@@ -711,7 +766,7 @@ function initApp() {
   const hasUtils = typeof window.Utils !== 'undefined';
   
   if (!hasConfig || !hasServices || !hasUtils) {
-    setTimeout(() => initApp(), window.CONFIG?.PERFORMANCE?.INIT_APP_DELAY_MS || 100);
+    setTimeout(retryInitialization, (window.CONFIG && window.CONFIG.PERFORMANCE && window.CONFIG.PERFORMANCE.INIT_APP_DELAY_MS) || 100);
     return;
   }
   
@@ -755,6 +810,10 @@ function initApp() {
   }
   
   app.init();
+}
+
+function retryInitialization() {
+  initApp();
 }
 
 if (document.readyState === 'loading') {
