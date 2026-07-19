@@ -76,6 +76,13 @@ const seoDatabase = {
       description: 'ООО «Волга-Днепр Инжиниринг» стало правопреемником AMTES GmbH.',
       canonical: 'https://vdengineering.ru/news/20220628'
     }
+  },
+  page: {
+    'feedback': {
+      title: 'Обратная связь и запрос коммерческого предложения | Волга-Днепр Инжиниринг',
+      description: 'Свяжитесь с нами для обсуждения вашего проекта, запроса КП или отправки резюме. Мы ценим каждого клиента и соискателя. Заполните форму, и мы ответим в кратчайшие сроки.',
+      canonical: 'https://vdengineering.ru/feedback'
+    }
   }
 };
 
@@ -123,12 +130,14 @@ function updateMetaTags(type, id) {
 function initDynamicSEO() {
   const path = window.location.pathname;
 
-  if (path.startsWith('/project/')) {
+  if (path.indexOf('/project/') === 0) {
     const projectId = path.split('/project/')[1].replace(/\/$/, '');
-    updateMetaTags('project', projectId);
-  } else if (path.startsWith('/news/')) {
+    updateSEOMetaTags('project', projectId);
+  } else if (path.indexOf('/news/') === 0) {
     const newsId = path.split('/news/')[1].replace(/\/$/, '');
-    updateMetaTags('news', newsId);
+    updateSEOMetaTags('news', newsId);
+  } else if (path === '/feedback' || path === '/feedback.html' || path.indexOf('/feedback') === 0) {
+    updateSEOMetaTags('page', 'feedback');
   }
 }
 

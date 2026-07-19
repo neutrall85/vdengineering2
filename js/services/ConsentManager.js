@@ -119,7 +119,7 @@ const ConsentManager = {
                 <label class="user-consent-label">
                   <input type="checkbox" id="consent-functional" checked disabled>
                   <span class="user-consent-text">
-                    <strong>${sanitizer.escapeHtml(this.config.categories.functional.name)}</strong><br>
+                    <strong>${sanitizer.escapeHtml(this.config.categories.functional.name)}</strong>
                     <small>${sanitizer.escapeHtml(this.config.categories.functional.description)}</small>
                   </span>
                 </label>
@@ -128,7 +128,7 @@ const ConsentManager = {
                 <label class="user-consent-label">
                   <input type="checkbox" id="consent-analytics">
                   <span class="user-consent-text">
-                    <strong>${sanitizer.escapeHtml(this.config.categories.analytics.name)}</strong><br>
+                    <strong>${sanitizer.escapeHtml(this.config.categories.analytics.name)}</strong>
                     <small>${sanitizer.escapeHtml(this.config.categories.analytics.description)}</small>
                   </span>
                 </label>

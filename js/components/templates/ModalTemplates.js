@@ -350,6 +350,26 @@ const ModalTemplates = {
       <div id="projectCategoryEmpty" class="modal-category-empty">В этой категории пока нет проектов.</div>
     </div>
   </div>
+</div>`,
+
+    // ========== ДОБАВЛЕН ШАБЛОН ДЛЯ МОДАЛКИ НОВОСТИ ==========
+    newsModal: `
+<!-- News Modal -->
+<div class="modal-overlay modal-overlay-news" id="newsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
+  <div class="modal-container">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-image-container" id="newsModalImageContainer">
+      <img class="modal-image" id="newsModalImage" src="" alt="" loading="lazy">
+    </div>
+    <div class="modal-body">
+      <span class="modal-category" id="newsModalCategory"></span>
+      <span class="modal-date" id="newsModalDate"></span>
+      <h2 class="modal-title" id="newsModalTitle"></h2>
+      <div class="modal-content" id="newsModalContent"></div>
+    </div>
+  </div>
 </div>`
 };
 

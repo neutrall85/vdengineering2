@@ -4,6 +4,8 @@
  * 
  * Версия с ЧПУ-ссылками (без #, ?, &)
  * Исправлена блокировка скролла при вложенных модалках
+ * Добавлена поддержка автоссылки для модалки обратной связи (/feedback)
+ * Исправлено сохранение и восстановление исходного пути при закрытии модалки
  */
 class ModalManager {
   constructor() {
@@ -19,6 +21,7 @@ class ModalManager {
     this.currentModalId = null;
     this.currentCategory = null;
     this.currentProjectCategory = null;
+    this.originalPath = null; // Сохраняем исходный путь для восстановления
     this._initGlobalHandlers();
     this._openFromUrl();
     this._initPopstate();
@@ -176,7 +179,6 @@ class ModalManager {
     }
     if (container && imageEl) {
       const images = project.images || [];
-      // Нормализация путей
       const normalizedImages = images.map(img => this._normalizePath(img));
       if (typeof window.initProjectGallery === 'function') {
         window.initProjectGallery(normalizedImages, container, imageEl);
@@ -504,43 +506,63 @@ class ModalManager {
    * Обновление URL с ЧПУ-путём
    */
   _updateUrl(key, id) {
-    if (!id) return;
-    const path = `/${key}/${encodeURIComponent(id)}`;
-    window.history.pushState({ modal: key, id: id }, '', path);
-  }
-
-  /**
-   * Получить базовый путь для текущей страницы
-   */
-  _getBasePath() {
-    const path = window.location.pathname;
-    if (path.startsWith('/news')) return '/news';
-    if (path.startsWith('/projects')) return '/projects';
-    return '/';
+    if (!key) return;
+    let path;
+    if (key === 'feedback') {
+      path = '/feedback';
+    } else if (id) {
+      path = `/${key}/${encodeURIComponent(id)}`;
+    } else {
+      return;
+    }
+    window.history.pushState({ modal: key, id: id || null }, '', path);
   }
 
   /**
    * Открытие модалки при загрузке страницы на основе pathname
    */
-  _openFromUrl() {
-    const path = window.location.pathname;
-    const match = path.match(/^\/(news|project|category|project-category)\/(.+)$/);
-    if (match) {
-      const [, key, id] = match;
-      const decodedId = decodeURIComponent(id);
-      setTimeout(() => {
-        if (key === 'project') {
-          this.openProjectById(decodedId);
-        } else if (key === 'news') {
-          this.openNewsById(decodedId);
-        } else if (key === 'category') {
-          this.openCategoryByName(decodedId);
-        } else if (key === 'project-category') {
-          this.openProjectCategoryByName(decodedId);
+    _openFromUrl() {
+      const path = window.location.pathname;
+      const match = path.match(/^\/(news|project|category|project-category|feedback)(?:\/(.+))?$/);
+      if (match) {
+        const [, key, id] = match;
+        
+        // 1. Для feedback ID не нужен
+        if (key === 'feedback') {
+          setTimeout(() => this.open('feedback', { skipUrlUpdate: true }), 300);
+          return;
         }
-      }, 300);
+
+        // 2. Если ID не передан — просто ничего не делаем и выходим.
+        // Никаких логов в консоль.
+        const decodedId = id ? decodeURIComponent(id) : null;
+        if (!decodedId) return;
+
+        // 3. Если ID есть, открываем как обычно
+        setTimeout(() => {
+          if (key === 'project') {
+            const project = window.PROJECTS_DATA?.[decodedId];
+            if (project) {
+              this._populateProjectModal(project);
+              this.currentModalId = decodedId;
+              this.open('project', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
+            }
+          } else if (key === 'news') {
+            const allNews = Object.values(window.NEWS_DATA || {}).flat();
+            const news = allNews.find(n => String(n.id) === String(decodedId));
+            if (news) {
+              this._populateNewsModal(news);
+              this.currentModalId = decodedId;
+              this.open('news', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
+            }
+          } else if (key === 'category') {
+            this.openCategoryByName(decodedId);
+          } else if (key === 'project-category') {
+            this.openProjectCategoryByName(decodedId);
+          }
+        }, 300);
+      }
     }
-  }
 
   /**
    * Обработчик события popstate (кнопка "Назад"/"Вперёд")
@@ -550,24 +572,53 @@ class ModalManager {
       const state = event.state;
       if (state && state.modal) {
         const { modal, id } = state;
-        if (modal === 'project') {
-          this.openProjectById(id);
+        // При восстановлении состояния не обновляем URL
+        if (modal === 'feedback') {
+          this.open('feedback', { skipUrlUpdate: true });
+        } else if (modal === 'project') {
+          if (id) {
+            const project = window.PROJECTS_DATA?.[id];
+            if (project) {
+              this._populateProjectModal(project);
+              this.currentModalId = id;
+              this.open('project', { id, keepParentModal: false, skipUrlUpdate: true });
+            }
+          } else {
+            this.open('project', { skipUrlUpdate: true });
+          }
         } else if (modal === 'news') {
-          this.openNewsById(id);
+          if (id) {
+            const allNews = Object.values(window.NEWS_DATA || {}).flat();
+            const news = allNews.find(n => String(n.id) === String(id));
+            if (news) {
+              this._populateNewsModal(news);
+              this.currentModalId = id;
+              this.open('news', { id, keepParentModal: false, skipUrlUpdate: true });
+            }
+          } else {
+            this.open('news', { skipUrlUpdate: true });
+          }
         } else if (modal === 'category') {
-          this.openCategoryByName(id);
+          if (id) {
+            this.openCategoryByName(id);
+          } else {
+            this.open('category', { skipUrlUpdate: true });
+          }
         } else if (modal === 'project-category') {
-          this.openProjectCategoryByName(id);
+          if (id) {
+            this.openProjectCategoryByName(id);
+          } else {
+            this.open('project-category', { skipUrlUpdate: true });
+          }
         } else {
-          this.open(modal);
+          this.open(modal, { skipUrlUpdate: true });
         }
       } else {
         // Если состояние пустое, закрываем все модалки
         this.closeAll();
-        // Возвращаем базовый URL
-        const basePath = this._getBasePath();
-        if (window.location.pathname !== basePath) {
-          window.history.replaceState({}, '', basePath);
+        // Возвращаем базовый URL (корень)
+        if (window.location.pathname !== '/') {
+          window.history.replaceState({}, '', '/');
         }
       }
     });
@@ -583,6 +634,12 @@ class ModalManager {
 
     const keepParentModal = options.keepParentModal === true;
     const skipStack = options.skipStack === true;
+    const skipUrlUpdate = options.skipUrlUpdate === true;
+
+    // Если открывается первая модалка (нет активной), сохраняем исходный путь
+    if (this.activeModal === null && !skipUrlUpdate) {
+      this.originalPath = window.location.pathname + window.location.search + window.location.hash;
+    }
 
     if (this.activeModal && this.activeModal !== key) {
       if (!keepParentModal && !skipStack) {
@@ -621,10 +678,17 @@ class ModalManager {
         window.Services.eventBus.emit('modal:opened', { key, overlay });
       }
 
-      if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category') {
-        const id = options.id || this.currentModalId || this.currentCategory || this.currentProjectCategory;
-        if (id) {
-          this._updateUrl(key, id);
+      // Обновление URL для поддержки ЧПУ (если не запрещено)
+      if (!skipUrlUpdate) {
+        if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback') {
+          if (key === 'feedback') {
+            this._updateUrl('feedback');
+          } else {
+            const id = options.id || this.currentModalId || this.currentCategory || this.currentProjectCategory;
+            if (id) {
+              this._updateUrl(key, id);
+            }
+          }
         }
       }
     }, 50);
@@ -657,21 +721,26 @@ class ModalManager {
         const parentPath = `/${previousModal}/${encodeURIComponent(parentId)}`;
         window.history.replaceState({ modal: previousModal, id: parentId }, '', parentPath);
       } else {
-        const basePath = this._getBasePath();
-        window.history.replaceState({}, '', basePath);
+        // Если у родителя нет ID, возвращаемся на корень или на исходный путь?
+        // Лучше использовать исходный путь, если он есть
+        if (this.originalPath) {
+          window.history.replaceState({}, '', this.originalPath);
+        } else {
+          window.history.replaceState({}, '', '/');
+        }
       }
       
-      // === ИСПРАВЛЕНИЕ БЛОКИРОВКИ СКРОЛЛА ===
-      // Разблокируем скролл перед открытием родительской модалки
       ScrollManager.unlock();
-      
-      // Открываем родительскую модалку без повторной блокировки скролла
-      this.open(previousModal, { keepParentModal: false, skipStack: true });
+      this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
       this.activeModal = previousModal;
     } else {
-      // Нет родительской модалки — возвращаемся на базовый URL
-      const basePath = this._getBasePath();
-      window.history.replaceState({}, '', basePath);
+      // Нет родительской модалки — восстанавливаем исходный путь или корень
+      if (this.originalPath) {
+        window.history.replaceState({}, '', this.originalPath);
+        this.originalPath = null;
+      } else {
+        window.history.replaceState({}, '', '/');
+      }
       ScrollManager.unlock();
       this.activeModal = null;
     }
@@ -759,6 +828,7 @@ class ModalManager {
     this.currentModalId = null;
     this.currentCategory = null;
     this.currentProjectCategory = null;
+    this.originalPath = null;
     this._handlersInitialized = false;
     window.removeEventListener('popstate', this._popstateHandler);
   }

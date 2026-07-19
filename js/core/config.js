@@ -66,7 +66,7 @@ const CONFIG = {
   
   MAP: {
     STATIC_URL: '/assets/images/map-office.webp',
-    MAP_PAGE_URL: 'https://yandex.ru/maps/213/moscow/?ll=37.41917%2C55.947444&z=17&pt=37.41917%2C55.947444&mode=routes&rtext=~55.947444%2C37.41917'
+    MAP_PAGE_URL: 'https://yandex.ru/maps/213/moscow/?ll=37.41917%2C55.947444&z=17&pt=37.41917%2C55.947444'
   }
 };
 

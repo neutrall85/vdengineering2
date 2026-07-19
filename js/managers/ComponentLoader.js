@@ -19,7 +19,9 @@ const ComponentLoader = {
         successModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.successModal : '',
         feedbackModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.feedbackModal : '',
         categoryNewsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.categoryNewsModal : '',
-        projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : ''
+        projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : '',
+        // ДОБАВЛЯЕМ ШАБЛОН НОВОСТИ
+        newsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.newsModal : ''
     },
 
     /**
@@ -143,6 +145,17 @@ const ComponentLoader = {
                 projectCategoryContainer.appendChild(node.cloneNode(true));
             });
             document.body.appendChild(projectCategoryContainer.firstElementChild);
+        }
+
+        // ========== ДОБАВЛЯЕМ ЗАГРУЗКУ МОДАЛКИ НОВОСТИ ==========
+        if (!document.getElementById('newsModalOverlay')) {
+            const newsModalContainer = document.createElement('div');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(this.templates.newsModal, 'text/html');
+            Array.from(doc.body.childNodes).forEach(node => {
+                newsModalContainer.appendChild(node.cloneNode(true));
+            });
+            document.body.appendChild(newsModalContainer.firstElementChild);
         }
     },
 
