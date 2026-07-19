@@ -10,7 +10,7 @@ class Application {
     this.modules = [];
     this.errors = [];
     this.services = {};
-    
+
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
     this._boundPopstateHandler = null;
@@ -48,61 +48,129 @@ class Application {
       }
 
       const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
-      
+
       const componentsLoadedPromise = new Promise(this._resolveOnComponentsLoaded.bind(this));
       await componentsLoadedPromise;
-      
+
+      // ===== ИСПРАВЛЕНИЕ: инициализация страницы проектов для прямой ссылки =====
+      const currentPath = window.location.pathname;
+      if ((currentPath.startsWith('/projects') || currentPath.startsWith('/project-category')) && typeof initProjectsPage === 'function') {
+        initProjectsPage();
+      }
+
       this._hidePageLoader();
       this._initGlobalHelpers();
       this._setCurrentYear();
       this._registerModules();
       this._registerModals();
-      
+
       await this._initAllModules();
-      
+
+      // ========== ОБРАБОТКА ПРЯМЫХ URL ПОСЛЕ ПОЛНОЙ ЗАГРУЗКИ ==========
+      this._handleDirectUrlAfterLoad();
+
       this._initFormManagers();
-      
+
       const pageInitMap = {
         'projects': 'initProjectsPage',
         'services': 'initServicesPage',
         'vacancies': 'initVacanciesPage'
       };
-      
+
       if (pageInitMap[currentPage]) {
         const initFn = window[pageInitMap[currentPage]];
         if (typeof initFn === 'function') {
           initFn();
         }
       }
-      
+
       this._initFloatingCTA();
       this._initImageLazyLoading();
       this._initPrefersReducedMotion();
       this._handleHashScroll();
       this._initScrollProgressBar();
       this._initMapLoader();
-      
+
       if (typeof textSelectionReporter !== 'undefined') {
         textSelectionReporter.init();
       }
-      
+
       if (!this._visibilityHandlerAdded) {
         this._boundVisibilityHandler = this._handleVisibilityChange.bind(this);
         document.addEventListener('visibilitychange', this._boundVisibilityHandler);
         this._visibilityHandlerAdded = true;
       }
-      
+
       this.initialized = true;
-      
+
       if (this.errors.length > 0) {
         Logger.WARN('Application initialized with errors:', this.errors);
       }
-      
+
       if (window.Services && window.Services.eventBus) {
         window.Services.eventBus.emit('app:ready');
       }
     } catch (error) {
       this._showError(error);
+    }
+  }
+
+  /**
+   * Проверяет URL и открывает модалку с новостью, проектом или категорией.
+   * Вызывается только после того, как все компоненты и данные загружены.
+   */
+  _handleDirectUrlAfterLoad() {
+    const path = window.location.pathname;
+
+    // Открытие новости
+    const newsMatch = path.match(/^\/news\/(\d+)/);
+    if (newsMatch) {
+      const newsId = newsMatch[1];
+      if (typeof modalManager !== 'undefined' && typeof modalManager.openNewsById === 'function') {
+        modalManager.openNewsById(newsId);
+      }
+      return;
+    }
+
+    // Открытие проекта
+    const projectMatch = path.match(/^\/projects\/(.+)/);
+    if (projectMatch) {
+      const projectId = projectMatch[1];
+      if (typeof modalManager !== 'undefined' && typeof modalManager.openProjectById === 'function') {
+        // Инициализируем страницу проектов, если она ещё не загружена
+        if (typeof initProjectsPage === 'function' && !window._projectsPageInitialized) {
+          initProjectsPage();
+        }
+        modalManager.openProjectById(projectId);
+      }
+      return;
+    }
+
+    // Открытие категории новостей
+    const categoryMatch = path.match(/^\/category\/(.+)/);
+    if (categoryMatch) {
+      const categoryName = decodeURIComponent(categoryMatch[1]);
+      if (typeof modalManager !== 'undefined' && typeof modalManager.openCategoryByName === 'function') {
+        modalManager.openCategoryByName(categoryName);
+      }
+      return;
+    }
+
+    // Открытие категории проектов
+    const projectCategoryMatch = path.match(/^\/project-category\/(.+)/);
+    if (projectCategoryMatch) {
+      const categoryName = decodeURIComponent(projectCategoryMatch[1]);
+      if (typeof modalManager !== 'undefined' && typeof modalManager.openProjectCategoryByName === 'function') {
+        modalManager.openProjectCategoryByName(categoryName);
+      }
+      return;
+    }
+
+    // Открытие обратной связи
+    if (path === '/feedback' || path === '/feedback.html') {
+      if (typeof modalManager !== 'undefined') {
+        modalManager.open('feedback', { skipUrlUpdate: true });
+      }
     }
   }
 
@@ -118,7 +186,7 @@ class Application {
       resolve();
     };
     document.addEventListener('components:loaded', onComponentsLoaded);
-    
+
     if (typeof ComponentLoader !== 'undefined') {
       const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
       ComponentLoader.init({
@@ -159,14 +227,14 @@ class Application {
     } else {
       Logger.WARN('Form #proposalForm not found, FormManager not created');
     }
-    
+
     if (typeof UniversalApplicationModalManager !== 'undefined') {
       UniversalApplicationModalManager.init();
       this.services.universalModalManager = UniversalApplicationModalManager;
     } else {
       Logger.WARN('UniversalApplicationModalManager not available');
     }
-    
+
     const feedbackForm = document.getElementById('feedbackForm');
     if (feedbackForm) {
       const rateLimiter = new Utils.RateLimiter(window.Services.storage);
@@ -188,12 +256,12 @@ class Application {
       window.feedbackFormManager.init();
       this.services.feedbackFormManager = window.feedbackFormManager;
     }
-    
+
     const dateInput = document.getElementById('desiredDate');
     if (dateInput && typeof DateInputHelper !== 'undefined') {
       DateInputHelper.initDateInput(dateInput);
     }
-    
+
     const approvalDateInput = document.getElementById('desiredApprovalDate');
     if (approvalDateInput && typeof DateInputHelper !== 'undefined') {
       DateInputHelper.initDateInput(approvalDateInput);
@@ -202,7 +270,7 @@ class Application {
 
   _registerModules() {
     const modulesToRegister = [];
-    
+
     if (typeof navigationManager !== 'undefined') {
       this.services.navigationManager = navigationManager;
       modulesToRegister.push(navigationManager);
@@ -221,13 +289,13 @@ class Application {
     if (typeof modalManager !== 'undefined') {
       this.services.modalManager = modalManager;
     }
-    
+
     this.modules = modulesToRegister;
   }
 
   _registerModals() {
     if (typeof modalManager === 'undefined' || this._modalsRegistered) return;
-    
+
     const modalsToRegister = [
       { key: 'about', overlayId: 'aboutModalOverlay', required: false },
       { key: 'details', overlayId: 'detailsModalOverlay', required: false },
@@ -242,7 +310,7 @@ class Application {
       { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
       { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false }
     ];
-    
+
     for (let i = 0; i < modalsToRegister.length; i++) {
       this._processModalRegistration(modalsToRegister[i]);
     }
@@ -256,7 +324,7 @@ class Application {
     const onClose = config.onClose;
     const onOpen = config.onOpen;
     const focusSelector = config.focusSelector;
-    
+
     const overlay = document.getElementById(overlayId);
     if (overlay) {
       modalManager.register(key, { overlayId: overlayId, onClose: onClose, onOpen: onOpen, focusSelector: focusSelector });
@@ -293,7 +361,7 @@ class Application {
     window.closeMobileMenu = this._globalCloseMobileMenu.bind(this);
     window.removeFile = this._globalRemoveFile.bind(this);
     window.toggleWidget = this._globalToggleWidget.bind(this);
-    
+
     this._boundCookieClickHandler = this._handleCookieSettingsClick.bind(this);
     document.addEventListener('click', this._boundCookieClickHandler);
   }
@@ -340,29 +408,29 @@ class Application {
   _handleCookieSettingsClick(e) {
     const link = e.target.closest('#cookie-settings-link');
     if (!link) return;
-    
+
     e.preventDefault();
     const storage = window.Services && window.Services.storage;
     if (storage && typeof ConsentManager.withdrawConsent === 'function') {
       ConsentManager.withdrawConsent(storage);
     }
-    
+
     setTimeout(this._switchMapToStatic.bind(this), 150);
   }
 
   _switchMapToStatic() {
     const container = document.getElementById('mapContainer');
     if (!container) return;
-    
+
     const staticUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.STATIC_URL;
     if (!staticUrl) return;
-    
+
     const iframe = container.querySelector('iframe');
     if (iframe) iframe.remove();
-    
+
     let img = container.querySelector('img');
     if (img) return;
-    
+
     img = document.createElement('img');
     img.id = 'staticMap';
     img.className = 'static-map';
@@ -370,7 +438,7 @@ class Application {
     img.alt = 'Карта проезда к офису';
     img.loading = 'lazy';
     container.appendChild(img);
-    
+
     Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
   }
 
@@ -407,20 +475,20 @@ class Application {
   _initFloatingCTA() {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
-    
+
     const currentPath = window.location.pathname;
-    
+
     if (currentPath === '/partners.html' || currentPath === '/contacts.html') {
       floatingBtn.classList.add('visible');
       return;
     }
-    
+
     const isHomePage = currentPath === '/' || currentPath.endsWith('index.html') || currentPath === '';
     if (!isHomePage) {
       floatingBtn.remove();
       return;
     }
-    
+
     const heroSection = document.querySelector('.hero');
     if (heroSection) {
       this._boundHeroObserver = this._handleHeroIntersection.bind(this);
@@ -437,7 +505,7 @@ class Application {
   _handleHeroIntersection(entries) {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
-    
+
     for (let i = 0; i < entries.length; i++) {
       this._processHeroEntry(floatingBtn, entries[i]);
     }
@@ -461,7 +529,7 @@ class Application {
 
   _initImageLazyLoading() {
     const lazyImages = document.querySelectorAll('img[data-src]');
-    
+
     if ('IntersectionObserver' in window) {
       this._boundImageObserver = this._handleImageIntersection.bind(this);
       this._imageObserverInstance = new IntersectionObserver(this._boundImageObserver, { rootMargin: '100px' });
@@ -508,11 +576,11 @@ class Application {
 
   _initPrefersReducedMotion() {
     this._prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    
+
     if (this._prefersReducedMotion.matches) {
       document.body.classList.add('reduced-motion');
     }
-    
+
     this._boundMotionChangeHandler = this._handleMotionChange.bind(this);
     this._prefersReducedMotion.addEventListener('change', this._boundMotionChangeHandler);
   }
@@ -528,11 +596,11 @@ class Application {
   _handleHashScroll() {
     const hash = window.location.hash;
     if (!hash || hash === '#') return;
-    
+
     const targetId = hash.substring(1);
     const targetElement = document.getElementById(targetId);
     if (!targetElement) return;
-    
+
     this._boundComponentsLoadedScrollHandler = this._scrollToTarget.bind(this, targetElement);
     document.addEventListener('components:loaded', this._boundComponentsLoadedScrollHandler, { once: true });
     this._boundHashScrollTimeout = setTimeout(this._boundComponentsLoadedScrollHandler, 800);
@@ -553,19 +621,19 @@ class Application {
 
   _initScrollProgressBar() {
     if (this.scrollProgressElements) return;
-    
+
     const container = document.createElement('div');
     container.className = 'scroll-progress-container';
     const bar = document.createElement('div');
     bar.className = 'scroll-progress-bar';
     container.appendChild(bar);
     document.body.appendChild(container);
-    
+
     this.scrollProgressElements = { container: container, bar: bar };
-    
+
     this._boundProgressHandler = this._updateScrollProgress.bind(this, bar);
     this._boundResizeHandler = this._updateScrollProgress.bind(this, bar);
-    
+
     window.addEventListener('scroll', this._boundProgressHandler);
     window.addEventListener('resize', this._boundResizeHandler);
     this._updateScrollProgress(bar);
@@ -588,7 +656,7 @@ class Application {
       if (container && container.parentNode) container.parentNode.removeChild(container);
       this.scrollProgressElements = null;
     }
-    
+
     if (this._boundProgressHandler) {
       window.removeEventListener('scroll', this._boundProgressHandler);
       window.removeEventListener('resize', this._boundResizeHandler);
@@ -600,23 +668,23 @@ class Application {
   _initMapLoader() {
     const container = document.getElementById('mapContainer');
     if (!container) return;
-    
+
     const staticUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.STATIC_URL;
     const mapPageUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.MAP_PAGE_URL;
-    
+
     if (!staticUrl || !mapPageUrl) {
       Logger.WARN('Map static URL or page URL not configured');
       return;
     }
-    
+
     container.innerHTML = '';
-    
+
     const img = document.createElement('img');
     img.className = 'static-map';
     img.src = staticUrl;
     img.alt = 'Карта проезда к офису';
     img.loading = 'lazy';
-    
+
     img.addEventListener('click', this._handleMapClick.bind(this, mapPageUrl));
     container.appendChild(img);
     Logger.INFO('Статическая карта загружена');
@@ -646,31 +714,31 @@ class Application {
     if (errorContainer) {
       errorContainer.style.display = 'block';
       errorContainer.replaceChildren();
-      
+
       const errorDiv = document.createElement('div');
       errorDiv.className = 'app-error-message-block';
-      
+
       const h2 = document.createElement('h2');
       h2.className = 'app-error-title';
       h2.textContent = 'Ошибка загрузки приложения';
       errorDiv.appendChild(h2);
-      
+
       const p1 = document.createElement('p');
       p1.className = 'app-error-text';
       p1.textContent = 'Произошла ошибка при инициализации сайта. Пожалуйста, обновите страницу.';
       errorDiv.appendChild(p1);
-      
+
       const p2 = document.createElement('p');
       p2.className = 'app-error-detail';
       p2.textContent = Utils.Sanitizer.escapeHtml(error.message);
       errorDiv.appendChild(p2);
-      
+
       const reloadBtn = document.createElement('button');
       reloadBtn.className = 'app-error-reload-btn';
       reloadBtn.textContent = 'Обновить страницу';
       reloadBtn.addEventListener('click', this._handleReloadClick.bind(this));
       errorDiv.appendChild(reloadBtn);
-      
+
       errorContainer.appendChild(errorDiv);
     } else {
       alert('Ошибка загрузки приложения: ' + Utils.Sanitizer.escapeHtml(error.message));
@@ -688,31 +756,31 @@ class Application {
     if (this._boundMotionChangeHandler && this._prefersReducedMotion) this._prefersReducedMotion.removeEventListener('change', this._boundMotionChangeHandler);
     if (this._boundComponentsLoadedScrollHandler) document.removeEventListener('components:loaded', this._boundComponentsLoadedScrollHandler);
     if (this._boundHashScrollTimeout) clearTimeout(this._boundHashScrollTimeout);
-    
+
     if (this._heroObserverInstance) this._heroObserverInstance.disconnect();
     if (this._imageObserverInstance) this._imageObserverInstance.disconnect();
     if (this._boundFloatingScrollHandler) window.removeEventListener('scroll', this._boundFloatingScrollHandler);
-    
+
     this._destroyScrollProgressBar();
-    
+
     const servicesToDestroy = [
-      'navigationManager', 'animationManager', 'modalManager', 
+      'navigationManager', 'animationManager', 'modalManager',
       'newsManager', 'newsRenderer', 'formManager', 'consentManager', 'feedbackFormManager'
     ];
-    
+
     for (let i = 0; i < servicesToDestroy.length; i++) {
       this._destroyService(servicesToDestroy[i]);
     }
-    
+
     if (typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.destroy === 'function') {
       UniversalApplicationModalManager.destroy();
     }
     if (typeof textSelectionReporter !== 'undefined' && typeof textSelectionReporter.destroy === 'function') {
       textSelectionReporter.destroy();
     }
-    
+
     this._cleanupGlobals();
-    
+
     this.modules = [];
     this.errors = [];
     this.services = {};
@@ -733,7 +801,7 @@ class Application {
       'toggleWidget', 'openDetailsModal', 'openProjectModal', 'initProjectGallery',
       'openApplicationModal', 'closeUniversalApplicationModal'
     ];
-    
+
     for (let i = 0; i < globalFunctions.length; i++) {
       this._cleanupGlobalFunction(globalFunctions[i]);
     }
@@ -752,12 +820,12 @@ function initApp() {
   const hasConfig = typeof window.CONFIG !== 'undefined';
   const hasServices = typeof window.Services !== 'undefined';
   const hasUtils = typeof window.Utils !== 'undefined';
-  
+
   if (!hasConfig || !hasServices || !hasUtils) {
     setTimeout(retryInitialization, (window.CONFIG && window.CONFIG.PERFORMANCE && window.CONFIG.PERFORMANCE.INIT_APP_DELAY_MS) || 100);
     return;
   }
-  
+
   if (typeof NEWS_DATA !== 'undefined') {
     try {
       if (typeof NewsRenderer !== 'undefined' && typeof NewsManager !== 'undefined') {
@@ -771,7 +839,7 @@ function initApp() {
       Logger.ERROR('Ошибка инициализации менеджеров новостей:', err);
     }
   }
-  
+
   if (typeof PROJECTS_DATA !== 'undefined' && typeof ProjectRenderer !== 'undefined') {
     try {
       window.projectRenderer = new ProjectRenderer(PROJECTS_DATA);
@@ -780,14 +848,14 @@ function initApp() {
       Logger.ERROR('Ошибка создания projectRenderer:', err);
     }
   }
-  
+
   if (typeof initDocPreviews === 'function') {
     initDocPreviews();
   }
-  
+
   const app = new Application();
   window.App = app;
-  
+
   if (typeof ConsentManager !== 'undefined') {
     try {
       ConsentManager.init();
@@ -796,7 +864,7 @@ function initApp() {
       Logger.ERROR('Failed to initialize ConsentManager:', err);
     }
   }
-  
+
   app.init();
 }
 

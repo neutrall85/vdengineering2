@@ -144,13 +144,15 @@ class HeroSlideshow {
     // 1. Останавливаем таймер немедленно
     this.pause();
 
-    // 2. Удаляем все обработчики событий
-    this.eventListeners.forEach(({ element, event, handler }) => {
-      if (element) {
-        element.removeEventListener(event, handler);
-      }
-    });
-    this.eventListeners = [];
+    // 2. Удаляем все обработчики событий (с проверкой, что eventListeners существует)
+    if (Array.isArray(this.eventListeners)) {
+      this.eventListeners.forEach(({ element, event, handler }) => {
+        if (element) {
+          element.removeEventListener(event, handler);
+        }
+      });
+      this.eventListeners = [];
+    }
 
     // 3. Очищаем ссылки на DOM-элементы для сборщика мусора
     this.container = null;

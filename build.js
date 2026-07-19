@@ -84,10 +84,12 @@ function buildCSS() {
 // Замена локальных скриптов и стилей на бандлы
 function replaceWithBundles() {
   console.log('🔄 Замена скриптов и стилей на бандлы...');
-  const htmlFiles = glob.sync(CONFIG.htmlFiles, { ignore: ['node_modules/**'] });
+  const htmlFiles = glob.sync(CONFIG.htmlFiles, { 
+    ignore: ['node_modules/**', 'yandex_114fca37dd9b4a11.html'] 
+  });
   const version = CONFIG.version;
-  const jsBundle = `js/bundle.min.js?v=${version}`;
-  const cssBundle = `css/styles.min.css?v=${version}`;
+  const jsBundle = `/js/bundle.min.js?v=${version}`;
+  const cssBundle = `/css/styles.min.css?v=${version}`;
 
   for (const file of htmlFiles) {
     const content = fs.readFileSync(file, 'utf8');

@@ -7,57 +7,57 @@ const seoDatabase = {
     'ads-b-out': {
       title: 'Реализация функции ADS-B Out v.2 на ВС Ан-124-100 | Проекты',
       description: 'Дополнительный сертификат типа № FATA-STC030108. Модификация и реализация функции ADS-B Out v.2 на самолетах Ан-124-100(-150).',
-      canonical: 'https://vdengineering.ru/project/ads-b-out'
+      canonical: 'https://vdengineering.ru/projects/ads-b-out'
     },
     'd18t-support': {
       title: 'Поддержание летной годности ВС Ан-124-100 | Проекты',
       description: 'Дополнительный сертификат типа № FATA-STC0304. Работы по подтверждению ресурса и срока службы ВС Ан-124-100(-150).',
-      canonical: 'https://vdengineering.ru/project/d18t-support'
+      canonical: 'https://vdengineering.ru/projects/d18t-support'
     },
     'paint-update': {
       title: 'Модификация и обновление ЛКП воздушных судов | Проекты',
       description: 'Разработка и внедрение модификаций лакокрасочного покрытия планера воздушного судна.',
-      canonical: 'https://vdengineering.ru/project/paint-update'
+      canonical: 'https://vdengineering.ru/projects/paint-update'
     },
     'foreign-mods': {
       title: 'Модификация ВС и двигателей иностранного производства | Проекты',
       description: 'Разработка и одобрение 11 изменений типовой конструкции для самолетов и двигателей иностранного производства.',
-      canonical: 'https://vdengineering.ru/project/foreign-mods'
+      canonical: 'https://vdengineering.ru/projects/foreign-mods'
     },
     'foreign-repairs': {
       title: 'Нетиповые ремонты компонентов иностранного производства | Проекты',
       description: 'Разработка и выполнение более 170 нетиповых ремонтов конструкции ВС и компонентов II и III классов.',
-      canonical: 'https://vdengineering.ru/project/foreign-repairs'
+      canonical: 'https://vdengineering.ru/projects/foreign-repairs'
     },
     'nose-repair': {
       title: 'Ремонт носовой части фюзеляжа | Проекты',
       description: 'Разработка ремонтной документации и выполнение нетиповых ремонтов носовой части фюзеляжа.',
-      canonical: 'https://vdengineering.ru/project/nose-repair'
+      canonical: 'https://vdengineering.ru/projects/nose-repair'
     },
     'landing-gear': {
       title: 'Модификация и ремонт взлётно-посадочных устройств | Проекты',
       description: 'Инжиниринговые решения по модификации, ремонту и продлению ресурса шасси.',
-      canonical: 'https://vdengineering.ru/project/landing-gear'
+      canonical: 'https://vdengineering.ru/projects/landing-gear'
     },
     'remote-control': {
       title: 'Модификация системы управления воздушным судном | Проекты',
       description: 'Разработка изменений в системе управления ВС, включая проводку и механизацию.',
-      canonical: 'https://vdengineering.ru/project/remote-control'
+      canonical: 'https://vdengineering.ru/projects/remote-control'
     },
     'antenna-replacement': {
       title: 'Модификация и ремонт систем связи и антенн | Проекты',
       description: 'Установка и модификация антенных систем, интеграция нового оборудования связи.',
-      canonical: 'https://vdengineering.ru/project/antenna-replacement'
+      canonical: 'https://vdengineering.ru/projects/antenna-replacement'
     },
     'cargo-equipment': {
       title: 'Модификация грузового оборудования и СНО | Проекты',
       description: 'Проектирование, модификация и ремонт погрузочно-разгрузочных систем и СНО.',
-      canonical: 'https://vdengineering.ru/project/cargo-equipment'
+      canonical: 'https://vdengineering.ru/projects/cargo-equipment'
     },
     'ground-equipment': {
       title: 'Разработка средств наземного обслуживания (СНО) | Проекты',
       description: 'Создание инновационных решений по наземному обслуживанию, нивелировке и взвешиванию.',
-      canonical: 'https://vdengineering.ru/project/ground-equipment'
+      canonical: 'https://vdengineering.ru/projects/ground-equipment'
     }
   },
   news: {
@@ -85,6 +85,32 @@ const seoDatabase = {
     }
   }
 };
+
+// --- ФУНКЦИИ ДЛЯ ХЛЕБНЫХ КРОШЕК (SEO) ---
+function generateBreadcrumbJSONLD(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": items.map((item, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "name": item.name,
+      "item": `https://vdengineering.ru${item.url}`
+    }))
+  };
+}
+
+function injectJSONLD(data) {
+  const existingScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb]');
+  if (existingScript) existingScript.remove();
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.setAttribute('data-breadcrumb', 'true');
+  script.textContent = JSON.stringify(data);
+  document.head.appendChild(script);
+}
+// --------------------------------------------
 
 function sanitizeString(str) {
   if (typeof str !== 'string') return '';
@@ -130,14 +156,42 @@ function updateMetaTags(type, id) {
 function initDynamicSEO() {
   const path = window.location.pathname;
 
-  if (path.indexOf('/project/') === 0) {
-    const projectId = path.split('/project/')[1].replace(/\/$/, '');
-    updateSEOMetaTags('project', projectId);
-  } else if (path.indexOf('/news/') === 0) {
-    const newsId = path.split('/news/')[1].replace(/\/$/, '');
-    updateSEOMetaTags('news', newsId);
-  } else if (path === '/feedback' || path === '/feedback.html' || path.indexOf('/feedback') === 0) {
-    updateSEOMetaTags('page', 'feedback');
+  // 1. Проверяем, открыта ли новость
+  const newsMatch = path.match(/^\/news\/(\d+)/);
+  if (newsMatch) {
+    const newsId = newsMatch[1];
+    const allNews = Object.values(window.NEWS_DATA || {}).flat();
+    const news = allNews.find(n => String(n.id) === String(newsId));
+    if (news) {
+      injectJSONLD(generateBreadcrumbJSONLD([
+        { name: 'Главная', url: '/' },
+        { name: 'Новости', url: '/news' },
+        { name: news.title, url: path }
+      ]));
+      updateMetaTags('news', newsId);
+    }
+    return;
+  }
+
+  // 2. Проверяем, открыт ли проект (исправлено: /projects/)
+  const projectMatch = path.match(/^\/projects\/(.+)/);
+  if (projectMatch) {
+    const projectId = projectMatch[1];
+    const project = window.PROJECTS_DATA?.[projectId];
+    if (project) {
+      injectJSONLD(generateBreadcrumbJSONLD([
+        { name: 'Главная', url: '/' },
+        { name: 'Проекты', url: '/projects' },
+        { name: project.title, url: path }
+      ]));
+      updateMetaTags('project', projectId);
+    }
+    return;
+  }
+
+  // 3. Если это страница обратной связи
+  if (path === '/feedback' || path === '/feedback.html' || path.indexOf('/feedback') === 0) {
+    updateMetaTags('page', 'feedback');
   }
 }
 

@@ -340,6 +340,12 @@ const FormUtils = {
       el.classList.remove('error');
       el.removeAttribute('aria-invalid');
     });
+
+    // Обновляем состояние кнопки отправки (она должна стать неактивной)
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+    }
   }
 };
 
@@ -612,12 +618,49 @@ class ModalFormHandler {
       }
     });
 
+    // Инициализация чекбоксов согласия (управление кнопкой)
     this._initConsentCheckboxes();
+
+    // Инициализация валидации дат (только отображение ошибки, не блокирует кнопку)
     this._initDateValidation();
+
+    // Устанавливаем начальное состояние кнопки
+    this._updateSubmitButton();
 
     this._initialized = true;
   }
 
+  /**
+   * Управление кнопкой отправки ТОЛЬКО на основе состояния чекбоксов согласия
+   */
+  _initConsentCheckboxes() {
+    // Находим все чекбоксы с атрибутом required (обычно это чекбокс согласия)
+    const consentCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
+    if (consentCheckboxes.length === 0) return;
+
+    // Вешаем обработчики на каждый такой чекбокс
+    consentCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => this._updateSubmitButton());
+    });
+  }
+
+  /**
+   * Обновляет состояние кнопки отправки: активна, если все обязательные чекбоксы отмечены
+   */
+  _updateSubmitButton() {
+    const submitBtn = this.form.querySelector('button[type="submit"]');
+    if (!submitBtn) return;
+
+    const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
+    const allChecked = Array.from(requiredCheckboxes).every(cb => cb.checked);
+
+    // Кнопка активна только если все обязательные чекбоксы отмечены
+    submitBtn.disabled = !allChecked;
+  }
+
+  /**
+   * Валидация дат (только отображение ошибки, кнопку не блокирует)
+   */
   _initDateValidation() {
     const dateReceived = this.form.querySelector('#desiredDate');
     const dateApproval = this.form.querySelector('#desiredApprovalDate');
@@ -653,7 +696,6 @@ class ModalFormHandler {
 
       if (!approvalVal) {
         errorEl.classList.remove('show');
-        this._updateSubmitButton();
         return;
       }
 
@@ -662,7 +704,6 @@ class ModalFormHandler {
 
       if (!receivedDate || !approvalDate) {
         errorEl.classList.remove('show');
-        this._updateSubmitButton();
         return;
       }
 
@@ -672,7 +713,6 @@ class ModalFormHandler {
       } else {
         errorEl.classList.remove('show');
       }
-      this._updateSubmitButton();
     };
 
     dateReceived.addEventListener('input', validateDates);
@@ -681,36 +721,6 @@ class ModalFormHandler {
     dateApproval.addEventListener('blur', validateDates);
 
     validateDates();
-
-    this._dateValidationHandlers = { dateReceived, dateApproval, validateDates };
-  }
-
-  _updateSubmitButton() {
-    const submitBtn = this.form.querySelector('button[type="submit"]');
-    if (!submitBtn) return;
-
-    const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
-    const allChecked = Array.from(requiredCheckboxes).every(cb => cb.checked);
-
-    const errorEl = this.form.querySelector('#dateOrderError');
-    const hasDateError = errorEl ? errorEl.classList.contains('show') : false;
-
-    submitBtn.disabled = !allChecked || hasDateError;
-  }
-
-  _initConsentCheckboxes() {
-    const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
-    const submitBtn = this.form.querySelector('button[type="submit"]');
-    if (!submitBtn) return;
-
-    const update = () => {
-      this._updateSubmitButton();
-    };
-
-    requiredCheckboxes.forEach(cb => {
-      cb.addEventListener('change', update);
-    });
-    update();
   }
 
   async _handleSubmit(e) {

@@ -1,11 +1,11 @@
 /**
  * Управление модальными окнами – единая точка входа
  * ООО "Волга-Днепр Инжиниринг"
- * 
+ *
  * Версия с ЧПУ-ссылками (без #, ?, &)
- * Исправлена блокировка скролла при вложенных модалках
- * Добавлена поддержка автоссылки для модалки обратной связи (/feedback)
- * Исправлено сохранение и восстановление исходного пути при закрытии модалки
+ * Исправлено восстановление URL при закрытии модалок новостей и проектов
+ * Добавлена автоматическая инициализация страницы проектов при закрытии
+ * Исправлена корректировка originalPath для категорий (category, project-category)
  */
 class ModalManager {
   constructor() {
@@ -21,9 +21,16 @@ class ModalManager {
     this.currentModalId = null;
     this.currentCategory = null;
     this.currentProjectCategory = null;
-    this.originalPath = null; // Сохраняем исходный путь для восстановления
+    this.originalPath = null;
+
+    this._categoryRetryCount = 0;
+    this._projectCategoryRetryCount = 0;
+    this._categoryRetryTimer = null;
+    this._projectCategoryRetryTimer = null;
+    this._openTimeout = null;
+    this._openFromUrlTimeout = null;
+
     this._initGlobalHandlers();
-    this._openFromUrl();
     this._initPopstate();
   }
 
@@ -153,7 +160,7 @@ class ModalManager {
     const project = window.PROJECTS_DATA[projectId];
     this._populateProjectModal(project);
     this.currentModalId = projectId;
-    
+
     const keepParent = this.activeModal === 'project-category';
     this.open('project', { id: projectId, keepParentModal: keepParent });
   }
@@ -188,24 +195,6 @@ class ModalManager {
         imageEl.alt = project.title;
       }
     }
-
-    // ===== SEO: ДОБАВЛЯЕМ JSON-LD ДЛЯ ПОИСКОВИКОВ =====
-    const existingScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb]');
-    if (existingScript) existingScript.remove();
-
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-breadcrumb', 'true');
-    script.textContent = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://vdengineering.ru/" },
-        { "@type": "ListItem", "position": 2, "name": "Проекты", "item": "https://vdengineering.ru/projects" },
-        { "@type": "ListItem", "position": 3, "name": project.title, "item": `https://vdengineering.ru/project/${project.id}` }
-      ]
-    });
-    document.head.appendChild(script);
   }
 
   _openService(trigger) {
@@ -262,7 +251,7 @@ class ModalManager {
     }
     this._populateNewsModal(news);
     this.currentModalId = newsId;
-    
+
     const keepParent = this.activeModal === 'category';
     this.open('news', { id: newsId, keepParentModal: keepParent });
   }
@@ -301,30 +290,33 @@ class ModalManager {
         mainImage.alt = news.title;
       }
     }
-
-    // ===== SEO: ДОБАВЛЯЕМ JSON-LD ДЛЯ ПОИСКОВИКОВ =====
-    const existingScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb]');
-    if (existingScript) existingScript.remove();
-
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-breadcrumb', 'true');
-    script.textContent = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://vdengineering.ru/" },
-        { "@type": "ListItem", "position": 2, "name": "Новости", "item": "https://vdengineering.ru/news" },
-        { "@type": "ListItem", "position": 3, "name": news.title, "item": `https://vdengineering.ru/news/${news.id}` }
-      ]
-    });
-    document.head.appendChild(script);
   }
 
   openCategoryByName(category) {
     if (!category) {
-        Logger.WARN('openCategoryByName: Категория не передана');
+      Logger.WARN('openCategoryByName: Категория не передана');
+      return;
+    }
+
+    if (!window.newsRenderer) {
+      if (this._categoryRetryCount < 30) {
+        this._categoryRetryCount++;
+        if (this._categoryRetryTimer) clearTimeout(this._categoryRetryTimer);
+        this._categoryRetryTimer = setTimeout(() => {
+          this._categoryRetryTimer = null;
+          this.openCategoryByName(category);
+        }, 100);
         return;
+      } else {
+        Logger.ERROR('openCategoryByName: newsRenderer так и не появился');
+        this._categoryRetryCount = 0;
+        return;
+      }
+    }
+    this._categoryRetryCount = 0;
+    if (this._categoryRetryTimer) {
+      clearTimeout(this._categoryRetryTimer);
+      this._categoryRetryTimer = null;
     }
 
     const titleEl = document.getElementById('categoryModalTitle');
@@ -339,16 +331,6 @@ class ModalManager {
     listEl.innerHTML = '';
     emptyEl.classList.add('hidden');
     titleEl.textContent = `Новости категории: ${category}`;
-
-    if (!window.newsRenderer) {
-      Logger.WARN('window.newsRenderer не найден.');
-      emptyEl.textContent = 'Новости временно недоступны.';
-      emptyEl.classList.remove('hidden');
-      emptyEl.classList.add('block');
-      this.currentCategory = category;
-      this.open('category', { id: category });
-      return;
-    }
 
     const allNews = Object.values(window.NEWS_DATA || {}).flat();
     const filteredNews = allNews.filter(news => news.category === category);
@@ -391,8 +373,29 @@ class ModalManager {
 
   openProjectCategoryByName(category) {
     if (!category) {
-        Logger.WARN('openProjectCategoryByName: Категория не передана');
+      Logger.WARN('openProjectCategoryByName: Категория не передана');
+      return;
+    }
+
+    if (!window.projectRenderer) {
+      if (this._projectCategoryRetryCount < 30) {
+        this._projectCategoryRetryCount++;
+        if (this._projectCategoryRetryTimer) clearTimeout(this._projectCategoryRetryTimer);
+        this._projectCategoryRetryTimer = setTimeout(() => {
+          this._projectCategoryRetryTimer = null;
+          this.openProjectCategoryByName(category);
+        }, 100);
         return;
+      } else {
+        Logger.ERROR('openProjectCategoryByName: projectRenderer так и не появился');
+        this._projectCategoryRetryCount = 0;
+        return;
+      }
+    }
+    this._projectCategoryRetryCount = 0;
+    if (this._projectCategoryRetryTimer) {
+      clearTimeout(this._projectCategoryRetryTimer);
+      this._projectCategoryRetryTimer = null;
     }
 
     const titleEl = document.getElementById('projectCategoryModalTitle');
@@ -407,16 +410,6 @@ class ModalManager {
     listEl.innerHTML = '';
     emptyEl.classList.add('hidden');
     titleEl.textContent = `Проекты категории: ${category}`;
-
-    if (!window.projectRenderer) {
-      Logger.WARN('window.projectRenderer не найден.');
-      emptyEl.textContent = 'Проекты временно недоступны.';
-      emptyEl.classList.remove('hidden');
-      emptyEl.classList.add('block');
-      this.currentProjectCategory = category;
-      this.open('project-category', { id: category });
-      return;
-    }
 
     const allProjects = Object.values(window.projectRenderer?.PROJECTS_DATA || {});
     const filteredProjects = allProjects.filter(project => project.category.includes(category));
@@ -539,31 +532,41 @@ class ModalManager {
     let path;
     if (key === 'feedback') {
       path = '/feedback';
-    } else if (id) {
-      path = `/${key}/${encodeURIComponent(id)}`;
     } else {
-      return;
+      const urlKey = key === 'project' ? 'projects' : key;
+      if (id) {
+        path = `/${urlKey}/${encodeURIComponent(id)}`;
+      } else {
+        return;
+      }
     }
     window.history.pushState({ modal: key, id: id || null }, '', path);
   }
 
   _openFromUrl() {
     const path = window.location.pathname;
-    const match = path.match(/^\/(news|project|category|project-category|feedback)(?:\/(.+))?$/);
+    const match = path.match(/^\/(news|projects|category|project-category|feedback)(?:\/(.+))?$/);
     if (match) {
-      const [, key, id] = match;
-      
+      let [, key, id] = match;
+      if (key === 'projects') key = 'project';
+
       if (key === 'feedback') {
-        setTimeout(() => this.open('feedback', { skipUrlUpdate: true }), 300);
+        if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
+        this._openFromUrlTimeout = setTimeout(() => {
+          this._openFromUrlTimeout = null;
+          this.open('feedback', { skipUrlUpdate: true });
+        }, 300);
         return;
       }
 
       const decodedId = id ? decodeURIComponent(id) : null;
       if (!decodedId) {
-        return; 
+        return;
       }
 
-      setTimeout(() => {
+      if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
+      this._openFromUrlTimeout = setTimeout(() => {
+        this._openFromUrlTimeout = null;
         if (key === 'project') {
           const project = window.PROJECTS_DATA?.[decodedId];
           if (project) {
@@ -593,10 +596,10 @@ class ModalManager {
       const state = event.state;
       if (state && state.modal) {
         const { modal, id } = state;
-        
+
         if (!id && modal !== 'feedback') {
-            this.closeAll();
-            return;
+          this.closeAll();
+          return;
         }
 
         if (modal === 'feedback') {
@@ -648,6 +651,7 @@ class ModalManager {
     });
   }
 
+  // ===== ИСПРАВЛЕНИЕ: корректировка originalPath для новостей, проектов и категорий =====
   open(key, options = {}) {
     const config = this.modals.get(key);
     if (!config) {
@@ -660,7 +664,28 @@ class ModalManager {
     const skipUrlUpdate = options.skipUrlUpdate === true;
 
     if (this.activeModal === null && !skipUrlUpdate) {
-      this.originalPath = window.location.pathname + window.location.search + window.location.hash;
+      let path = window.location.pathname + window.location.search + window.location.hash;
+
+      // Карта префиксов для детальных URL и соответствующих базовых путей
+      const prefixMap = {
+        'news': '/news',
+        'project': '/projects',
+        'category': '/category',
+        'project-category': '/project-category'
+      };
+      const baseMap = {
+        'news': '/news',
+        'project': '/projects',
+        'category': '/news',
+        'project-category': '/projects'
+      };
+
+      const prefix = prefixMap[key];
+      if (prefix && path.startsWith(prefix + '/')) {
+        path = baseMap[key];
+      }
+
+      this.originalPath = path;
     }
 
     if (this.activeModal && this.activeModal !== key) {
@@ -686,12 +711,14 @@ class ModalManager {
     }
 
     this.activeModal = key;
-    
+
     if (!skipStack) {
       ScrollManager.lock();
     }
 
-    setTimeout(() => {
+    if (this._openTimeout) clearTimeout(this._openTimeout);
+    this._openTimeout = setTimeout(() => {
+      this._openTimeout = null;
       overlay.classList.add('active');
       this._initFocusTrap(overlay);
       if (config.onOpen) config.onOpen(overlay);
@@ -738,8 +765,11 @@ class ModalManager {
     if (previousModal) {
       const parentId = this._getParentId(previousModal);
       if (parentId) {
-        const parentPath = `/${previousModal}/${encodeURIComponent(parentId)}`;
-        window.history.replaceState({ modal: previousModal, id: parentId }, '', parentPath);
+        let basePath = `/${previousModal}`;
+        if (previousModal === 'news' || previousModal === 'project') {
+          basePath += '/';
+        }
+        window.history.replaceState({ modal: previousModal, id: parentId }, '', basePath);
       } else {
         if (this.originalPath) {
           window.history.replaceState({}, '', this.originalPath);
@@ -747,7 +777,7 @@ class ModalManager {
           window.history.replaceState({}, '', '/');
         }
       }
-      
+
       ScrollManager.unlock();
       this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
       this.activeModal = previousModal;
@@ -758,7 +788,15 @@ class ModalManager {
       } else {
         window.history.replaceState({}, '', '/');
       }
-      
+
+      // Если закрывается проект или категория проектов, и страница не инициализирована – инициализируем
+      if ((key === 'project' || key === 'project-category') && 
+          typeof window.initProjectsPage === 'function' && !window._projectsPageInitialized) {
+        setTimeout(() => {
+          window.initProjectsPage();
+        }, 50);
+      }
+
       ScrollManager.unlock();
       this.activeModal = null;
     }
@@ -831,12 +869,24 @@ class ModalManager {
       this._boundOpenHandler = null;
     }
     this._removeFocusTrap();
+
     this.cleanupHandlers.forEach(({ overlay, clickHandler }) => {
       if (overlay && clickHandler) {
         overlay.removeEventListener('click', clickHandler);
       }
     });
     this.cleanupHandlers.clear();
+
+    if (this._categoryRetryTimer) clearTimeout(this._categoryRetryTimer);
+    if (this._projectCategoryRetryTimer) clearTimeout(this._projectCategoryRetryTimer);
+    if (this._openTimeout) clearTimeout(this._openTimeout);
+    if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
+
+    this._categoryRetryTimer = null;
+    this._projectCategoryRetryTimer = null;
+    this._openTimeout = null;
+    this._openFromUrlTimeout = null;
+
     this.modals.clear();
     this.activeModal = null;
     this.activeModalStack = [];

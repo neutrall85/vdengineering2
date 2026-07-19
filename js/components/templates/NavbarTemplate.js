@@ -8,7 +8,7 @@ const NavbarTemplate = `
   <div class="navbar-content">
     <div class="logo">
       <a href="/">
-        <img src="assets/images/logo.svg" alt="Волга-Днепр Инжиниринг" class="logo-image" width="300" height="70" fetchpriority="high">
+        <img src="/assets/images/logo.svg" alt="Волга-Днепр Инжиниринг" class="logo-image" width="300" height="70" fetchpriority="high">
       </a>
     </div>
     <ul class="nav-links">
