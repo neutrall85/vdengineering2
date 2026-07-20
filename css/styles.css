@@ -6393,3 +6393,11 @@ form.hidden-form {
     display: none;
   }
 }
+
+@media (max-width: 1280px) {
+  .services-grid,
+  .projects-grid,
+  .preview-projects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

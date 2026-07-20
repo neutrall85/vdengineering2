@@ -28,7 +28,6 @@ class NewsManager {
     const closeBtn = document.getElementById('lightboxCloseBtn');
 
     if (!this.lightboxOverlay || !this.lightboxImage) {
-      Logger.WARN('Lightbox elements not found');
       return;
     }
 
