@@ -61,7 +61,7 @@ const CONFIG = {
     SESSION_STORAGE_KEY: 'form_submitted'
   },
   YANDEX: {
-    METRIKA_COUNTER_ID: '110278877'
+    METRIKA_COUNTER_ID: '110866353'
   },
   
   MAP: {

@@ -138,7 +138,7 @@ const FormUtils = {
 
   async fetchCsrfToken() {
     try {
-      const response = await fetch('api/csrf_token.php');
+      const response = await fetch('/api/csrf_token.php');
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const data = await response.json();
       return data.csrf_token;
@@ -786,7 +786,7 @@ class ModalFormHandler {
       const formats = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'ZIP', 'PPT', 'PPTX', 'JPG', 'PNG', 'GIF'];
       userMessage = `Неподдерживаемый формат файла. Разрешены: ${formats.map(f => f.toUpperCase()).join(', ')}.`;
     } else if (msg.includes('сервера') || msg.includes('позже')) {
-      userMessage = 'Ошибка на сервере. Пожалуйста, попробуйте позже или обратитесь к администратору admin@vdenginiring.ru';
+      userMessage = 'Ошибка на сервере. Пожалуйста, попробуйте позже или обратитесь к администратору admin@vdengineering.ru';
     }
 
     const warning = this.form.querySelector('.rate-limit-warning');

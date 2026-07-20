@@ -6397,7 +6397,9 @@ form.hidden-form {
 @media (max-width: 1280px) {
   .services-grid,
   .projects-grid,
-  .preview-projects-grid {
+  .preview-projects-grid,
+  .careers-benefits-grid,
+  .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }

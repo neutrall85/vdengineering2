@@ -101,7 +101,7 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="fileAttachment">Вложение (опционально)</label>
+          <label class="form-label" for="fileAttachment">Вложение</label>
           <div class="form-file" id="fileDrop">
             <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
@@ -291,7 +291,7 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="feedbackFileAttachment">Вложение (опционально)</label>
+          <label class="form-label" for="feedbackFileAttachment">Вложение</label>
           <div class="form-file" id="feedbackFileDrop">
             <input type="file" id="feedbackFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
