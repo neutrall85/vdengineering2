@@ -964,6 +964,7 @@ body.app-ready>footer {
   line-height: 1.1;
   margin-bottom: 0.25rem;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-item:hover .stat-number,
@@ -1529,12 +1530,6 @@ body.app-ready>footer {
   max-height: 90px;
 }
 
-/* .partner-logo img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  object-fit: contain;
-} */
 
 @media (max-width: 768px) {
   .partners-collage {
@@ -6394,7 +6389,7 @@ form.hidden-form {
   }
 }
 
-@media (max-width: 1280px) {
+@media (pointer: fine) and (max-width: 1280px) {
   .services-grid,
   .projects-grid,
   .preview-projects-grid,
