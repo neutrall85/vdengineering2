@@ -20,8 +20,8 @@ const ComponentLoader = {
         feedbackModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.feedbackModal : '',
         categoryNewsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.categoryNewsModal : '',
         projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : '',
-        // ДОБАВЛЯЕМ ШАБЛОН НОВОСТИ
-        newsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.newsModal : ''
+        newsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.newsModal : '',
+        errorReportModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.errorReportModal : '' // ДОБАВЛЕНО
     },
 
     /**
@@ -147,7 +147,7 @@ const ComponentLoader = {
             document.body.appendChild(projectCategoryContainer.firstElementChild);
         }
 
-        // ========== ДОБАВЛЯЕМ ЗАГРУЗКУ МОДАЛКИ НОВОСТИ ==========
+        // Загрузка модалки новости
         if (!document.getElementById('newsModalOverlay')) {
             const newsModalContainer = document.createElement('div');
             const parser = new DOMParser();
@@ -156,6 +156,17 @@ const ComponentLoader = {
                 newsModalContainer.appendChild(node.cloneNode(true));
             });
             document.body.appendChild(newsModalContainer.firstElementChild);
+        }
+
+        // ========== ЗАГРУЗКА МОДАЛКИ ОШИБКИ ==========
+        if (!document.getElementById('errorReportModalOverlay')) {
+            const errorReportContainer = document.createElement('div');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(this.templates.errorReportModal, 'text/html');
+            Array.from(doc.body.childNodes).forEach(node => {
+                errorReportContainer.appendChild(node.cloneNode(true));
+            });
+            document.body.appendChild(errorReportContainer.firstElementChild);
         }
     },
 

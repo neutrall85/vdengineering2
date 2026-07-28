@@ -6422,3 +6422,344 @@ form.hidden-form {
     -moz-hyphens: auto;
     -ms-hyphens: auto;
 }
+
+.btn-no-shine.btn-no-shine::after {
+    display: none;
+}
+
+/* ==================== ПОИСК В ФУТЕРЕ ==================== */
+.footer-search {
+    max-width: 1400px;
+    margin: 0rem auto 1rem;
+    padding: 0 1rem;
+}
+
+.footer-search-form {
+    display: flex;
+    justify-content: center;
+}
+
+.footer-search-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 0.25rem 0.25rem 0.25rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    max-width: 500px;
+    width: 100%;
+}
+
+.footer-search-group:focus-within {
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+.footer-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+    min-width: 100px;
+    font-family: inherit;
+}
+
+.footer-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-search-input:focus {
+    outline: none;
+}
+
+.footer-search-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    color: black;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.footer-search-btn:hover {
+    background: var(--vd-light-gray);
+    transform: translateY(-2px);
+}
+
+.footer-search-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.footer-search-btn span {
+    display: inline-block;
+}
+
+/* ==================== СТРАНИЦА /search ==================== */
+.search-page {
+    padding: 120px 5% 60px;
+    min-height: 60vh;
+    background: white;
+}
+
+.search-page-header {
+    max-width: 800px;
+    margin: 0 auto 2rem;
+    text-align: center;
+}
+
+.search-page-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--vd);
+    margin-bottom: 1rem;
+}
+
+.search-page-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-page-group {
+    display: flex;
+    gap: 0.5rem;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 50px;
+    padding: 0.3rem 0.3rem 0.3rem 1.5rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-page-group:focus-within {
+    border-color: var(--vd);
+    box-shadow: 0 0 0 4px rgba(0, 78, 150, 0.15);
+}
+
+.search-page-input {
+    flex: 1;
+    border: none;
+    font-size: 1rem;
+    padding: 0.7rem 0;
+    background: transparent;
+    font-family: inherit;
+}
+
+.search-page-input:focus,
+.footer-search-input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.search-page-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--vd);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    font-family: inherit;
+}
+
+.search-page-btn:hover {
+    background: var(--vd-dark);
+    transform: translateY(-2px);
+}
+
+.search-page-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* Результаты поиска */
+.search-results-container {
+    max-width: 800px;
+    margin: 2rem auto 0;
+}
+
+.search-results-header {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.search-results-header p {
+    color: var(--metallic);
+    font-size: 0.95rem;
+}
+
+.search-result-card {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s ease;
+}
+
+.search-result-card:hover {
+    background: var(--vd-light-gray);
+    margin: 0 -1rem;
+    padding: 1.25rem 1rem;
+    border-radius: 8px;
+}
+
+.search-result-title {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--vd);
+    text-decoration: none;
+    margin-bottom: 0.25rem;
+}
+
+.search-result-title:hover {
+    text-decoration: underline;
+}
+
+.search-result-url {
+    font-size: 0.8rem;
+    color: var(--metallic);
+    margin-bottom: 0.5rem;
+}
+
+.search-result-desc {
+    color: var(--text-dark);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.search-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--metallic);
+}
+
+.search-empty p {
+    margin-bottom: 0.5rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .footer-search-group {
+        max-width: 100%;
+        padding: 0.2rem 0.2rem 0.2rem 0.8rem;
+    }
+    
+    .footer-search-input {
+        font-size: 0.85rem;
+        min-width: 80px;
+    }
+    
+    .footer-search-btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.8rem;
+    }
+    
+    .footer-search-btn span {
+        display: none;
+    }
+    
+    .footer-search-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .search-page-group {
+        padding: 0.2rem 0.2rem 0.2rem 1rem;
+    }
+    
+    .search-page-input {
+        font-size: 0.9rem;
+        padding: 0.6rem 0;
+    }
+    
+    .search-page-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .search-page-btn span {
+        display: none;
+    }
+    
+    .search-page-btn svg {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+/* ==================== УБИРАЕМ ПРЯМОУГОЛЬНЫЙ ФОН ПРИ АВТОЗАПОЛНЕНИИ (БЕЗ !important) ==================== */
+/* Для футера – белый текст на тёмном фоне */
+#footerSearchForm .footer-search-input:-webkit-autofill,
+#footerSearchForm .footer-search-input:-webkit-autofill:hover,
+#footerSearchForm .footer-search-input:-webkit-autofill:focus,
+#footerSearchForm .footer-search-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset;
+    background-color: transparent;
+    background-clip: padding-box;
+    transition: background-color 5000s ease-in-out 0s;
+    -webkit-text-fill-color: white;
+}
+
+/* Для страницы поиска – наследуем цвет из обычных стилей (чёрный) */
+#searchForm .search-page-input:-webkit-autofill,
+#searchForm .search-page-input:-webkit-autofill:hover,
+#searchForm .search-page-input:-webkit-autofill:focus,
+#searchForm .search-page-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset;
+    background-color: transparent;
+    background-clip: padding-box;
+    transition: background-color 5000s ease-in-out 0s;
+    /* -webkit-text-fill-color не задаём – наследуется от обычных стилей */
+}
+
+/* Дополнительно для Firefox (если нужно) – можно убрать, если фон не появляется */
+#footerSearchForm .footer-search-input:-moz-autofill,
+#searchForm .search-page-input:-moz-autofill {
+    background-color: transparent;
+    box-shadow: 0 0 0 1000px transparent inset;
+}
+
+/* Убираем стандартную обводку при фокусе (без !important) */
+#footerSearchForm .footer-search-input:focus,
+#searchForm .search-page-input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* ==================== СТИЛИ ДЛЯ ПОЛОС ПРОКРУТКИ В FIREFOX ==================== */
+.modal-body,
+.search-results-container,
+#errorReportTextDisplay,
+.search-result-card,
+.news-card-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 78, 150, 0.3) transparent;
+}
+
+/* Для мобильных устройств оставляем стандартные скроллбары */
+@media (max-width: 768px) {
+    .modal-body,
+    .search-results-container,
+    #errorReportTextDisplay {
+        scrollbar-width: auto;
+    }
+}

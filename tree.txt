@@ -1,0 +1,337 @@
+C:.
+|   403.html
+|   404.html
+|   about.html
+|   contacts.html
+|   docs.html
+|   index.html
+|   news.html
+|   partners.html
+|   projects.html
+|   services.html
+|   tree.txt
+|   vacancies.html
+|   
++---api
+|   |   .htaccess
+|   |   .user.ini
+|   |   cookie-consent.php
+|   |   csrf_token.php
+|   |   env_loader.php
+|   |   Logger.php
+|   |   report-error.php
+|   |   response_templates.php
+|   |   secret_config.php
+|   |   submit.php
+|   |   
+|   \---PHPMailer
+|           .htaccess
+|           Exception.php
+|           PHPMailer.php
+|           SMTP.php
+|           
++---assets
+|   |   eas.svg
+|   |   
+|   +---docs
+|   |       certificate-dev.pdf
+|   |       FATA-STC030108_ADS-B_out_v2.pdf
+|   |       FATA-STC0304_resource_An-124-100.pdf
+|   |       Special_assessment_of_working_conditions.pdf
+|   |       
+|   +---fonts
+|   |       Montserrat-Bold.woff
+|   |       Montserrat-Bold.woff2
+|   |       Montserrat-ExtraBold.woff
+|   |       Montserrat-ExtraBold.woff2
+|   |       Montserrat-Light.woff
+|   |       Montserrat-Light.woff2
+|   |       Montserrat-Medium.woff
+|   |       Montserrat-Medium.woff2
+|   |       Montserrat-Regular.woff
+|   |       Montserrat-Regular.woff2
+|   |       Montserrat-SemiBold.woff
+|   |       Montserrat-SemiBold.woff2
+|   |       stylesheet.css
+|   |       
+|   \---images
+|       |   aiplane_in_the_sky_large.webp
+|       |   airplane_in_the_sky.webp
+|       |   airplane_not_high.webp
+|       |   An-124-100.webp
+|       |   apple-touch-icon.png
+|       |   developer_certificate.webp
+|       |   favicon-96x96.png
+|       |   favicon.ico
+|       |   favicon.svg
+|       |   hero-bg-old.webp
+|       |   hero.webp
+|       |   join.webp
+|       |   KB.webp
+|       |   KB2.webp
+|       |   logo.jpg
+|       |   logo.svg
+|       |   logo.webp
+|       |   logo1.png
+|       |   map-office.png
+|       |   map-office.webp
+|       |   og-image-sq.jpg
+|       |   og-image-square.jpg
+|       |   og-image_old.jpg
+|       |   og-image_old.webp
+|       |   og-telegram.webp
+|       |   people.webp
+|       |   ruble_tc825vr0qc54.svg
+|       |   site.webmanifest
+|       |   tab.png
+|       |   tab_1.png
+|       |   web-app-manifest-192x192.png
+|       |   web-app-manifest-512x512.png
+|       |   
+|       +---docs
+|       |       certificate-2022.webp
+|       |       certificate-2023.webp
+|       |       certificate-dev-2023.webp
+|       |       FATA-STC030108_ADS-B_out_v2.webp
+|       |       FATA-STC0304_resource_An-124-100.webp
+|       |       
+|       +---icons
+|       |       airplane.svg
+|       |       box.svg
+|       |       engine.svg
+|       |       load.svg
+|       |       
+|       +---news
+|       |       20260301_biathlon.webp
+|       |       Best.webp
+|       |       conference.webp
+|       |       conference_50_years_aviastar.webp
+|       |       DST_together.webp
+|       |       flight-conference.webp
+|       |       join.webp
+|       |       shvets_diplom.webp
+|       |       shvets_spirit.webp
+|       |       TOiR.webp
+|       |       zabeg_50let_aviastar.webp
+|       |       Zagordan.webp
+|       |       
+|       +---partners
+|       |   +---abc
+|       |   |       logo.webp
+|       |   |       
+|       |   +---aeromaster
+|       |   |       logo.svg
+|       |   |       
+|       |   +---atran
+|       |   |       logo.svg
+|       |   |       
+|       |   +---belavia
+|       |   |       logo.svg
+|       |   |       
+|       |   +---flag
+|       |   |       logo.webp
+|       |   |       
+|       |   +---gazpromavia
+|       |   |       logo.svg
+|       |   |       
+|       |   +---nauka
+|       |   |       logo.svg
+|       |   |       
+|       |   +---nordwind
+|       |   |       logo.svg
+|       |   |       
+|       |   +---rossiya
+|       |   |       logo.svg
+|       |   |       
+|       |   +---russian_paints
+|       |   |       logo.svg
+|       |   |       
+|       |   +---smartavia
+|       |   |       logo.svg
+|       |   |       
+|       |   +---utair
+|       |   |       lockup co-brand_blue_cmyk.pdf
+|       |   |       utair.svg
+|       |   |       ООО _Волга-Днепр Инжиниринг_ _ Разработчик модификаций и ремонта авиационной техники.mhtml
+|       |   |       
+|       |   +---vda
+|       |   |       logo.svg
+|       |   |       
+|       |   \---vdt
+|       |           logo.webp
+|       |           
+|       +---Projects
+|       |   +---ADS-B_Out
+|       |   |       block.webp
+|       |   |       Display.webp
+|       |   |       track.webp
+|       |   |       view.webp
+|       |   |       
+|       |   +---An-124-100_paint
+|       |   |       An-124-100_paint.webp
+|       |   |       dwg1.webp
+|       |   |       dwg2.webp
+|       |   |       
+|       |   +---cabins
+|       |   |       cabins1.webp
+|       |   |       cabins2.webp
+|       |   |       cabins3.webp
+|       |   |       
+|       |   +---change_antenna
+|       |   |       change_antenna1.webp
+|       |   |       change_antenna2.webp
+|       |   |       change_antenna3.webp
+|       |   |       change_antenna4.webp
+|       |   |       
+|       |   +---engines
+|       |   |       engine1.webp
+|       |   |       engine2.webp
+|       |   |       engine3.webp
+|       |   |       engine4.webp
+|       |   |       
+|       |   +---frame
+|       |   |       frame1.webp
+|       |   |       frame2.webp
+|       |   |       frame3.webp
+|       |   |       frame4.webp
+|       |   |       
+|       |   +---lavatory
+|       |   |       lavatory1.webp
+|       |   |       lavatory2.webp
+|       |   |       lavatory3.webp
+|       |   |       
+|       |   +---lights
+|       |   |       lights1.webp
+|       |   |       lights2.webp
+|       |   |       lights3.webp
+|       |   |       lights4.webp
+|       |   |       lights5.webp
+|       |   |       lights6.webp
+|       |   |       lights7.webp
+|       |   |       lights8.webp
+|       |   |       lights9.webp
+|       |   |       
+|       |   +---loading_equipment
+|       |   |       loading_equipment1.webp
+|       |   |       loading_equipment2.webp
+|       |   |       loading_equipment3.webp
+|       |   |       loading_equipment4.webp
+|       |   |       
+|       |   +---loading_equipment2
+|       |   |       loading_equipment1.webp
+|       |   |       loading_equipment2.webp
+|       |   |       loading_equipment3.webp
+|       |   |       loading_equipment4.webp
+|       |   |       
+|       |   +---main_landing_gear
+|       |   |       main_landing_gear1.webp
+|       |   |       main_landing_gear2.webp
+|       |   |       
+|       |   +---mods
+|       |   |       dwg.webp
+|       |   |       oxygen.webp
+|       |   |       seats.webp
+|       |   |       wheel.webp
+|       |   |       
+|       |   +---nose_landing_gear_fairing
+|       |   |       nose1.webp
+|       |   |       nose2.webp
+|       |   |       nose3.webp
+|       |   |       
+|       |   +---onboard_valve_control
+|       |   |       onboard_valve_control1.webp
+|       |   |       onboard_valve_control2.webp
+|       |   |       onboard_valve_control3.webp
+|       |   |       onboard_valve_control4.webp
+|       |   |       
+|       |   +---repairs
+|       |   |       defect.webp
+|       |   |       engine_pod.webp
+|       |   |       roller.webp
+|       |   |       
+|       |   \---socket
+|       |           socket1.webp
+|       |           socket2.webp
+|       |           socket3.webp
+|       |           
+|       +---services
+|       |       schema.webp
+|       |       schema2.webp
+|       |       
+|       \---slideshow
+|               aiplane_in_the_sky_large.webp
+|               airplane-back.webp
+|               airplane-in-the-sky.webp
+|               airplane-wing.webp
+|               airplane-wing2.webp
+|               airplane.webp
+|               arplane-front-in-the-sky.webp
+|               engine-blade.webp
+|               engine-front.webp
+|               
++---css
+|       styles.css
+|       styles.min.css
+|       
+\---js
+    |   bundle.min.js
+    |   
+    +---components
+    |   |   HeroSlideshow.js
+    |   |   
+    |   \---templates
+    |           ComponentTemplates.js
+    |           FooterTemplate.js
+    |           ModalTemplates.js
+    |           NavbarTemplate.js
+    |           
+    +---core
+    |       app.js
+    |       config.js
+    |       init-nojs.js
+    |       Logger.js
+    |       
+    +---data
+    |       newsData.js
+    |       policyDocuments.js
+    |       projectsData.js
+    |       servicesData.js
+    |       vacanciesData.js
+    |       
+    +---managers
+    |       AnimationManager.js
+    |       ComponentLoader.js
+    |       FormManager.js
+    |       ModalManager.js
+    |       NavigationManager.js
+    |       NewsManager.js
+    |       PolicyModalManager.js
+    |       UniversalApplicationModalManager.js
+    |       
+    +---pages
+    |       docs.js
+    |       page-init.js
+    |       projects.js
+    |       services.js
+    |       vacancies.js
+    |       
+    +---renderers
+    |       NewsRenderer.js
+    |       ProjectRenderer.js
+    |       
+    +---services
+    |       ConsentManager.js
+    |       ScrollManager.js
+    |       services.js
+    |       YandexMetricaModule.js
+    |       
+    +---utils
+    |       formUtils.js
+    |       helpers.js
+    |       seo.js
+    |       TextSelectionReporter.js
+    |       utils.js
+    |       
+    \---validation
+            FormValidation.js
+            

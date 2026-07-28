@@ -34,6 +34,9 @@ const server = http.createServer((req, res) => {
     else if (url.startsWith('/about/') || url === '/about') {
         url = '/about.html';
     } 
+    else if (url.startsWith('/search/') || url === '/search') {
+        url = '/search.html';
+    } 
     else if (url === '/' || url === '/index') {
         url = '/index.html';
     }

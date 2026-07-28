@@ -530,7 +530,9 @@ class ModalManager {
   _updateUrl(key, id) {
     if (!key) return;
     let path;
-    if (key === 'feedback') {
+    if (key === 'proposal') {
+      path = '/proposal';
+    } else if (key === 'feedback') {
       path = '/feedback';
     } else {
       const urlKey = key === 'project' ? 'projects' : key;
@@ -545,6 +547,17 @@ class ModalManager {
 
   _openFromUrl() {
     const path = window.location.pathname;
+    
+    // Проверяем /proposal
+    if (path === '/proposal' || path === '/proposal.html') {
+      if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
+      this._openFromUrlTimeout = setTimeout(() => {
+        this._openFromUrlTimeout = null;
+        this.open('proposal', { skipUrlUpdate: true });
+      }, 300);
+      return;
+    }
+
     const match = path.match(/^\/(news|projects|category|project-category|feedback)(?:\/(.+))?$/);
     if (match) {
       let [, key, id] = match;
@@ -597,12 +610,14 @@ class ModalManager {
       if (state && state.modal) {
         const { modal, id } = state;
 
-        if (!id && modal !== 'feedback') {
+        if (!id && modal !== 'feedback' && modal !== 'proposal') {
           this.closeAll();
           return;
         }
 
-        if (modal === 'feedback') {
+        if (modal === 'proposal') {
+          this.open('proposal', { skipUrlUpdate: true });
+        } else if (modal === 'feedback') {
           this.open('feedback', { skipUrlUpdate: true });
         } else if (modal === 'project') {
           if (id) {
@@ -685,6 +700,13 @@ class ModalManager {
         path = baseMap[key];
       }
 
+      // Для proposal и feedback не меняем originalPath
+      if (key === 'proposal') {
+        path = '/proposal';
+      } else if (key === 'feedback') {
+        path = '/feedback';
+      }
+
       this.originalPath = path;
     }
 
@@ -728,9 +750,9 @@ class ModalManager {
       }
 
       if (!skipUrlUpdate) {
-        if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback') {
-          if (key === 'feedback') {
-            this._updateUrl('feedback');
+        if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback' || key === 'proposal') {
+          if (key === 'feedback' || key === 'proposal') {
+            this._updateUrl(key);
           } else {
             const id = options.id || this.currentModalId || this.currentCategory || this.currentProjectCategory;
             if (id) {

@@ -1,6 +1,6 @@
 /**
  * TextSelectionReporter – отправка сообщений об ошибках без модального окна
- * Выделите текст → Ctrl+Enter → мгновенная отправка на email
+ * Выделите текст → Ctrl+Enter → открывается модальное окно
  * Баннер показывается не чаще одного раза в час.
  * ООО "Волга-Днепр Инжиниринг"
  */
@@ -122,7 +122,23 @@ class TextSelectionReporter {
     }
 
     const contextText = this._getContextText(selection, selectedText);
-    this.submitReport(contextText || selectedText);
+    const fullText = contextText || selectedText;
+
+    // Открываем модальное окно ошибки
+    if (typeof modalManager !== 'undefined') {
+      // Экранируем текст для безопасности
+      const safeText = Utils.Sanitizer ? Utils.Sanitizer.escapeHtml(fullText) : fullText;
+      const display = document.getElementById('errorReportTextDisplay');
+      const hidden = document.getElementById('errorReportText');
+      if (display) display.textContent = safeText;
+      if (hidden) hidden.value = safeText;
+      const comment = document.getElementById('errorReportComment');
+      if (comment) comment.value = '';
+      modalManager.open('error-report');
+    } else {
+      // fallback – отправляем сразу
+      this.submitReport(fullText, '');
+    }
   }
 
   _getContextText(selection, selectedText) {
@@ -174,7 +190,7 @@ class TextSelectionReporter {
     storage.set(this.rateLimiterKey, valid);
   }
 
-  async submitReport(selectedTextWithContext) {
+  async submitReport(selectedTextWithContext, comment) {
     if (!selectedTextWithContext) {
       alert('Нет выделенного текста. Попробуйте снова.');
       return;
@@ -183,28 +199,18 @@ class TextSelectionReporter {
     try {
       const apiUrl = '/api/report-error.php';
 
-      let csrfToken = '';
-      const metaToken = document.querySelector('meta[name="csrf-token"]');
-      if (metaToken) csrfToken = metaToken.getAttribute('content');
-      if (!csrfToken) {
-        const inputToken = document.querySelector('input[name="csrf_token"]');
-        if (inputToken) csrfToken = inputToken.value;
-      }
-
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+          'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
           type: 'error_report',
           selectedText: selectedTextWithContext,
-          comment: '',
+          comment: comment || '',
           url: window.location.href,
-          userAgent: navigator.userAgent,
-          csrf_token: csrfToken
+          userAgent: navigator.userAgent
         }),
       });
 
