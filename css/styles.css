@@ -4708,6 +4708,7 @@ form.hidden-form {
     font-size: 1.2rem;
     margin-bottom: 0.25rem;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .stat-label {
@@ -5326,6 +5327,7 @@ form.hidden-form {
     font-size: 1.2rem;
     margin-bottom: 0.25rem;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .stat-label {
@@ -6397,4 +6399,26 @@ form.hidden-form {
   .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* Бургер-меню при ширине до 1375px */
+@media (max-width: 1375px) {
+  .nav-links {
+    display: none;  /* скрываем горизонтальное меню */
+  }
+  .mobile-menu-btn {
+    display: flex;  /* показываем кнопку бургера */
+  }
+}
+
+/* Ограничение ширины текста на странице "О нас" */
+.about-preview-inline .about-text {
+    max-width: 1400px;          /* такая же ширина, как у основных блоков */
+    margin-left: auto;
+    margin-right: auto;            /* такие же отступы, как у navbar (и других секций) */
+    text-align: justify;
+    hyphens: auto;          /* автоматические переносы слов для лучшего вида */
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    -ms-hyphens: auto;
 }

@@ -17,7 +17,7 @@ const FooterTemplate = `
     </ul>
   </div>
   <div class="footer-bottom">
-    <p>© <span id="currentYear"></span> ООО «Волга-Днепр Инжиниринг». Все права защищены.</p>
+    <p>© <span id="currentYear"></span> ООО «ВД Инжиниринг». ИНН 7743364515. Все права защищены.</p>
   </div>
 </footer>
 

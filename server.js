@@ -77,5 +77,4 @@ const server = http.createServer((req, res) => {
 const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`✅ СЕРВЕР ЗАПУЩЕН! Откройте в браузере: http://localhost:${PORT}/`);
-    console.log(`✅ Переходите по ЧПУ-ссылкам, например: http://localhost:${PORT}/news/123`);
 });
