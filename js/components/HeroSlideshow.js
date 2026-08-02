@@ -92,9 +92,14 @@ class HeroSlideshow {
 
   startAutoPlay() {
     if (this.intervalId) clearInterval(this.intervalId);
-    this.intervalId = setInterval(() => {
-      if (!this.isDestroyed) this.nextSlide();
-    }, this.slideInterval);
+    // Используем try-catch для защиты от блокировки антивирусом
+    try {
+      this.intervalId = setInterval(() => {
+        if (!this.isDestroyed && !document.hidden) this.nextSlide();
+      }, this.slideInterval);
+    } catch (e) {
+      console.warn('Autoplay blocked:', e);
+    }
   }
 
   pause() {
