@@ -1,7 +1,7 @@
 <?php
 /**
  * response_templates.php — шаблоны ответов для разных типов форм
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 class ResponseBuilder {
 
@@ -187,7 +187,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «Волга-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
     </td>
   </tr>
 </table>
@@ -247,7 +247,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «Волга-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
     </td>
   </tr>
 </table>
@@ -303,7 +303,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «Волга-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
     </td>
   </tr>
 </table>
@@ -373,7 +373,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «Волга-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
     </td>
   </tr>
 </table>

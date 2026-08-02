@@ -1,6 +1,6 @@
 /**
  * ProjectRenderer – рендеринг карточек проектов
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 class ProjectRenderer {
   constructor(PROJECTS_DATA) {
@@ -21,6 +21,14 @@ class ProjectRenderer {
     if (path.startsWith('/')) return path;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     return '/' + path;
+  }
+
+  // ИЗМЕНЕНО: добавлена функция расчёта класса задержки
+  _getDelayClass(index, stagger = 50) {
+    const delay = index * stagger;
+    const rounded = Math.round(delay / 50) * 50; // классы идут с шагом 50
+    const clamped = Math.min(rounded, 900);      // максимум – delay-900
+    return `delay-${clamped}`;
   }
 
   render(container) {
@@ -67,7 +75,9 @@ class ProjectRenderer {
 
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
-    article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
+    // ИЗМЕНЕНО: вместо style.animationDelay добавляем класс задержки
+    const delayClass = this._getDelayClass(index, this.cardStaggerMs);
+    article.classList.add(delayClass);
     article.dataset.modalOpen = 'project';
     article.dataset.projectId = project.id;
     article.dataset.once = 'true';

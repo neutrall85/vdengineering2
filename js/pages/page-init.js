@@ -1,6 +1,6 @@
 /**
  * Инициализация главной страницы – только рендеринг
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 (function() {
   // Динамическое создание модального окна проекта (если отсутствует)
@@ -52,6 +52,14 @@
         document.removeEventListener('components:loaded', onComponentsLoaded);
       });
     }
+  }
+
+  // ИЗМЕНЕНО: добавлена функция расчёта класса задержки
+  function getDelayClass(index, stagger = 50) {
+    const delay = index * stagger;
+    const rounded = Math.round(delay / 50) * 50;
+    const clamped = Math.min(rounded, 900);
+    return `delay-${clamped}`;
   }
 
   // Рендер превью новостей
@@ -149,7 +157,6 @@
   }
 
   // Вспомогательная функция создания карточки проекта (для превью на главной)
-  // ========== ИЗМЕНЕНИЕ: добавлена кликабельная плашка категории ==========
   function createProjectCard(project, index) {
     const sanitizer = window.Utils?.Sanitizer;
     const safeTitle = sanitizer ? sanitizer.escapeHtml(project.title) : project.title;
@@ -160,7 +167,9 @@
 
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
-    article.style.animationDelay = `${index * 50}ms`;
+    // ИЗМЕНЕНО: вместо style.animationDelay добавляем класс задержки
+    const delayClass = getDelayClass(index, 50);
+    article.classList.add(delayClass);
     article.dataset.modalOpen = 'project';
     article.dataset.projectId = project.id;
     article.dataset.once = 'true';
@@ -179,7 +188,6 @@
     const contentDiv = document.createElement('div');
     contentDiv.className = 'project-content-padding';
 
-    // ===== ДОБАВЛЕНА КЛИКАБЕЛЬНАЯ ПЛАШКА КАТЕГОРИИ =====
     const categorySpan = document.createElement('span');
     categorySpan.className = 'project-category-badge category-trigger';
     categorySpan.textContent = safeCategory;

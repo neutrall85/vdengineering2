@@ -818,6 +818,7 @@ body.app-ready>footer {
 
 .slideshow-indicators {
   position: absolute;
+  cursor: auto;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
@@ -1069,15 +1070,15 @@ body.app-ready>footer {
 }
 
 .btn-primary svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   fill: white;
   display: block;
   transition: transform var(--duration-normal) var(--ease-elastic);
 }
 
 .btn-primary:hover svg {
-  transform: translateX(5px);
+  transform: translateX(8px);
 }
 
 .btn-secondary {
@@ -1096,17 +1097,30 @@ body.app-ready>footer {
   gap: 0.75rem;
 }
 
+.btn-primary-inline svg,
+.btn-secondary-inline svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    transition: transform 0.3s ease;
+}
+
+.btn-primary-inline:hover svg,
+.btn-secondary-inline:hover svg {
+    transform: translateX(8px);
+}
+
 .btn-secondary:hover {
   border-color: var(--vd);
   color: var(--vd-dark);
   transform: translateY(-2px);
 }
 
-.btn-secondary svg {
+/* .btn-secondary svg {
   width: 18px;
   height: 18px;
   fill: currentColor;
-}
+} */
 
 /* ==================== УСЛУГИ ==================== */
 .services {
@@ -4379,11 +4393,10 @@ img.loading + .image-placeholder {
 
 .vacancies-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
   gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  justify-items: stretch;
 }
 
 .vacancy-card {
@@ -6391,7 +6404,7 @@ form.hidden-form {
   }
 }
 
-@media (pointer: fine) and (max-width: 1280px) {
+@media (pointer: fine) and (max-width: 1453px) {
   .services-grid,
   .projects-grid,
   .preview-projects-grid,
@@ -6658,6 +6671,15 @@ form.hidden-form {
 
 /* Адаптивность */
 @media (max-width: 768px) {
+    .footer {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .footer-search {
+      order: -1;   /* поднимаем блок поиска наверх */
+    }
+    
     .footer-search-group {
         max-width: 100%;
         padding: 0.2rem 0.2rem 0.2rem 0.8rem;
@@ -6762,4 +6784,203 @@ form.hidden-form {
     #errorReportTextDisplay {
         scrollbar-width: auto;
     }
+}
+
+/* ==================== МОДАЛКА ВАКАНСИИ ==================== */
+.modal-overlay-vacancy .modal-container {
+  max-width: min(90vw, 800px);
+}
+
+.vacancy-full .modal-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.6rem;
+  color: var(--vd);
+}
+
+.vacancy-full .modal-subtitle {
+  color: var(--metallic);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.vacancy-full .vacancy-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.vacancy-full .vacancy-details h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--vd);
+  margin: 0 0 0.3rem 0;
+}
+
+.vacancy-full .vacancy-details ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.vacancy-full .vacancy-details li {
+  margin-bottom: 0.3rem;
+  line-height: 1.5;
+}
+
+.vacancy-modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  text-align: right;
+}
+
+.vacancy-modal-footer .btn-primary {
+  min-width: 200px;
+  justify-content: center;
+}
+
+/* ==================== КРАТКИЕ КАРТОЧКИ ВАКАНСИЙ ==================== */
+.vacancies-grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
+  gap: 2rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .vacancies-grid-container {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.vacancy-card-short {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem 1.8rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  height: 100%;
+}
+
+.vacancy-card-short:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 78, 150, 0.12);
+  border-color: var(--vd);
+}
+
+.vacancy-card-short .vacancy-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--vd);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.vacancy-card-short .vacancy-department-short {
+  font-size: 1.1rem;
+  color: var(--metallic);
+  margin-top: 0.1rem;
+}
+
+/* Стили для блока обязанностей в краткой карточке */
+.vacancy-card-short .vacancy-short-responsibilities {
+  margin: 0.2rem 0;
+  flex: 1;
+}
+
+.vacancy-card-short .responsibilities-title {
+  font-weight: 700;
+  color: var(--vd);
+  font-size: 1.1rem;
+  margin-bottom: 0.15rem;
+}
+
+.vacancy-card-short .vacancy-short-responsibilities ul {
+  list-style: disc;
+  padding-left: 1.2rem;
+  margin: 0.2rem 0;
+}
+
+.vacancy-card-short .vacancy-short-responsibilities li {
+  font-size: 1rem;
+  color: var(--text-dark);
+  line-height: 1.5;
+  margin-bottom: 0.2rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .vacancy-card-short {
+    padding: 1rem 1.2rem;
+  }
+  .vacancy-card-short .vacancy-title {
+    font-size: 1rem;
+  }
+  .vacancy-card-short .vacancy-actions {
+    margin-top: auto; /* это главное свойство для прижатия */
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 0.5rem; /* небольшой отступ сверху для красоты */
+  }
+  .vacancy-card-short .btn-respond {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.vacancy-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin: 12px 0 8px;
+}
+
+.vacancy-meta-item {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    background: var(--bg-light, #f0f4f8);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary, #2c3e50);
+    border: 1px solid var(--border-light, #dce3eb);
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.vacancy-meta-item:hover {
+    background: var(--bg-hover, #e6edf4);
+}
+
+/* ===== Модалка "Сообщить об ошибке" ===== */
+.error-report-text-display {
+  background: #f5f5f5;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.error-report-textarea {
+  height: 80px;
+}
+
+.error-report-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }

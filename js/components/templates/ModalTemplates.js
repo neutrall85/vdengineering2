@@ -1,7 +1,6 @@
 /**
  * ModalTemplates - HTML-шаблоны модальных окон
- * Вынесены из ComponentLoader для улучшения читаемости
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 
 const ModalTemplates = {
@@ -101,9 +100,9 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="fileAttachment">Вложение</label>
+          <label class="form-label" for="proposalFileAttachment">Вложение</label>
           <div class="form-file" id="fileDrop">
-            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
+            <input type="file" id="proposalFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -175,9 +174,9 @@ const ModalTemplates = {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="fileAttachment">Резюме (файл) <span class="required">*</span></label>
+          <label class="form-label" for="universalFileAttachment">Резюме (файл) <span class="required">*</span></label>
           <div class="form-file" id="universalFileDrop">
-            <input type="file" id="fileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" required multiple>
+            <input type="file" id="universalFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" required multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -271,13 +270,13 @@ const ModalTemplates = {
             <legend class="form-label">Тип отзыва <span class="required">*</span></legend>
             <div class="radio-group">
               <label class="radio-label">
-                <input type="radio" name="sentiment" value="positive" required> Положительный
+                <input type="radio" name="sentiment" value="positive" id="sentiment-positive" required> Положительный
               </label>
               <label class="radio-label">
-                <input type="radio" name="sentiment" value="negative" required> Негативный
+                <input type="radio" name="sentiment" value="negative" id="sentiment-negative" required> Негативный
               </label>
               <label class="radio-label">
-                <input type="radio" name="sentiment" value="neutral" required> Нейтральный
+                <input type="radio" name="sentiment" value="neutral" id="sentiment-neutral" required> Нейтральный
               </label>
             </div>
           </fieldset>
@@ -371,7 +370,6 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    // ========== ДОБАВЛЕН ШАБЛОН ДЛЯ ОТПРАВКИ ОШИБКИ ==========
     errorReportModal: `
 <div class="modal-overlay modal-overlay-error-report" id="errorReportModalOverlay" role="dialog" aria-modal="true" aria-labelledby="errorReportModalTitle">
   <div class="modal-container modal-container-error-report">
@@ -385,19 +383,39 @@ const ModalTemplates = {
     <div class="modal-body">
       <form id="errorReportForm" novalidate>
         <div class="form-group">
-          <label class="form-label" for="errorReportTextDisplay">Выделенный текст</label>
-          <div id="errorReportTextDisplay" style="background:#f5f5f5; padding:0.75rem; border-radius:8px; border:1px solid #e0e0e0; max-height:150px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; font-size:0.9rem; color:#333;"></div>
+          <span class="form-label">Выделенный текст</label>
+          <div id="errorReportTextDisplay" class="error-report-text-display" role="textbox" aria-label="Выделенный текст" readonly></div>
           <input type="hidden" id="errorReportText" name="errorText" value="">
         </div>
         <div class="form-group">
           <label class="form-label" for="errorReportComment">Комментарий (необязательно)</label>
-          <textarea class="form-textarea" id="errorReportComment" name="comment" placeholder="Опишите, что не так, или предложите исправление..." maxlength="1000" style="height:80px;"></textarea>
+          <textarea class="form-textarea error-report-textarea" id="errorReportComment" name="comment" placeholder="Опишите, что не так, или предложите исправление..." maxlength="1000"></textarea>
         </div>
-        <div class="form-actions" style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1rem;">
+        <div class="error-report-actions">
           <button type="button" class="btn-secondary" id="errorReportCancelBtn">Отмена</button>
           <button type="submit" class="btn-primary btn-no-shine" id="errorReportSubmitBtn">Отправить</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>`,
+
+    vacancyModal: `
+<!-- Vacancy Detail Modal -->
+<div class="modal-overlay modal-overlay-vacancy" id="vacancyModalOverlay" role="dialog" aria-modal="true" aria-labelledby="vacancyModalTitle">
+  <div class="modal-container modal-container-vacancy">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-header">
+      <h2 class="modal-title" id="vacancyModalTitle"></h2>
+      <p class="modal-subtitle" id="vacancyModalDepartment"></p>
+    </div>
+    <div class="modal-body vacancy-full" id="vacancyModalBody">
+      <!-- динамическое содержимое -->
+    </div>
+    <div class="vacancy-modal-footer">
+      <button class="btn-primary vacancy-respond-btn" data-vacancy-id="">Откликнуться</button>
     </div>
   </div>
 </div>`

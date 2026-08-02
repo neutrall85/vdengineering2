@@ -16,10 +16,10 @@ require_once __DIR__ . '/env_loader.php';
 $siteRoot = dirname($_SERVER['DOCUMENT_ROOT']);
 
 // ---- Пути к служебным папкам (явно задаём абсолютные пути) ----
-define('LOG_DIR', '/var/www/normacode/data/logs/');
-define('RATE_DIR', '/var/www/normacode/data/rate/');
-define('UPLOAD_DIR', '/var/www/normacode/data/private_uploads/');
-define('SESSION_DIR', '/var/www/normacode/data/sessions/');
+define('LOG_DIR', '/var/www/vdengineering_usr/data/logs/');
+define('RATE_DIR', '/var/www/vdengineering_usr/data/rate/');
+define('UPLOAD_DIR', '/var/www/vdengineering_usr/data/private_uploads/');
+define('SESSION_DIR', '/var/www/vdengineering_usr/data/sessions/');
 
 // Остальные константы (логи по типам)
 define('CONSENT_LOG_DIR',          LOG_DIR . 'consent/');
@@ -66,7 +66,11 @@ define('ADMIN_EMAILS_FEEDBACK', array_values(array_filter(array_map('trim', expl
 $adminAll = env('ADMIN_EMAILS', false);
 define('ADMIN_EMAILS', $adminAll ? array_values(array_filter(array_map('trim', explode(',', $adminAll)))) : []);
 $adminErrorEmail = env('ADMIN_ERROR_EMAIL', false);
-define('ADMIN_ERROR_EMAIL', $adminErrorEmail ?: 'admin@normacode.ru');
+define('ADMIN_ERROR_EMAIL', 
+    $adminErrorEmail 
+        ? array_values(array_filter(array_map('trim', explode(',', $adminErrorEmail)))) 
+        : []
+);
 
 // ---- Лимиты ----
 define('MAX_FILE_SIZE',     (int)(env('MAX_FILE_SIZE', false) ?: 24 * 1024 * 1024));

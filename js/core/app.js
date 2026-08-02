@@ -1,6 +1,6 @@
 /**
  * Главный файл инициализации приложения
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  * Строгий ООП стиль: нулевое использование инлайновых коллбэков
  */
 
@@ -47,11 +47,14 @@ class Application {
         }
       }
 
-      const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      // Нормализуем путь для определения текущей страницы
+      const currentPage = window.location.pathname.replace(/^\/|\/$/g, '').split('/')[0] || 'index';
 
+      // Ждём загрузки компонентов (навбар, футер, модалки)
       const componentsLoadedPromise = new Promise(this._resolveOnComponentsLoaded.bind(this));
       await componentsLoadedPromise;
 
+      // После загрузки компонентов инициализируем остальное
       const currentPath = window.location.pathname;
       if ((currentPath.startsWith('/projects') || currentPath.startsWith('/project-category')) && typeof initProjectsPage === 'function') {
         initProjectsPage();
@@ -69,16 +72,49 @@ class Application {
 
       this._initFormManagers();
 
-      const pageInitMap = {
-        'projects': 'initProjectsPage',
-        'services': 'initServicesPage',
-        'vacancies': 'initVacanciesPage'
-      };
+      // ===== ИНИЦИАЛИЗАЦИЯ СТРАНИЦ (projects, services, vacancies) =====
+      // Вызываем только после того, как компоненты точно загружены
+      // Используем обработчик события components:loaded для гарантии
+      document.addEventListener('components:loaded', () => {
+        const pageInitMap = {
+          'projects': 'initProjectsPage',
+          'services': 'initServicesPage',
+          'vacancies': 'initVacanciesPage'
+        };
 
-      if (pageInitMap[currentPage]) {
-        const initFn = window[pageInitMap[currentPage]];
-        if (typeof initFn === 'function') {
-          initFn();
+        if (pageInitMap[currentPage]) {
+          const initFn = window[pageInitMap[currentPage]];
+          if (typeof initFn === 'function') {
+            // Даём браузеру время на отрисовку перед инициализацией
+            requestAnimationFrame(() => {
+              initFn();
+              if (currentPage === 'vacancies') {
+                window._vacanciesPageInitialized = true;
+              }
+            });
+          }
+        }
+      });
+
+      // Также вызываем сразу, если компоненты уже загружены (на случай, если событие уже произошло)
+      // Проверяем, загружены ли компоненты (есть ли навбар)
+      if (document.querySelector('.navbar')) {
+        const pageInitMap = {
+          'projects': 'initProjectsPage',
+          'services': 'initServicesPage',
+          'vacancies': 'initVacanciesPage'
+        };
+
+        if (pageInitMap[currentPage]) {
+          const initFn = window[pageInitMap[currentPage]];
+          if (typeof initFn === 'function') {
+            requestAnimationFrame(() => {
+              initFn();
+              if (currentPage === 'vacancies') {
+                window._vacanciesPageInitialized = true;
+              }
+            });
+          }
         }
       }
 
@@ -94,20 +130,109 @@ class Application {
         const searchManager = new SearchManager();
         searchManager.init();
         this.services.searchManager = searchManager;
+
+        document.addEventListener('components:loaded', () => {
+          if (this.services.searchManager && typeof this.services.searchManager.reindex === 'function') {
+            this.services.searchManager.reindex();
+            Logger.INFO('Search index rebuilt after components loaded');
+          }
+        });
+
+        setTimeout(() => {
+          if (this.services.searchManager && typeof this.services.searchManager.reindex === 'function') {
+            this.services.searchManager.reindex();
+            Logger.INFO('Search index rebuilt after timeout');
+          }
+        }, 2000);
       }
 
       // ========== ПОДСВЕТКА ИЗ ПАРАМЕТРА highlight С ПРОКРУТКОЙ ==========
       const params = new URLSearchParams(window.location.search);
       const highlightQuery = params.get('highlight');
+
       if (highlightQuery && typeof HighlightUtils !== 'undefined') {
-        setTimeout(() => {
+        const applyHighlightWithRetry = (retryCount = 0) => {
           HighlightUtils.highlight(highlightQuery);
-          // Прокрутка к первому подсвеченному элементу
-          const firstMark = document.querySelector('mark.search-highlight');
-          if (firstMark) {
-            firstMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 300);
+          
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const allMarks = document.querySelectorAll('mark.search-highlight');
+              let targetMark = null;
+              
+              for (const mark of allMarks) {
+                const rect = mark.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                  targetMark = mark;
+                  break;
+                }
+              }
+              
+              if (targetMark) {
+                const rect = targetMark.getBoundingClientRect();
+                const isInViewport = rect.top >= 0 && rect.bottom <= window.innerHeight;
+                
+                if (!isInViewport) {
+                  const navbar = document.querySelector('.navbar');
+                  const navbarHeight = navbar ? navbar.offsetHeight : 70;
+                  const topOffset = navbarHeight + 20;
+                  const bottomOffset = 30;
+                  
+                  const distanceFromBottom = document.documentElement.scrollHeight - rect.bottom;
+                  let finalPosition;
+                  if (distanceFromBottom < window.innerHeight / 2) {
+                    finalPosition = rect.top + window.scrollY - (window.innerHeight - rect.height - bottomOffset);
+                  } else {
+                    finalPosition = rect.top + window.scrollY - (window.innerHeight / 2) + (rect.height / 2);
+                    finalPosition = Math.max(finalPosition, rect.top + window.scrollY - topOffset);
+                  }
+                  
+                  window.scrollTo({
+                    top: Math.max(0, finalPosition),
+                    behavior: 'smooth'
+                  });
+                  
+                  if (retryCount < 3) {
+                    setTimeout(() => {
+                      const newRect = targetMark.getBoundingClientRect();
+                      const newIsInViewport = newRect.top >= 0 && newRect.bottom <= window.innerHeight;
+                      if (!newIsInViewport) {
+                        window.scrollTo({
+                          top: Math.max(0, finalPosition + 50),
+                          behavior: 'auto'
+                        });
+                        setTimeout(() => {
+                          const finalRect = targetMark.getBoundingClientRect();
+                          if (!(finalRect.top >= 0 && finalRect.bottom <= window.innerHeight)) {
+                            targetMark.scrollIntoView({ block: 'center', behavior: 'auto' });
+                          }
+                        }, 200);
+                      }
+                    }, 300);
+                  }
+                }
+              }
+            });
+          });
+        };
+
+        const executeWithDelay = () => {
+          setTimeout(() => {
+            applyHighlightWithRetry(0);
+          }, 100);
+        };
+
+        if (document.querySelector('#navbar') && document.querySelector('footer.footer')) {
+          executeWithDelay();
+        } else {
+          document.addEventListener('components:loaded', () => {
+            setTimeout(() => {
+              applyHighlightWithRetry(0);
+            }, 100);
+          }, { once: true });
+          setTimeout(() => {
+            applyHighlightWithRetry(0);
+          }, 990);
+        }
       }
 
       // ========== ПОДПИСКА НА ОТКРЫТИЕ МОДАЛОК ДЛЯ ПОДСВЕТКИ И ПРОКРУТКИ ==========
@@ -119,12 +244,10 @@ class Application {
           if (query && overlay) {
             setTimeout(() => {
               HighlightUtils.highlight(query, overlay);
-              // Прокрутка внутри модалки к первому подсвеченному элементу
               const firstMark = overlay.querySelector('mark.search-highlight');
               if (firstMark) {
                 const modalBody = overlay.querySelector('.modal-body');
                 if (modalBody) {
-                  // Вычисляем позицию внутри modal-body
                   const rect = firstMark.getBoundingClientRect();
                   const containerRect = modalBody.getBoundingClientRect();
                   modalBody.scrollTop = (rect.top - containerRect.top) + modalBody.scrollTop - 20;
@@ -132,7 +255,7 @@ class Application {
                   firstMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
               }
-            }, 200);
+            }, 250);
           }
         };
         this._highlightModalHandler = highlightHandler;
@@ -174,6 +297,58 @@ class Application {
   _handleDirectUrlAfterLoad() {
     const path = window.location.pathname;
 
+    // ========== ОБРАБОТКА ПРЯМЫХ ССЫЛОК НА ВАКАНСИИ ==========
+    const vacancyMatch = path.match(/^\/vacancy\/(.+)/);
+    if (vacancyMatch) {
+      const vacancyId = vacancyMatch[1];
+      if (typeof modalManager !== 'undefined' && vacancyId) {
+        if (typeof initVacanciesPage === 'function' && !window._vacanciesPageInitialized) {
+          initVacanciesPage();
+          window._vacanciesPageInitialized = true;
+        }
+        const vacancy = window.VACANCIES_DATA?.find(v => String(v.id) === String(vacancyId));
+        if (vacancy) {
+          if (typeof window.fillVacancyModalById === 'function') {
+            window.fillVacancyModalById(vacancyId);
+          } else {
+            const titleEl = document.getElementById('vacancyModalTitle');
+            const deptEl = document.getElementById('vacancyModalDepartment');
+            const bodyEl = document.getElementById('vacancyModalBody');
+            if (titleEl) titleEl.textContent = vacancy.title;
+            if (deptEl) deptEl.textContent = vacancy.department;
+            if (bodyEl) {
+              const content = document.createElement('div');
+              content.className = 'vacancy-details';
+              if (vacancy.responsibilities && vacancy.responsibilities.length) {
+                const respDiv = document.createElement('div');
+                const items = vacancy.responsibilities.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
+                respDiv.innerHTML = `<h4>Обязанности:</h4><ul>${items}</ul>`;
+                content.appendChild(respDiv);
+              }
+              if (vacancy.requirements && vacancy.requirements.length) {
+                const reqDiv = document.createElement('div');
+                const items = vacancy.requirements.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
+                reqDiv.innerHTML = `<h4>Требования:</h4><ul>${items}</ul>`;
+                content.appendChild(reqDiv);
+              }
+              if (vacancy.conditions && vacancy.conditions.length) {
+                const condDiv = document.createElement('div');
+                const items = vacancy.conditions.map(c => `<li>${Utils.Sanitizer.escapeHtml(c)}</li>`).join('');
+                condDiv.innerHTML = `<h4>Условия:</h4><ul>${items}</ul>`;
+                content.appendChild(condDiv);
+              }
+              bodyEl.replaceChildren(content);
+            }
+          }
+          modalManager.open('vacancy', { id: vacancyId, skipUrlUpdate: true, direct: true });
+        } else {
+          Logger.WARN(`Вакансия с id ${vacancyId} не найдена`);
+        }
+      }
+      return;
+    }
+
+    // ========== НОВОСТИ ==========
     const newsMatch = path.match(/^\/news\/(\d+)/);
     if (newsMatch) {
       const newsId = newsMatch[1];
@@ -183,6 +358,7 @@ class Application {
       return;
     }
 
+    // ========== ПРОЕКТЫ ==========
     const projectMatch = path.match(/^\/projects\/(.+)/);
     if (projectMatch) {
       const projectId = projectMatch[1];
@@ -195,6 +371,7 @@ class Application {
       return;
     }
 
+    // ========== КАТЕГОРИЯ НОВОСТЕЙ ==========
     const categoryMatch = path.match(/^\/category\/(.+)/);
     if (categoryMatch) {
       const categoryName = decodeURIComponent(categoryMatch[1]);
@@ -204,6 +381,7 @@ class Application {
       return;
     }
 
+    // ========== КАТЕГОРИЯ ПРОЕКТОВ ==========
     const projectCategoryMatch = path.match(/^\/project-category\/(.+)/);
     if (projectCategoryMatch) {
       const categoryName = decodeURIComponent(projectCategoryMatch[1]);
@@ -213,22 +391,40 @@ class Application {
       return;
     }
 
+    // ========== ОБРАТНАЯ СВЯЗЬ ==========
     if (path === '/feedback' || path === '/feedback.html') {
       if (typeof modalManager !== 'undefined') {
-        modalManager.open('feedback', { skipUrlUpdate: true });
+        modalManager.open('feedback', { skipUrlUpdate: true, direct: true });
       }
       return;
     }
 
+    // ========== КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ ==========
     if (path === '/proposal' || path === '/proposal.html') {
       if (typeof modalManager !== 'undefined') {
-        modalManager.open('proposal', { skipUrlUpdate: true });
+        modalManager.open('proposal', { skipUrlUpdate: true, direct: true });
+      }
+      return;
+    }
+
+    // ========== ПОЛИТИКИ (ДОБАВЛЕНО) ==========
+    const policyMatch = path.match(/^\/policy\/(.+)/);
+    if (policyMatch) {
+      const policyKey = policyMatch[1];
+      if (typeof PolicyModalManager !== 'undefined') {
+        PolicyModalManager.openPolicyModal(policyKey);
+        window.history.pushState({ modal: 'policy', key: policyKey }, '', path);
       }
       return;
     }
   }
 
   _handlePopState() {
+    const state = window.history.state;
+    if (state && state.modal === 'policy' && state.key && typeof PolicyModalManager !== 'undefined') {
+      PolicyModalManager.openPolicyModal(state.key);
+      return;
+    }
     if (typeof initDynamicSEO === 'function') {
       initDynamicSEO();
     }
@@ -242,7 +438,7 @@ class Application {
     document.addEventListener('components:loaded', onComponentsLoaded);
 
     if (typeof ComponentLoader !== 'undefined') {
-      const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+      const currentPage = window.location.pathname.replace(/^\/|\/$/g, '').split('/')[0] || 'index';
       ComponentLoader.init({
         loadNavbar: true,
         loadFooter: true,
@@ -422,7 +618,8 @@ class Application {
       { key: 'feedback', overlayId: 'feedbackModalOverlay', required: false, onClose: this._handleFeedbackClose.bind(this) },
       { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
       { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false },
-      { key: 'error-report', overlayId: 'errorReportModalOverlay', required: false, onClose: this._handleErrorReportClose.bind(this) }
+      { key: 'error-report', overlayId: 'errorReportModalOverlay', required: false, onClose: this._handleErrorReportClose.bind(this) },
+      { key: 'vacancy', overlayId: 'vacancyModalOverlay', required: false }
     ];
 
     for (let i = 0; i < modalsToRegister.length; i++) {

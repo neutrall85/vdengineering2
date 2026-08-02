@@ -1,35 +1,54 @@
 /**
  * PolicyModalManager - менеджер модальных окон политик
- * ООО "Волга-Днепр Инжиниринг"
- *
- * - При переходе по ссылке сохраняется позиция прокрутки текущего документа.
- * - При нажатии «Назад» восстанавливается позиция предыдущего документа.
- * - При открытии поверх другой модалки (proposal/universal) кнопка «Назад» позволяет закрыть политику.
- * - CSS для кнопки «Назад» должен быть определён в styles.css.
+ * ООО "ВД Инжиниринг"
  */
-
 const PolicyModalManager = {
-    historyStack: [],      // { key, scrollTop }
+    historyStack: [],
     currentIndex: -1,
     backButton: null,
     modalOverlay: null,
     contentContainer: null,
 
     init() {
+        // Клик по ссылкам с data-policy
         document.addEventListener('click', (e) => {
             const link = e.target.closest('[data-policy]');
             if (link) {
                 e.preventDefault();
                 const policyKey = link.getAttribute('data-policy');
                 this.openPolicyModal(policyKey);
+                window.history.pushState({ modal: 'policy', key: policyKey }, '', `/policy/${policyKey}`);
             }
         });
+
+        // Клик по прямым ссылкам /policy/... (игнорируем #cookie-settings-link)
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a[href^="/policy/"]');
+            if (link) {
+                if (link.id === 'cookie-settings-link') return;
+                if (link.hasAttribute('data-policy')) return;
+                e.preventDefault();
+                const policyKey = link.getAttribute('href').replace('/policy/', '');
+                if (policyKey && window.POLICY_DOCUMENTS && window.POLICY_DOCUMENTS[policyKey]) {
+                    this.openPolicyModal(policyKey);
+                    window.history.pushState({ modal: 'policy', key: policyKey }, '', `/policy/${policyKey}`);
+                }
+            }
+        });
+
+        // Настройки cookie (оставляем только баннер, не открываем модалку)
+        // Обработчик #cookie-settings-link теперь в ConsentManager
     },
 
     openPolicyModal(policyKey, addToHistory = true) {
+        if (!window.POLICY_DOCUMENTS) {
+            Logger?.ERROR?.('POLICY_DOCUMENTS не загружен');
+            return;
+        }
+
         const policy = POLICY_DOCUMENTS[policyKey];
         if (!policy) {
-            Logger?.WARN?.(`Policy "${policyKey}" not found`);
+            Logger?.WARN?.(`Политика "${policyKey}" не найдена`);
             return;
         }
 
@@ -40,46 +59,57 @@ const PolicyModalManager = {
             }
         }
 
-        // Сохраняем прокрутку текущего документа, если есть история
+        // История
         if (addToHistory && this.currentIndex >= 0 && this.historyStack[this.currentIndex]) {
             this.historyStack[this.currentIndex].scrollTop = this.contentContainer?.scrollTop || 0;
         }
 
-        // Добавляем в историю, если это переход на новый документ
         if (addToHistory && this.historyStack[this.currentIndex]?.key !== policyKey) {
             this.historyStack = this.historyStack.slice(0, this.currentIndex + 1);
             this.historyStack.push({ key: policyKey, scrollTop: 0 });
             this.currentIndex++;
         }
 
-        // Обновляем заголовок и содержимое
+        // Заголовок
         const titleEl = document.getElementById('policyModalTitle');
         if (titleEl) titleEl.textContent = policy.title;
 
+        // Контент
         const safeContent = this._sanitizePolicyContent(policy.content);
         this._updateModalContent(safeContent);
 
-        // Восстанавливаем прокрутку для текущего документа
+        // Восстанавливаем прокрутку
         const savedScrollTop = this.historyStack[this.currentIndex]?.scrollTop ?? 0;
         if (this.contentContainer) this.contentContainer.scrollTop = savedScrollTop;
 
         this._updateBackButton();
 
-        // Определяем, нужно ли сохранять родительскую модалку
+        // Открываем модалку
         let keepParentModal = false;
         if (typeof modalManager !== 'undefined' && modalManager.activeModal && modalManager.activeModal !== 'policy') {
-            keepParentModal = true; // открываем политику поверх существующей модалки
+            keepParentModal = true;
         }
 
         if (!this.modalOverlay.classList.contains('active')) {
             modalManager.open('policy', { keepParentModal });
         }
+
+        // Подсветка
+        setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            const highlightQuery = params.get('highlight');
+            if (highlightQuery && typeof HighlightUtils !== 'undefined') {
+                HighlightUtils.highlight(highlightQuery, this.contentContainer);
+                const firstMark = this.contentContainer.querySelector('mark.search-highlight');
+                if (firstMark) {
+                    this.contentContainer.scrollTop = firstMark.offsetTop - 20;
+                }
+            }
+        }, 300);
     },
 
     goBack() {
-        // Если есть предыдущий документ в истории политик – переключаем на него
         if (this.currentIndex > 0) {
-            // Сохраняем позицию текущего документа
             if (this.contentContainer && this.historyStack[this.currentIndex]) {
                 this.historyStack[this.currentIndex].scrollTop = this.contentContainer.scrollTop;
             }
@@ -87,10 +117,8 @@ const PolicyModalManager = {
             this.openPolicyModal(this.historyStack[this.currentIndex].key, false);
             return;
         }
-
-        // Если история пуста, но есть родительская модалка (политика открыта поверх другой модалки)
         if (this.currentIndex === 0 && modalManager.activeModalStack && modalManager.activeModalStack.length > 0) {
-            this.closePolicyModal(); // закрываем политику, возвращаемся к родительской модалке
+            this.closePolicyModal();
         }
     },
 
@@ -152,7 +180,6 @@ const PolicyModalManager = {
         const modalContainer = document.createElement('div');
         modalContainer.className = 'modal-container';
 
-        // Кнопка закрытия
         const closeBtn = document.createElement('button');
         closeBtn.className = 'modal-close';
         closeBtn.setAttribute('aria-label', 'Закрыть');
@@ -165,9 +192,8 @@ const PolicyModalManager = {
         closeBtn.appendChild(svgEl);
         closeBtn.addEventListener('click', () => this.closePolicyModal());
 
-        // Кнопка «Назад» (стили должны быть в CSS)
         const backBtn = document.createElement('button');
-        backBtn.className = 'modal-back-btn hidden'; // добавляем класс hidden
+        backBtn.className = 'modal-back-btn hidden';
         backBtn.innerHTML = '← Назад';
         backBtn.setAttribute('aria-label', 'Назад');
         backBtn.addEventListener('click', () => this.goBack());

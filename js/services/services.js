@@ -1,6 +1,6 @@
 /**
  * Объединённые сервисы: EventBus, StorageService, ApiClient
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 
 const Services = (function() {

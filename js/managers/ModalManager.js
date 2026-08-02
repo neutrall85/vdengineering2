@@ -1,6 +1,6 @@
 /**
  * Управление модальными окнами – единая точка входа
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  *
  * Версия с ЧПУ-ссылками (без #, ?, &)
  * Исправлено восстановление URL при закрытии модалок новостей и проектов
@@ -452,7 +452,9 @@ class ModalManager {
   _openUniversalApplication(trigger) {
     const vacancyId = trigger?.getAttribute('data-vacancy-id') || null;
     const mode = vacancyId ? 'vacancy' : 'application';
-
+    
+    // Проверяем, есть ли атрибут keep-parent (или передаём через опции)
+    const keepParent = trigger?.getAttribute('data-keep-parent') === 'true' || false;
     const modalTitle = document.getElementById('universalApplicationModalTitle');
     const modalSubtitle = document.getElementById('universalApplicationModalSubtitle');
     const submitBtnText = document.getElementById('universalSubmitBtnText');
@@ -469,7 +471,7 @@ class ModalManager {
         this._setHiddenField(form, 'vacancy_title', '');
       }
     } else {
-      const vacancyCard = trigger?.closest('.vacancy-card');
+      const vacancyCard = trigger?.closest('.vacancy-card-short') || document.querySelector(`[data-vacancy-id="${vacancyId}"]`);
       const vacancyTitle = vacancyCard?.querySelector('.vacancy-title')?.textContent || '';
       if (modalTitle) modalTitle.textContent = `Отклик на вакансию: ${vacancyTitle}`;
       if (submitBtnText) submitBtnText.textContent = 'Отправить отклик';
@@ -480,16 +482,18 @@ class ModalManager {
         this._setHiddenField(form, 'vacancy_title', vacancyTitle);
       }
     }
-    this.open('universal');
+    // Открываем универсальную модалку с сохранением родительской, если нужно
+    this.open('universal', { keepParentModal: keepParent });
   }
 
   _setHiddenField(form, name, value) {
     let input = form.querySelector(`input[name="${name}"]`);
     if (!input) {
-      input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      form.appendChild(input);
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.id = `hidden_${name}`; // добавляем id
+        form.appendChild(input);
     }
     input.value = value;
   }
@@ -606,67 +610,113 @@ class ModalManager {
 
   _initPopstate() {
     window.addEventListener('popstate', (event) => {
-      const state = event.state;
-      if (state && state.modal) {
-        const { modal, id } = state;
+        const state = event.state;
+        if (state && state.modal) {
+            const { modal, id } = state;
 
-        if (!id && modal !== 'feedback' && modal !== 'proposal') {
-          this.closeAll();
-          return;
-        }
+            if (!id && modal !== 'feedback' && modal !== 'proposal' && modal !== 'vacancy') {
+                this.closeAll();
+                return;
+            }
 
-        if (modal === 'proposal') {
-          this.open('proposal', { skipUrlUpdate: true });
-        } else if (modal === 'feedback') {
-          this.open('feedback', { skipUrlUpdate: true });
-        } else if (modal === 'project') {
-          if (id) {
-            const project = window.PROJECTS_DATA?.[id];
-            if (project) {
-              this._populateProjectModal(project);
-              this.currentModalId = id;
-              this.open('project', { id, keepParentModal: false, skipUrlUpdate: true });
+            if (modal === 'proposal') {
+                this.open('proposal', { skipUrlUpdate: true });
+            } else if (modal === 'feedback') {
+                this.open('feedback', { skipUrlUpdate: true });
+            } else if (modal === 'vacancy') {
+                if (id) {
+                    const vacancyId = id; // строковый ID
+                    // Проверяем существование вакансии по ID
+                    const vacancy = window.VACANCIES_DATA?.find(v => String(v.id) === String(vacancyId));
+                    if (vacancy) {
+                        // Заполняем модалку
+                        if (typeof window.fillVacancyModalById === 'function') {
+                            window.fillVacancyModalById(vacancyId);
+                        } else {
+                            // fallback – заполняем вручную
+                            const titleEl = document.getElementById('vacancyModalTitle');
+                            const deptEl = document.getElementById('vacancyModalDepartment');
+                            const bodyEl = document.getElementById('vacancyModalBody');
+                            if (titleEl) titleEl.textContent = vacancy.title;
+                            if (deptEl) deptEl.textContent = vacancy.department;
+                            if (bodyEl) {
+                                const content = document.createElement('div');
+                                content.className = 'vacancy-details';
+                                if (vacancy.responsibilities && vacancy.responsibilities.length) {
+                                    const respDiv = document.createElement('div');
+                                    const items = vacancy.responsibilities.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
+                                    respDiv.innerHTML = `<h4>Обязанности:</h4><ul>${items}</ul>`;
+                                    content.appendChild(respDiv);
+                                }
+                                if (vacancy.requirements && vacancy.requirements.length) {
+                                    const reqDiv = document.createElement('div');
+                                    const items = vacancy.requirements.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
+                                    reqDiv.innerHTML = `<h4>Требования:</h4><ul>${items}</ul>`;
+                                    content.appendChild(reqDiv);
+                                }
+                                if (vacancy.conditions && vacancy.conditions.length) {
+                                    const condDiv = document.createElement('div');
+                                    const items = vacancy.conditions.map(c => `<li>${Utils.Sanitizer.escapeHtml(c)}</li>`).join('');
+                                    condDiv.innerHTML = `<h4>Условия:</h4><ul>${items}</ul>`;
+                                    content.appendChild(condDiv);
+                                }
+                                bodyEl.replaceChildren(content);
+                            }
+                        }
+                        this.open('vacancy', { id: vacancyId, skipUrlUpdate: true });
+                    } else {
+                        Logger.WARN(`Вакансия с id ${vacancyId} не найдена`);
+                    }
+                } else {
+                    this.open('vacancy', { skipUrlUpdate: true });
+                }
+            } else if (modal === 'project') {
+                if (id) {
+                    const project = window.PROJECTS_DATA?.[id];
+                    if (project) {
+                        this._populateProjectModal(project);
+                        this.currentModalId = id;
+                        this.open('project', { id, keepParentModal: false, skipUrlUpdate: true });
+                    }
+                } else {
+                    this.open('project', { skipUrlUpdate: true });
+                }
+            } else if (modal === 'news') {
+                if (id) {
+                    const allNews = Object.values(window.NEWS_DATA || {}).flat();
+                    const news = allNews.find(n => String(n.id) === String(id));
+                    if (news) {
+                        this._populateNewsModal(news);
+                        this.currentModalId = id;
+                        this.open('news', { id, keepParentModal: false, skipUrlUpdate: true });
+                    }
+                } else {
+                    this.open('news', { skipUrlUpdate: true });
+                }
+            } else if (modal === 'category') {
+                if (id) {
+                    this.openCategoryByName(id);
+                } else {
+                    this.open('category', { skipUrlUpdate: true });
+                }
+            } else if (modal === 'project-category') {
+                if (id) {
+                    this.openProjectCategoryByName(id);
+                } else {
+                    this.open('project-category', { skipUrlUpdate: true });
+                }
+            } else {
+                this.open(modal, { skipUrlUpdate: true });
             }
-          } else {
-            this.open('project', { skipUrlUpdate: true });
-          }
-        } else if (modal === 'news') {
-          if (id) {
-            const allNews = Object.values(window.NEWS_DATA || {}).flat();
-            const news = allNews.find(n => String(n.id) === String(id));
-            if (news) {
-              this._populateNewsModal(news);
-              this.currentModalId = id;
-              this.open('news', { id, keepParentModal: false, skipUrlUpdate: true });
-            }
-          } else {
-            this.open('news', { skipUrlUpdate: true });
-          }
-        } else if (modal === 'category') {
-          if (id) {
-            this.openCategoryByName(id);
-          } else {
-            this.open('category', { skipUrlUpdate: true });
-          }
-        } else if (modal === 'project-category') {
-          if (id) {
-            this.openProjectCategoryByName(id);
-          } else {
-            this.open('project-category', { skipUrlUpdate: true });
-          }
         } else {
-          this.open(modal, { skipUrlUpdate: true });
+            this.closeAll();
+            if (window.location.pathname !== '/') {
+                window.history.replaceState({}, '', '/');
+            }
         }
-      } else {
-        this.closeAll();
-        if (window.location.pathname !== '/') {
-          window.history.replaceState({}, '', '/');
-        }
-      }
     });
-  }
+}
 
-  // ===== ИСПРАВЛЕНИЕ: корректировка originalPath для новостей, проектов и категорий =====
   open(key, options = {}) {
     const config = this.modals.get(key);
     if (!config) {
@@ -681,7 +731,6 @@ class ModalManager {
     if (this.activeModal === null && !skipUrlUpdate) {
       let path = window.location.pathname + window.location.search + window.location.hash;
 
-      // Карта префиксов для детальных URL и соответствующих базовых путей
       const prefixMap = {
         'news': '/news',
         'project': '/projects',
@@ -700,11 +749,13 @@ class ModalManager {
         path = baseMap[key];
       }
 
-      // Для proposal и feedback не меняем originalPath
       if (key === 'proposal') {
         path = '/proposal';
       } else if (key === 'feedback') {
         path = '/feedback';
+      } else if (key === 'vacancy') {
+        // Для вакансий базовый путь — /vacancies, но мы оставляем /vacancy, чтобы URL был /vacancy/123
+        // Ничего не меняем
       }
 
       this.originalPath = path;
@@ -750,7 +801,7 @@ class ModalManager {
       }
 
       if (!skipUrlUpdate) {
-        if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback' || key === 'proposal') {
+        if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback' || key === 'proposal' || key === 'vacancy') {
           if (key === 'feedback' || key === 'proposal') {
             this._updateUrl(key);
           } else {
@@ -777,58 +828,63 @@ class ModalManager {
     this._removeFocusTrap();
     overlay.classList.remove('active');
 
-    if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category') {
-      this.currentModalId = null;
-      this.currentCategory = null;
-      this.currentProjectCategory = null;
+    if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'vacancy') {
+        this.currentModalId = null;
+        this.currentCategory = null;
+        this.currentProjectCategory = null;
     }
 
     const previousModal = this.activeModalStack.length > 0 ? this.activeModalStack.pop() : null;
     if (previousModal) {
-      const parentId = this._getParentId(previousModal);
-      if (parentId) {
-        let basePath = `/${previousModal}`;
-        if (previousModal === 'news' || previousModal === 'project') {
-          basePath += '/';
-        }
-        window.history.replaceState({ modal: previousModal, id: parentId }, '', basePath);
-      } else {
-        if (this.originalPath) {
-          window.history.replaceState({}, '', this.originalPath);
+        const parentId = this._getParentId(previousModal);
+        if (parentId) {
+            let basePath = `/${previousModal}`;
+            if (previousModal === 'news' || previousModal === 'project' || previousModal === 'vacancy') {
+                basePath += '/';
+            }
+            window.history.replaceState({ modal: previousModal, id: parentId }, '', basePath);
         } else {
-          window.history.replaceState({}, '', '/');
+            if (this.originalPath) {
+                window.history.replaceState({}, '', this.originalPath);
+            } else {
+                window.history.replaceState({}, '', '/');
+            }
         }
-      }
 
-      ScrollManager.unlock();
-      this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
-      this.activeModal = previousModal;
+        ScrollManager.unlock();
+        this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
+        this.activeModal = previousModal;
     } else {
-      if (this.originalPath) {
-        window.history.replaceState({}, '', this.originalPath);
-        this.originalPath = null;
-      } else {
-        window.history.replaceState({}, '', '/');
-      }
+        if (this.originalPath) {
+            window.history.replaceState({}, '', this.originalPath);
+            this.originalPath = null;
+        } else {
+            window.history.replaceState({}, '', '/');
+        }
 
-      // Если закрывается проект или категория проектов, и страница не инициализирована – инициализируем
-      if ((key === 'project' || key === 'project-category') && 
-          typeof window.initProjectsPage === 'function' && !window._projectsPageInitialized) {
-        setTimeout(() => {
-          window.initProjectsPage();
-        }, 50);
-      }
+        if ((key === 'project' || key === 'project-category') && 
+            typeof window.initProjectsPage === 'function' && !window._projectsPageInitialized) {
+            setTimeout(() => {
+                window.initProjectsPage();
+            }, 50);
+        }
 
-      ScrollManager.unlock();
-      this.activeModal = null;
+        ScrollManager.unlock();
+        this.activeModal = null;
     }
 
     if (config.onClose) {
-      config.onClose(overlay);
+        config.onClose(overlay);
     }
     if (window.Services?.eventBus) {
-      window.Services.eventBus.emit('modal:closed', { key });
+        window.Services.eventBus.emit('modal:closed', { key });
     }
+
+    // ===== ДОБАВЛЕНО: снятие фокуса =====
+    if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
+
     return true;
   }
 
@@ -837,6 +893,7 @@ class ModalManager {
     if (modalKey === 'project-category') return this.currentProjectCategory;
     if (modalKey === 'news') return this.currentModalId;
     if (modalKey === 'project') return this.currentModalId;
+    if (modalKey === 'vacancy') return this.currentModalId;
     return null;
   }
 

@@ -1,6 +1,6 @@
 /**
  * Управление анимациями при скролле (расширенная версия)
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  * Поддерживает повторные анимации, безопасная работа с памятью
  * 
  * Исправление: добавлен метод _forceVisibleCheck() для немедленного показа
@@ -192,3 +192,5 @@ const animationManager = new AnimationManager();
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AnimationManager, animationManager };
 }
+
+window.animationManager = animationManager;

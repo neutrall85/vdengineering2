@@ -1,6 +1,6 @@
 /**
  * Рендеринг новостей
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 class NewsRenderer {
   constructor(newsData) {
@@ -17,6 +17,14 @@ class NewsRenderer {
     if (path.startsWith('/')) return path;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     return '/' + path;
+  }
+
+  // ИЗМЕНЕНО: добавлена функция расчёта класса задержки
+  _getDelayClass(index, stagger = 50) {
+    const delay = index * stagger;
+    const rounded = Math.round(delay / 50) * 50;
+    const clamped = Math.min(rounded, 900);
+    return `delay-${clamped}`;
   }
 
   renderPreview(container, count = 3) {
@@ -107,7 +115,9 @@ class NewsRenderer {
   _createNewsCard(news, index) {
     const article = document.createElement('article');
     article.classList.add('news-card', 'animate-on-scroll', 'fade-up');
-    article.style.animationDelay = `${index * this.cardStaggerMs}ms`;
+    // ИЗМЕНЕНО: вместо style.animationDelay добавляем класс задержки
+    const delayClass = this._getDelayClass(index, this.cardStaggerMs);
+    article.classList.add(delayClass);
     article.dataset.modalOpen = 'news';
     article.dataset.newsId = news.id;
     article.dataset.once = 'true';

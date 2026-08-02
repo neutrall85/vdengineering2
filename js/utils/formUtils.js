@@ -941,7 +941,7 @@ const DateInputHelper = {
             if (selectedDate && dateObj.getTime() === selectedDate.getTime()) {
               cell.classList.add('selected');
             }
-            cell.addEventListener('click', function(e) {
+            cell.addEventListener('pointerdown', function(e) {
               e.preventDefault();
               e.stopPropagation();
               const selected = new Date(year, month, d);
@@ -969,7 +969,7 @@ const DateInputHelper = {
         render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
       });
 
-      document.addEventListener('click', function(e) {
+      document.addEventListener('pointerdown', function(e) {
         if (picker && !picker.contains(e.target) && e.target !== input) {
           closePicker();
         }
@@ -1004,7 +1004,7 @@ const DateInputHelper = {
         overlay.className = 'date-picker-overlay';
         overlay.classList.add('hidden');
         document.body.appendChild(overlay);
-        overlay.addEventListener('click', function(e) {
+        overlay.addEventListener('pointerdown', function(e) {
           e.stopPropagation();
           closePicker();
         });
@@ -1318,7 +1318,7 @@ const DateInputHelper = {
       openPicker();
     });
 
-    input.addEventListener('click', function(e) {
+    input.addEventListener('pointerdown', function(e) {
       e.stopPropagation();
       if (!isVisible) openPicker();
     });

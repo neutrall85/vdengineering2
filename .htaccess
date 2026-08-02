@@ -1,5 +1,5 @@
 # ============================================================
-# .htaccess — ПРОДАКШН-ВЕРСИЯ
+# .htaccess — ПРОДАКШН-ВЕРСИЯ (исправленная)
 # HostLand VPS (Apache + Nginx proxy)
 # ============================================================
 
@@ -22,7 +22,6 @@ ErrorDocument 500 /500.html
 # 1. ЗАЩИТА ЧУВСТВИТЕЛЬНЫХ ФАЙЛОВ
 # ============================================================
 
-# Запрет доступа к .env
 <FilesMatch "^\.env$">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -33,7 +32,6 @@ ErrorDocument 500 /500.html
     </IfModule>
 </FilesMatch>
 
-# Запрет доступа ко ВСЕМ скрытым файлам (кроме .well-known для SSL)
 <FilesMatch "^\.">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -54,7 +52,6 @@ ErrorDocument 500 /500.html
     </IfModule>
 </FilesMatch>
 
-# Запрет доступа к логам, бэкапам, конфигам
 <FilesMatch "\.(log|bak|sql|ini|conf|dist|save|orig|tmp)$">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -69,16 +66,10 @@ ErrorDocument 500 /500.html
 # 2. БЕЗОПАСНОСТЬ ДИРЕКТОРИЙ
 # ============================================================
 
-# Запрет листинга директорий
 Options -Indexes -MultiViews
 
-# Защита папки private_uploads (загрузки пользователей)
 <IfModule mod_rewrite.c>
     RewriteRule ^private_uploads/ - [F,L]
-</IfModule>
-
-# Защита папок logs, data, sessions
-<IfModule mod_rewrite.c>
     RewriteRule ^logs/ - [F,L]
     RewriteRule ^data/ - [F,L]
     RewriteRule ^sessions/ - [F,L]
@@ -88,29 +79,20 @@ Options -Indexes -MultiViews
 # 3. ЗАЩИТНЫЕ HTTP-ЗАГОЛОВКИ
 # ============================================================
 <IfModule mod_headers.c>
-    # ---- Базовая защита ----
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "DENY"
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Cross-Origin-Opener-Policy "same-origin"
     
-    # ---- Content Security Policy ----
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com ; style-src 'self' https://yastatic.net; img-src 'self' data: https://cdn.yandex.ru https://mc.yandex.ru https://mc.yandex.com; font-src 'self' https://yastatic.net; connect-src 'self' https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru wss://mc.yandex.com wss://yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; object-src 'none'; base-uri 'self'; form-action 'self';"
     
-    # Убираем версию сервера
     Header always unset X-Powered-By
     Header always unset Server
     
-    # ---- HSTS (HTTP Strict Transport Security) ----
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    
-    # ---- Referrer-Policy ----
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    
-    # ---- Permissions-Policy ----
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
     
-    # ---- Кэширование для PHP/API (всегда свежее) ----
     <FilesMatch "\.(php)$">
         Header always set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
         Header always set Pragma "no-cache"
@@ -119,7 +101,6 @@ Options -Indexes -MultiViews
         Header always set X-Cache-Status "BYPASS"
     </FilesMatch>
     
-    # ---- Кэширование для JSON (API-ответы) ----
     <FilesMatch "\.(json)$">
         Header always set Cache-Control "no-store, no-cache, must-revalidate"
         Header always set Pragma "no-cache"
@@ -129,12 +110,54 @@ Options -Indexes -MultiViews
 </IfModule>
 
 # ============================================================
-# 4. ЧПУ ДЛЯ СТРАНИЦ (убираем .html)
+# 4. ЧПУ ДЛЯ СТРАНИЦ И МОДАЛЬНЫХ ОКОН (единый блок)
 # ============================================================
 <IfModule mod_rewrite.c>
-    # Если запрошенный файл или папка не существуют,
-    # ищем файл с таким же именем и расширением .html
-    RewriteCond %{REQUEST_URI} !\.html$ [NC]
+    # ---- ЯВНЫЕ ПРАВИЛА ДЛЯ БАЗОВЫХ СТРАНИЦ (без .html) ----
+    RewriteRule ^about$ /about.html [L]
+    RewriteRule ^contacts$ /contacts.html [L]
+    RewriteRule ^services$ /services.html [L]
+    RewriteRule ^projects$ /projects.html [L]
+    RewriteRule ^news$ /news.html [L]
+    RewriteRule ^docs$ /docs.html [L]
+    RewriteRule ^vacancies$ /vacancies.html [L]
+    RewriteRule ^partners$ /partners.html [L]
+    RewriteRule ^search$ /search.html [L]
+
+    # ---- СПЕЦИАЛЬНЫЕ ПРАВИЛА ДЛЯ МОДАЛЬНЫХ ОКОН (без .html) ----
+    # /feedback и /proposal → index.html (это модальные окна на главной)
+    RewriteRule ^feedback$ /index.html [L]
+    RewriteRule ^proposal$ /index.html [L]
+
+    # /vacancy/ID → index.html с параметром modal=vacancy
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^vacancy/([^/]+)$ /index.html?modal=vacancy&id=$1 [L,QSA]
+
+    # ---- ДЕТАЛЬНЫЕ МОДАЛЬНЫЕ URL (с параметрами) ----
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^news/([^/]+)$ /news.html?modal=news&id=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^projects/([^/]+)$ /projects.html?modal=project&id=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^category/([^/]+)$ /news.html?modal=category&id=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^project-category/([^/]+)$ /projects.html?modal=project-category&id=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^policy/(.+)$ /index.html?modal=policy&key=$1 [L,QSA]
+
+    # ---- ОБЩЕЕ ПРАВИЛО ДЛЯ ВСЕХ ОСТАЛЬНЫХ ПУТЕЙ ----
+    # Если файл не существует, пытаемся добавить .html
+    # (для обычных страниц, которых нет в явных правилах)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} !^/api/ [NC]
@@ -142,37 +165,12 @@ Options -Indexes -MultiViews
 </IfModule>
 
 # ============================================================
-# 5. ЧПУ ДЛЯ МОДАЛЬНЫХ ОКОН (без #, ?, &)
-# ============================================================
-<IfModule mod_rewrite.c>
-    # Перенаправляем /news/123 → /news.html?modal=news&id=123
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^news/([^/]+)$ /news.html?modal=news&id=$1 [L,QSA]
-
-    # Перенаправляем /project/ads-b-out → /projects.html?modal=project&id=ads-b-out
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^project/([^/]+)$ /projects.html?modal=project&id=$1 [L,QSA]
-
-    # Перенаправляем /category/События → /news.html?modal=category&id=События
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^category/([^/]+)$ /news.html?modal=category&id=$1 [L,QSA]
-
-    # Перенаправляем /project-category/Модернизация → /projects.html?modal=project-category&id=Модернизация
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^project-category/([^/]+)$ /projects.html?modal=project-category&id=$1 [L,QSA]
-</IfModule>
-
-# ============================================================
-# 6. ОГРАНИЧЕНИЕ РАЗМЕРА ЗАПРОСА (защита от DoS)
+# 5. ОГРАНИЧЕНИЕ РАЗМЕРА ЗАПРОСА
 # ============================================================
 LimitRequestBody 35000000
 
 # ============================================================
-# 7. СЖАТИЕ (ускорение загрузки)
+# 6. СЖАТИЕ
 # ============================================================
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/xml text/xml image/svg+xml application/font-woff application/font-woff2
@@ -180,35 +178,29 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 8. КЭШИРОВАНИЕ СТАТИКИ (управляется через Cache-Control)
+# 7. КЭШИРОВАНИЕ СТАТИКИ
 # ============================================================
 <IfModule mod_headers.c>
-    # ---- HTML (не кэшировать) ----
     <FilesMatch "\.(html|htm)$">
         Header set Cache-Control "no-cache, must-revalidate"
     </FilesMatch>
 
-    # ---- CSS (долгий кэш с immutable) ----
     <FilesMatch "\.(css)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 
-    # ---- JavaScript (долгий кэш с immutable) ----
     <FilesMatch "\.(js)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 
-    # ---- Изображения (кэш 1 месяц) ----
     <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico)$">
         Header set Cache-Control "public, max-age=2592000"
     </FilesMatch>
 
-    # ---- Шрифты (кэш 1 год + immutable) ----
     <FilesMatch "\.(woff|woff2|ttf|eot|otf)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 
-    # ---- JSON (уже есть в секции безопасности, но продублируем для надёжности) ----
     <FilesMatch "\.(json)$">
         Header set Cache-Control "no-store, no-cache, must-revalidate"
         Header set Pragma "no-cache"
@@ -216,7 +208,6 @@ LimitRequestBody 35000000
         Header set X-Accel-Expires "0"
     </FilesMatch>
 
-    # ---- PHP и API (уже есть, оставляем как есть) ----
     <FilesMatch "\.(php)$">
         Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
         Header set Pragma "no-cache"
@@ -227,7 +218,7 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 9. ЗАЩИТА ОТ ГОРЯЧИХ ССЫЛОК (Hotlinking)
+# 8. ЗАЩИТА ОТ ГОРЯЧИХ ССЫЛОК (Hotlinking)
 # ============================================================
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_REFERER} !^$
@@ -238,7 +229,7 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 10. ЗАЩИТА ОТ СПАМ-БОТОВ (по User-Agent)
+# 9. ЗАЩИТА ОТ СПАМ-БОТОВ
 # ============================================================
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_USER_AGENT} (havij|libwww-perl|wget|python|nikto|scan|java|winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC,OR]
@@ -247,9 +238,8 @@ LimitRequestBody 35000000
 </IfModule>
 
 # ============================================================
-# 11. ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА
+# 10. ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА
 # ============================================================
-# Запрет выполнения PHP в папке загрузок
 <IfModule mod_rewrite.c>
     RewriteRule ^private_uploads/.*\.php$ - [F,L]
 </IfModule>

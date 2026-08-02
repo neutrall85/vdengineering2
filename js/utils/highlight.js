@@ -1,30 +1,35 @@
 /**
  * highlight.js – утилита для подсветки текста на странице
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
+ *
+ * Подсвечивает все вхождения подстрок (регистронезависимо).
+ * Текст внутри кнопок (button, [role="button"]) игнорируется – не подсвечивается.
+ *
+ * Без использования innerHTML – только DOM-узлы.
+ * Собирает фрагмент из текстовых узлов и маркеров.
+ * Использует normalize для объединения соседних текстовых узлов.
  */
-
 const HighlightUtils = {
     /**
-     * Подсвечивает все вхождения текста внутри контейнера
-     * @param {string} query – текст для поиска (регистронезависимый)
-     * @param {Element} container – DOM-элемент, внутри которого ищем (по умолчанию document.body)
-     * @param {string} markClass – класс для <mark> (по умолчанию 'search-highlight')
+     * Подсвечивает все вхождения слов запроса в тексте, исключая кнопки.
+     * @param {string} query – поисковый запрос (слова через пробел)
+     * @param {HTMLElement} container – контейнер, в котором ищем
+     * @param {string} markClass – класс для маркеров (<mark>)
      */
     highlight(query, container = document.body, markClass = 'search-highlight') {
         if (!query) return;
-        // Удаляем предыдущую подсветку
         this.clearHighlights(container, markClass);
-        
-        const q = query.toLowerCase().trim();
-        if (!q) return;
-        
-        // Обходим текстовые узлы
+
+        const words = query.toLowerCase().trim().split(/\s+/).filter(w => w.length > 0);
+        if (words.length === 0) return;
+
+        // Создаём обходчик, который пропускает текстовые узлы внутри кнопок
         const walker = document.createTreeWalker(
             container,
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode(node) {
-                    // Пропускаем уже подсвеченные (внутри <mark>)
+                    // Пропускаем уже подсвеченные маркеры (чтобы не зациклиться)
                     if (node.parentElement && node.parentElement.tagName === 'MARK') {
                         return NodeFilter.FILTER_REJECT;
                     }
@@ -32,55 +37,81 @@ const HighlightUtils = {
                 }
             }
         );
-        
-        const nodesToReplace = [];
+
+        // Собираем все подходящие текстовые узлы
+        const textNodes = [];
         let node;
         while ((node = walker.nextNode())) {
-            const text = node.textContent;
-            const lowerText = text.toLowerCase();
-            if (lowerText.includes(q)) {
-                nodesToReplace.push({ node, text, lowerText });
-            }
+            textNodes.push(node);
         }
-        
-        // Заменяем узлы с подсветкой
-        nodesToReplace.forEach(({ node, text }) => {
+
+        // Обрабатываем каждый текстовый узел (как в оригинале)
+        for (const textNode of textNodes) {
+            const text = textNode.textContent;
+            const lowerText = text.toLowerCase();
+
+            // Ищем все вхождения каждого слова запроса
+            let matches = [];
+            for (const word of words) {
+                let idx = lowerText.indexOf(word);
+                while (idx !== -1) {
+                    matches.push({ start: idx, end: idx + word.length });
+                    idx = lowerText.indexOf(word, idx + 1);
+                }
+            }
+
+            if (matches.length === 0) continue;
+
+            // Сортируем и объединяем пересекающиеся диапазоны
+            matches.sort((a, b) => a.start - b.start);
+            const merged = [];
+            let cur = matches[0];
+            for (let i = 1; i < matches.length; i++) {
+                if (matches[i].start <= cur.end) {
+                    cur.end = Math.max(cur.end, matches[i].end);
+                } else {
+                    merged.push(cur);
+                    cur = matches[i];
+                }
+            }
+            merged.push(cur);
+
+            // Строим фрагмент с текстовыми кусками и маркерами
             const fragment = document.createDocumentFragment();
-            let remaining = text;
-            while (true) {
-                const pos = remaining.toLowerCase().indexOf(q);
-                if (pos === -1) {
-                    if (remaining) {
-                        fragment.appendChild(document.createTextNode(remaining));
-                    }
-                    break;
+            let lastEnd = 0;
+            for (const m of merged) {
+                if (m.start > lastEnd) {
+                    fragment.appendChild(document.createTextNode(text.slice(lastEnd, m.start)));
                 }
-                // Текст до совпадения
-                if (pos > 0) {
-                    fragment.appendChild(document.createTextNode(remaining.slice(0, pos)));
-                }
-                // Совпадение – оборачиваем в <mark>
                 const mark = document.createElement('mark');
                 mark.className = markClass;
-                mark.textContent = remaining.slice(pos, pos + q.length);
+                mark.textContent = text.slice(m.start, m.end);
                 fragment.appendChild(mark);
-                // Оставшийся текст после совпадения
-                remaining = remaining.slice(pos + q.length);
+                lastEnd = m.end;
             }
-            node.parentNode.replaceChild(fragment, node);
-        });
+            if (lastEnd < text.length) {
+                fragment.appendChild(document.createTextNode(text.slice(lastEnd)));
+            }
+
+            const wrapper = document.createElement('span');
+            wrapper.appendChild(fragment);
+            textNode.parentNode.replaceChild(wrapper, textNode);
+        }
+
+        // Объединяем соседние текстовые узлы во всём контейнере
+        container.normalize();
     },
-    
+
     /**
-     * Удаляет все подсветки внутри контейнера
+     * Очищает все ранее созданные подсветки (удаляет <mark> с заданным классом)
      */
     clearHighlights(container = document.body, markClass = 'search-highlight') {
         const marks = container.querySelectorAll(`mark.${markClass}`);
         marks.forEach(mark => {
             const parent = mark.parentNode;
             parent.replaceChild(document.createTextNode(mark.textContent), mark);
-            parent.normalize();
         });
+        container.normalize();
     }
 };
 

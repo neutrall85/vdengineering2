@@ -1,7 +1,7 @@
 // js/data/projectsData.js
 /**
  * PROJECTS_DATA - Данные проектов (единый источник истины)
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 
 const PROJECTS_DATA = {

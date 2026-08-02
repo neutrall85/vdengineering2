@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Поиск по сайту</title>
     
-<link rel="stylesheet" href="/css/styles.min.css?v=1785228434201"></head>
+<link rel="stylesheet" href="/css/styles.min.css?v=1785669619013"></head>
 <body>
     <div id="navbar"></div>
 
@@ -20,12 +20,19 @@
                 </div>
             </form>
         </div>
-        <div id="searchResults" class="search-results-container">
-            <!-- Результаты будут отрендерены SearchManager -->
+        <div id="searchResults" class="search-results-container"></div>
+        <div class="lightbox-overlay" id="lightboxOverlay" role="dialog" aria-modal="true" aria-label="Просмотр изображения">
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="lightboxCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg></button>
+            <button class="lightbox-nav lightbox-prev" id="lightboxPrevBtn" aria-label="Предыдущее изображение"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg></button>
+            <button class="lightbox-nav lightbox-next" id="lightboxNextBtn" aria-label="Следующее изображение"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"></path></svg></button>
+            <img class="lightbox-image" id="lightboxImage" src="" alt="">
+            <div class="lightbox-indicators" id="lightboxIndicators"></div>
+        </div>
         </div>
     </main>
 
     <footer id="footer"></footer>
-    <script src="/js/bundle.min.js?v=1785228434201"></script>
+    <script src="/js/bundle.min.js?v=1785669619013"></script>
 </body>
 </html>

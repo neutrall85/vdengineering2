@@ -1,6 +1,6 @@
 /**
  * FormManager – создаёт обработчик для формы коммерческого предложения
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 class FormManager {
   constructor(apiClient, rateLimiter) {

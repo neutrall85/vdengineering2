@@ -101,7 +101,6 @@ const ConsentManager = {
     this.state.eventBus.emit('preferences:applied', categories);
   },
 
-  // ===== ОСТАЛЬНЫЕ МЕТОДЫ (без изменений) =====
   _render() {
     if (document.getElementById('user-notice-banner')) return;
     const sanitizer = Utils.Sanitizer || { escapeHtml: (str) => str };
@@ -189,11 +188,16 @@ const ConsentManager = {
         Logger.WARN('ConsentManager: PolicyModalManager not available');
       }
     });
+
+    // Обработчик для ссылки "Настройки cookie"
     document.addEventListener('click', (e) => {
       const link = e.target.closest('#cookie-settings-link');
       if (link) {
         e.preventDefault();
-        this.withdrawConsent(storage);
+        const storage = window.Services?.storage;
+        if (storage && typeof this.withdrawConsent === 'function') {
+          this.withdrawConsent(storage);
+        }
       }
     });
   },

@@ -1,6 +1,6 @@
 /**
  * Конфигурационный файл проекта
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
  */
 
 const CONFIG = {
@@ -53,7 +53,7 @@ const CONFIG = {
     FADE_IN_THRESHOLD: 100,
     MODAL_CLOSE_DELAY_MS: 3000,
     OBSERVER_THRESHOLD: 0.4,          // уменьшен порог, чтобы срабатывало раньше
-    ROOT_MARGIN: '0px 0px 170px 0px',  // увеличен отступ снизу до 250px
+    ROOT_MARGIN: '0px 0px 170px 0px',
     CARD_STAGGER_MS: 50
   },
   SECURITY: {

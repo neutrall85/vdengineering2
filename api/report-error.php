@@ -1,7 +1,9 @@
 <?php
 /**
  * API для приёма сообщений об ошибках (отдельный обработчик)
- * ООО "Волга-Днепр Инжиниринг"
+ * ООО "ВД Инжиниринг"
+ *
+ * ВЕРСИЯ С ИСПРАВЛЕНИЕМ: отправка на все адреса из ADMIN_ERROR_EMAIL (массив)
  */
 
 ini_set('display_errors', 0);
@@ -52,7 +54,6 @@ if (empty($selectedText)) {
     echo json_encode(['success' => false, 'error' => 'Текст с ошибкой не может быть пустым']);
     exit;
 }
-// Комментарий не обязателен, просто не используем его дальше
 
 // Rate limiting по IP
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
@@ -99,10 +100,40 @@ Logger::info('Error report received', [
     'selectedText_length' => mb_strlen($selectedText, 'UTF-8'),
 ], 'error_reports');
 
-// Отправка письма
-$adminEmails = defined('ADMIN_ERROR_EMAIL') && is_array(ADMIN_ERROR_EMAIL) ? ADMIN_ERROR_EMAIL : ['error@normacode.ru'];
-$adminEmail = $adminEmails[0] ?? 'error@normacode.ru';
+// ============================================================
+// ПОЛУЧАЕМ СПИСОК ПОЛУЧАТЕЛЕЙ (ИСПРАВЛЕНИЕ)
+// ============================================================
+$recipients = [];
 
+// 1. Если определён ADMIN_ERROR_EMAIL и это массив – используем его
+if (defined('ADMIN_ERROR_EMAIL') && is_array(ADMIN_ERROR_EMAIL) && !empty(ADMIN_ERROR_EMAIL)) {
+    $recipients = ADMIN_ERROR_EMAIL;
+}
+// 2. Если нет, пробуем ADMIN_EMAILS (общий список)
+elseif (defined('ADMIN_EMAILS') && is_array(ADMIN_EMAILS) && !empty(ADMIN_EMAILS)) {
+    $recipients = ADMIN_EMAILS;
+}
+// 3. Если ничего нет – fallback
+else {
+    $recipients = ['admin@example.com'];
+}
+
+// Фильтруем только валидные email
+$recipients = array_values(array_filter($recipients, function($email) {
+    return filter_var(trim($email), FILTER_VALIDATE_EMAIL) !== false;
+}));
+
+if (empty($recipients)) {
+    // Если после фильтрации ни одного адреса – ошибка
+    Logger::error('No valid recipient emails for error report', [], 'error_reports');
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Не настроен получатель письма. Обратитесь к администратору.']);
+    exit;
+}
+
+// ============================================================
+// ПОДГОТОВКА ПИСЬМА
+// ============================================================
 $subject = '📝 Сообщение об ошибке на сайте';
 
 $esc = static function ($v) {
@@ -120,8 +151,11 @@ $html = '<!DOCTYPE html>
 <h2 style="color:#004E96;">' . $esc($subject) . '</h2>
 <p><strong>Страница:</strong> <a href="' . $esc($url) . '">' . $esc($url) . '</a></p>
 <p><strong>IP отправителя:</strong> ' . $esc($ip) . '</p>
-<p><strong>Текст с ошибкой:</strong><br><blockquote style="background:#f0f0f0; padding:10px; border-radius:4px;">' . $nl2brSafe($selectedText) . '</blockquote></p>
-<p><strong>User-Agent:</strong> ' . $esc($userAgent) . '</p>
+<p><strong>Текст с ошибкой:</strong><br><blockquote style="background:#f0f0f0; padding:10px; border-radius:4px;">' . $nl2brSafe($selectedText) . '</blockquote></p>';
+if (!empty($comment)) {
+    $html .= '<p><strong>Комментарий:</strong><br>' . $nl2brSafe($comment) . '</p>';
+}
+$html .= '<p><strong>User-Agent:</strong> ' . $esc($userAgent) . '</p>
 <p><small>Это автоматическое уведомление с сайта.</small></p>
 </div>
 </body>
@@ -130,13 +164,19 @@ $html = '<!DOCTYPE html>
 $text = "Сообщение об ошибке\n\n"
       . "Страница: $url\n"
       . "IP: $ip\n"
-      . "Текст с ошибкой:\n$selectedText\n"
-      . "User-Agent: $userAgent\n";
+      . "Текст с ошибкой:\n$selectedText\n";
+if (!empty($comment)) {
+    $text .= "Комментарий:\n$comment\n";
+}
+$text .= "User-Agent: $userAgent\n";
 
-// Подключаем PHPMailer
+// ============================================================
+// ОТПРАВКА ЧЕРЕЗ PHPMailer
+// ============================================================
 require_once __DIR__ . '/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/PHPMailer/SMTP.php';
 require_once __DIR__ . '/PHPMailer/Exception.php';
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -151,18 +191,31 @@ try {
     $mail->SMTPSecure = SMTP_SECURE;
     $mail->Port       = SMTP_PORT;
     $mail->setFrom(FROM_EMAIL, FROM_NAME);
-    $mail->addAddress($adminEmail);
+
+    // Добавляем всех получателей из массива
+    foreach ($recipients as $email) {
+        $mail->addAddress($email);
+    }
+
     $mail->isHTML(true);
     $mail->Subject = $subject;
     $mail->Body    = $html;
     $mail->AltBody = $text;
 
+    // Отправляем
     $mail->send();
+
+    Logger::info('Error report email sent', [
+        'recipients' => $recipients,
+        'ip'         => $ip
+    ], 'error_reports');
+
     echo json_encode(['success' => true, 'message' => 'Сообщение отправлено']);
 } catch (Exception $e) {
     Logger::error('Error report email failed', [
-        'error' => $mail->ErrorInfo,
-        'to' => $adminEmail,
+        'error'   => $mail->ErrorInfo,
+        'to'      => $recipients,
+        'ip'      => $ip
     ], 'error_reports');
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Не удалось отправить письмо. Попробуйте позже.']);

@@ -21,7 +21,8 @@ const ComponentLoader = {
         categoryNewsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.categoryNewsModal : '',
         projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : '',
         newsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.newsModal : '',
-        errorReportModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.errorReportModal : '' // ДОБАВЛЕНО
+        errorReportModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.errorReportModal : '',
+        vacancyModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.vacancyModal : '' // добавлено
     },
 
     /**
@@ -167,6 +168,17 @@ const ComponentLoader = {
                 errorReportContainer.appendChild(node.cloneNode(true));
             });
             document.body.appendChild(errorReportContainer.firstElementChild);
+        }
+
+        // ========== ЗАГРУЗКА МОДАЛКИ ВАКАНСИИ ==========
+        if (!document.getElementById('vacancyModalOverlay')) {
+            const vacancyContainer = document.createElement('div');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(this.templates.vacancyModal, 'text/html');
+            Array.from(doc.body.childNodes).forEach(node => {
+                vacancyContainer.appendChild(node.cloneNode(true));
+            });
+            document.body.appendChild(vacancyContainer.firstElementChild);
         }
     },
 
