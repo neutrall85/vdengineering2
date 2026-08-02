@@ -300,11 +300,11 @@ body.no-scroll-fixed {
   transition: width 0.1s ease-out;
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* @media (prefers-reduced-motion: reduce) {
   .scroll-progress-bar {
     transition: none;
   }
-}
+} */
 
 /* ==================== АНИМАЦИИ ПОЯВЛЕНИЯ ПРИ СКРОЛЛЕ ==================== */
 
@@ -452,7 +452,7 @@ body.no-scroll-fixed {
 .delay-850 { --animation-delay: 0.85s; }
 .delay-900 { --animation-delay: 0.9s; }
 
-@media (prefers-reduced-motion: reduce) {
+/* @media (prefers-reduced-motion: reduce) {
   .animate-on-scroll,
   .animate-on-scroll.visible,
   .visible,
@@ -470,7 +470,7 @@ body.no-scroll-fixed {
     filter: none !important;
     opacity: 1 !important;
   }
-}
+} */
 
 /* ==================== НАВИГАЦИЯ ==================== */
 body:not(.app-ready) .page-loader {
@@ -1056,12 +1056,12 @@ body.app-ready>footer {
 }
 
 /* Отключаем для пользователей с ограниченными возможностями */
-@media (prefers-reduced-motion: reduce) {
+/* @media (prefers-reduced-motion: reduce) {
   .btn-primary::after {
     animation: none;
     display: none;
   }
-}
+} */
 
 .btn-primary:hover {
   transform: translateY(-3px);
