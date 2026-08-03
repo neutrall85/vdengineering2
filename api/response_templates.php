@@ -72,7 +72,7 @@ class ResponseBuilder {
             'task'          => 'Описание задачи',
             'category'      => 'Категория запроса',
             'desired_date'  => 'Планируемая дата получения КП',
-            'desired_approval_date' => 'Планируемая дата одобрения',
+            'desired_approval_date' => 'Ожидаемый срок выполнения работ',
             'about'         => 'О себе / сопроводительное письмо',
             'vacancy_title' => 'Вакансия',
             'vacancy_id'    => 'ID вакансии',

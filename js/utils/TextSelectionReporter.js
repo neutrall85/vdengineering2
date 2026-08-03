@@ -80,7 +80,7 @@ class TextSelectionReporter {
     clearTimeout(this._bannerTimer);
     this._bannerTimer = setTimeout(() => {
       this._hideBanner();
-    }, 5000);
+    }, 15000);
   }
 
   _hideBanner() {

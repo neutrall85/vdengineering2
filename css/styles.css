@@ -6750,7 +6750,6 @@ form.hidden-form {
     background-color: transparent;
     background-clip: padding-box;
     transition: background-color 5000s ease-in-out 0s;
-    /* -webkit-text-fill-color не задаём – наследуется от обычных стилей */
 }
 
 /* Дополнительно для Firefox (если нужно) – можно убрать, если фон не появляется */

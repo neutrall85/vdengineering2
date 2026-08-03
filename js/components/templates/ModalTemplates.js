@@ -85,11 +85,11 @@ const ModalTemplates = {
               <p class="error-message" id="desiredDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
             <div class="form-group">
-              <label class="form-label" for="desiredApprovalDate">Планируемая дата одобрения</label>
+              <label class="form-label" for="desiredApprovalDate">Ожидаемый срок выполнения работ</label>
               <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" maxlength="10" autocomplete="off">
               <p class="error-message" id="desiredApprovalDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
-            <p class="error-message" id="dateOrderError">Планируемая дата одобрения не может быть раньше планируемой даты получения КП.</p>
+            <p class="error-message" id="dateOrderError">Ожидаемый срок выполнения работ не может быть раньше планируемой даты получения КП.</p>
           </div>
         </div>
 
