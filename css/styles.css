@@ -6983,3 +6983,20 @@ form.hidden-form {
   justify-content: flex-end;
   margin-top: 1rem;
 }
+
+.about-title,
+.about-title-inline {
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.about-preview--home .about-text {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* чтобы занять всю высоту родительской ячейки грида */
+}
+
+.about-preview--home .about-text .btn-secondary {
+  margin-top: auto;   /* прижимает кнопку к низу */
+  align-self: flex-start; /* чтобы кнопка не растягивалась на всю ширину */
+}
