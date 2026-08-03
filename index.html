@@ -28,41 +28,54 @@
   <link rel="shortcut icon" href="/assets/images/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
   <link rel="manifest" href="/assets/images/site.webmanifest">
-  <link rel="preconnect" href="https://yandex.ru">
   <link rel="preconnect" href="https://mc.yandex.ru">
-  <link rel="preconnect" href="https://core-renderer-tiles.maps.yandex.ru">
-  <link rel="preconnect" href="https://maps.yastatic.net">
   <link rel="canonical" href="https://vdengineering.ru/">
   
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "ООО «Волга-Днепр Инжиниринг»",
-    "url": "https://vdengineering.ru",
-    "logo": "https://vdengineering.ru/assets/images/logo.svg",
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "telephone": "+7-495-755-90-46",
-      "contactType": "customer service",
-      "email": "info_vde@volga-dnepr.com",
-      "areaServed": "RU",
-      "availableLanguage": "Russian"
-    },
-    "address": [
+    "@graph": [
       {
-        "@type": "PostalAddress",
-        "addressCountry": "RU",
-        "addressLocality": "Москва",
-        "streetAddress": "Международное шоссе 28Б, строение 3, 8 этаж, каб. 817",
-        "description": "Фактический адрес"
+        "@type": "Organization",
+        "@id": "https://vdengineering.ru/#organization",
+        "name": "ООО «Волга-Днепр Инжиниринг»",
+        "url": "https://vdengineering.ru",
+        "logo": "https://vdengineering.ru/assets/images/logo.svg",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+7-495-755-90-46",
+          "contactType": "customer service",
+          "email": "info_vde@volga-dnepr.com",
+          "areaServed": ["RU", "Worldwide"],
+          "availableLanguage": "Russian"
+        },
+        "address": [
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 8 этаж, каб. 817"
+          },
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 5 этаж, каб. 502"
+          }
+        ]
       },
       {
-        "@type": "PostalAddress",
-        "addressCountry": "RU",
-        "addressLocality": "Москва",
-        "streetAddress": "Международное шоссе 28Б, строение 3, 5 этаж, каб. 502",
-        "description": "Юридический адрес"
+        "@type": "WebSite",
+        "@id": "https://vdengineering.ru/#website",
+        "url": "https://vdengineering.ru",
+        "name": "ВД Инжиниринг",
+        "description": "Разработчик модификаций и ремонта авиационной техники",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://vdengineering.ru/search?q={search_term_string}"
+        }
       }
     ]
   }

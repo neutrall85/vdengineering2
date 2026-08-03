@@ -30,10 +30,79 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "Партнёры",
-    "description": "Партнёры и клиенты компании",
-    "url": "https://vdengineering.ru/partners"
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://vdengineering.ru/#organization",
+        "name": "ООО «Волга-Днепр Инжиниринг»",
+        "url": "https://vdengineering.ru",
+        "logo": "https://vdengineering.ru/assets/images/logo.svg",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+7-495-755-90-46",
+          "contactType": "customer service",
+          "email": "info_vde@volga-dnepr.com",
+          "areaServed": ["RU", "Worldwide"],
+          "availableLanguage": "Russian"
+        },
+        "address": [
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 8 этаж, каб. 817"
+          },
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 5 этаж, каб. 502"
+          }
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://vdengineering.ru/#website",
+        "url": "https://vdengineering.ru",
+        "name": "ВД Инжиниринг",
+        "description": "Разработчик модификаций и ремонта авиационной техники",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://vdengineering.ru/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "CollectionPage",
+        "@id": "https://vdengineering.ru/partners#webpage",
+        "url": "https://vdengineering.ru/partners",
+        "name": "Партнёры",
+        "description": "Партнёры и клиенты компании",
+        "isPartOf": { "@id": "https://vdengineering.ru/#website" },
+        "about": { "@id": "https://vdengineering.ru/#organization" },
+        "breadcrumb": { "@id": "https://vdengineering.ru/partners#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://vdengineering.ru/partners#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Главная",
+            "item": "https://vdengineering.ru/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Партнёры",
+            "item": "https://vdengineering.ru/partners"
+          }
+        ]
+      }
+    ]
   }
   </script>
 <link rel="stylesheet" href="/css/styles.min.css?v=1785736911629"></head>

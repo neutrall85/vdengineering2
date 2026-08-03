@@ -35,18 +35,79 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "AboutPage",
-    "name": "О компании",
-    "description": "ООО 'Волга-Днепр Инжиниринг' — ведущий разработчик модификаций авиационной техники",
-    "url": "https://vdengineering.ru/about",
-    "mainEntity": {
-      "@type": "Organization",
-      "name": "Волга-Днепр Инжиниринг",
-      "foundingDate": "2017",
-      "numberOfEmployees": 60,
-      "knowsLanguage": "Russian",
-      "areaServed": "Worldwide"
-    }
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://vdengineering.ru/#organization",
+        "name": "ООО «Волга-Днепр Инжиниринг»",
+        "url": "https://vdengineering.ru",
+        "logo": "https://vdengineering.ru/assets/images/logo.svg",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+7-495-755-90-46",
+          "contactType": "customer service",
+          "email": "info_vde@volga-dnepr.com",
+          "areaServed": ["RU", "Worldwide"],
+          "availableLanguage": "Russian"
+        },
+        "address": [
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 8 этаж, каб. 817"
+          },
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 5 этаж, каб. 502"
+          }
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://vdengineering.ru/#website",
+        "url": "https://vdengineering.ru",
+        "name": "ВД Инжиниринг",
+        "description": "Разработчик модификаций и ремонта авиационной техники",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://vdengineering.ru/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "AboutPage",
+        "@id": "https://vdengineering.ru/about#webpage",
+        "url": "https://vdengineering.ru/about",
+        "name": "О компании",
+        "description": "ООО «Волга-Днепр Инжиниринг» — ведущий разработчик модификаций авиационной техники",
+        "isPartOf": { "@id": "https://vdengineering.ru/#website" },
+        "about": { "@id": "https://vdengineering.ru/#organization" },
+        "breadcrumb": { "@id": "https://vdengineering.ru/about#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://vdengineering.ru/about#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Главная",
+            "item": "https://vdengineering.ru/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "О компании",
+            "item": "https://vdengineering.ru/about"
+          }
+        ]
+      }
+    ]
   }
   </script>
   <!-- Scripts (как в index, но без дублей) -->

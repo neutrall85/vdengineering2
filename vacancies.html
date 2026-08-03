@@ -30,24 +30,169 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "JobPosting",
-    "title": "Инженер-конструктор авиационной техники",
-    "description": "Участие в решении задач по проектированию модификаций и ремонтов воздушных судов различных типов, разработка погрузочного оборудования и СНО.",
-    "hiringOrganization": {
-      "@type": "Organization",
-      "name": "ООО «Волга-Днепр Инжиниринг»",
-      "sameAs": "https://vdengineering.ru"
-    },
-    "jobLocation": {
-      "@type": "Place",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Москва",
-        "addressCountry": "RU"
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://vdengineering.ru/#organization",
+        "name": "ООО «Волга-Днепр Инжиниринг»",
+        "url": "https://vdengineering.ru",
+        "logo": "https://vdengineering.ru/assets/images/logo.svg",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+7-495-755-90-46",
+          "contactType": "customer service",
+          "email": "info_vde@volga-dnepr.com",
+          "areaServed": ["RU", "Worldwide"],
+          "availableLanguage": "Russian"
+        },
+        "address": [
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 8 этаж, каб. 817"
+          },
+          {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3, 5 этаж, каб. 502"
+          }
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://vdengineering.ru/#website",
+        "url": "https://vdengineering.ru",
+        "name": "ВД Инжиниринг",
+        "description": "Разработчик модификаций и ремонта авиационной техники",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://vdengineering.ru/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://vdengineering.ru/vacancies#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Главная",
+            "item": "https://vdengineering.ru/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Вакансии",
+            "item": "https://vdengineering.ru/vacancies"
+          }
+        ]
+      },
+      {
+        "@type": "JobPosting",
+        "@id": "https://vdengineering.ru/vacancies#job-leading-engineer-engines",
+        "url": "https://vdengineering.ru/vacancies#job-leading-engineer-engines",
+        "title": "Ведущий инженер-конструктор",
+        "description": "Разработка КД, извещений об изменении и 3D моделей деталей и сборочных единиц двигателей, оснастки для ремонта и ТО; разработка извещений на нетиповые ремонты, технических описаний изменений, инженерных анализов, ремонтных инструкций; анализ эксплуатационных, конструктивных и производственных дефектов деталей двигателей; сопровождение ремонтов двигателей; участие в оценке технического состояния двигателей. Требования: высшее или среднее специальное инженерное, в области авиационных двигателей и энергетических установок; опыт от 5 лет инженером по направлению ГТД. Опыт работы с эксплуатационной и ремонтной документацией; уверенный пользователь MS Office; уверенный пользователь AutoCAD (2D), nanoCAD (2D) и CATIA (3D); умение работать с нормативной документацией; умение анализировать массивы данных; знание технического английского языка для работы с SRM, AMM и TSM иностранных двигателей; опыт работы с иностранными ВС является дополнительным преимуществом.",
+        "datePosted": "2026-07-01",
+        "validThrough": "2026-12-31",
+        "employmentType": "FULL_TIME",
+        "hiringOrganization": {
+          "@type": "Organization",
+          "@id": "https://vdengineering.ru/#organization"
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3"
+          }
+        },
+        "image": "https://vdengineering.ru/assets/images/logo.svg"
+      },
+      {
+        "@type": "JobPosting",
+        "@id": "https://vdengineering.ru/vacancies#job-engineer-designer-engines",
+        "url": "https://vdengineering.ru/vacancies#job-engineer-designer-engines",
+        "title": "Инженер-конструктор 1-2 категории",
+        "description": "Разработка и корректировка эксплуатационной и ремонтной документации для двигателя Д-18Т; разработка КД, извещений об изменении и 3D моделей деталей и сборочных единиц оснастки для ремонта и ТО двигателя; разработка технических описаний изменений, инженерных анализов, ремонтных инструкций; оформление решений, протоколов, актов. Требования: высшее или среднее специальное инженерное, в области авиационных двигателей и энергетических установок; опыт от 5 лет инженером по направлению ГТД. Опыт работы с эксплуатационной и ремонтной документацией; уверенный пользователь MS Office; опыт работы с иностранными ВС является дополнительным преимуществом; уверенный пользователь AutoCAD (2D), nanoCAD (2D) и CATIA (3D); умение работать с нормативной документацией; умение анализировать массивы данных; знание технического английского языка для работы с SRM, AMM и TSM иностранных двигателей.",
+        "datePosted": "2026-07-01",
+        "validThrough": "2026-12-31",
+        "employmentType": "FULL_TIME",
+        "hiringOrganization": {
+          "@type": "Organization",
+          "@id": "https://vdengineering.ru/#organization"
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3"
+          }
+        },
+        "image": "https://vdengineering.ru/assets/images/logo.svg"
+      },
+      {
+        "@type": "JobPosting",
+        "@id": "https://vdengineering.ru/vacancies#job-leading-engineer-air-conditioning",
+        "url": "https://vdengineering.ru/vacancies#job-leading-engineer-air-conditioning",
+        "title": "Ведущий инженер-конструктор по комплексной системе кондиционирования воздуха",
+        "description": "Разработка модификаций и ремонтов компонентов и комплектующих изделий КСКВ отечественных и зарубежных ВС; выполнение теплогидравлических, прочностных расчетов и анализов отказобезопасности КСКВ; разработка принципиальных пневматических и электрических схем КСКВ; формирование требований к составным частям и агрегатам КСКВ, формирование предложений по ПКИ и потенциальным поставщикам; координация и сопровождение работ с поставщиками и соисполнителями; компоновка составных частей и агрегатов КСКВ и их увязка с самолётными системами (разработка интерфейсных документов); разработка конструкторской и эксплуатационной документации; участие в сертификационных испытаниях КСКВ (взаимодействие с авиационными властями и сертификационными центрами, разработка и согласование планов сертификации, программ и методик испытаний, анализ данных испытаний, составление и согласование доказательной документации); ведение конструкторского сопровождения производства и эксплуатации авиационной техники в части КСКВ (анализ статистики отказов, осмотры, разработка рекомендаций и решений по нетиповым ремонтам КСКВ, разработка мероприятий по модернизации типовой конструкции). Требования: высшее техническое образование (авиационное - приоритет); опыт работы в Авиационных ОКБ и/или Инженерных центрах России, СНГ, США, Европы и др. Опыт работы в области производства, эксплуатации, проектирования и сертификации КСКВ российского и иностранного производства; опыт работы в должности ведущего инженера-конструктора от 5 лет; знание ЕСКД; уверенный пользователь MS Office. Знание пакетов САПР для механики и моделирования систем, AutoCAD, CATIA, SolidWorks.",
+        "datePosted": "2026-07-01",
+        "validThrough": "2026-12-31",
+        "employmentType": "FULL_TIME",
+        "hiringOrganization": {
+          "@type": "Organization",
+          "@id": "https://vdengineering.ru/#organization"
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3"
+          }
+        },
+        "image": "https://vdengineering.ru/assets/images/logo.svg"
+      },
+      {
+        "@type": "JobPosting",
+        "@id": "https://vdengineering.ru/vacancies#job-leading-engineer-projects",
+        "url": "https://vdengineering.ru/vacancies#job-leading-engineer-projects",
+        "title": "Ведущий инженер-конструктор (ведущий проектов)",
+        "description": "Анализ поступающих заявок от Заказчиков; оценка возможности технической реализации заявки разработка модификаций и ремонтов комплектующих изделий и ВС иностранного производства; формирование предложений по ПКИ и потенциальным поставщикам; координация и сопровождение работ с поставщиками и соисполнителями; разработка конструкторской и эксплуатационной документации; участие в сертификационных испытаниях (взаимодействие с авиационными властями и сертификационными центрами, разработка и согласование планов сертификации, программ и методик испытаний, анализ данных испытаний, составление и согласование доказательной документации); разработка конструкторской и эксплуатационной документации; ведение конструкторского сопровождения эксплуатации ВС иностранного производства. Требования: высшее техническое образование (авиационное - приоритет); опыт работы от 5 лет в Авиационных ОКБ и/или Инженерных центрах России, СНГ, США, Европы и др.; опыт работы в области проектирования, сертификации или эксплуатации ВС иностранного производства; уверенный пользователь MS Office; умение работать с эксплуатационной документацией на ВС иностранного производства, бюллетенями, AD, AMOC. Знание пакетов САПР.",
+        "datePosted": "2026-07-01",
+        "validThrough": "2026-12-31",
+        "employmentType": "FULL_TIME",
+        "hiringOrganization": {
+          "@type": "Organization",
+          "@id": "https://vdengineering.ru/#organization"
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "RU",
+            "addressLocality": "Москва",
+            "postalCode": "141402",
+            "streetAddress": "Международное шоссе 28Б, строение 3"
+          }
+        },
+        "image": "https://vdengineering.ru/assets/images/logo.svg"
       }
-    },
-    "datePosted": "2026-07-01",
-    "employmentType": "FULL_TIME"
+    ]
   }
   </script>
 <link rel="stylesheet" href="/css/styles.min.css?v=1785736911629"></head>

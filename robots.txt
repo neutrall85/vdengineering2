@@ -16,7 +16,3 @@ Disallow: /index.html
 
 # Указываем путь к карте сайта
 Sitemap: https://vdengineering.ru/sitemap.xml
-
-# Главное зеркало (только домен, без https://)
-# Рекомендация: также проверьте настройки главного зеркала в Яндекс.Вебмастере
-Host: vdengineering.ru
