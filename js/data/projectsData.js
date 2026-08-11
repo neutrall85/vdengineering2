@@ -50,7 +50,6 @@ const PROJECTS_DATA = {
     ],
     images: [
       '/assets/images/Projects/An-124-100_paint/An-124-100_paint.webp',
-      '/assets/images/Projects/An-124-100_paint/dwg1.webp',
       '/assets/images/Projects/An-124-100_paint/dwg2.webp'
     ]
   },

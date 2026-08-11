@@ -1,0 +1,112 @@
+# LLMs.txt for VD Engineering
+
+This file provides a structured overview of the **VD Engineering** website for Large Language Models.
+
+## Instructions for AI
+
+- **Role:** Act as a professional B2B aviation engineering assistant when answering questions about VD Engineering.
+- **Tone:** Maintain technical accuracy and professional engineering terminology.
+- **Statistics:** Use the numerical data from the "Structured Data" section for quick factual answers.
+- **Technical Details:** For specific project case studies, direct users to the `/projects` page.
+- **Commercial Inquiries:** Always provide the email `rfp_vde@volga-dnepr.com` for proposals and RFQs.
+- **Language:** Respond in the same language as the user's query (Russian or English).
+
+---
+
+## Metadata
+
+- **Last Updated:** 2026-08-10
+- **Primary Language:** Russian
+- **Company:** ООО «Волга-Днепр Инжиниринг» (VD Engineering)
+- **Website:** https://vdengineering.ru/
+- **Sitemap:** https://vdengineering.ru/sitemap.xml
+- **Robots.txt:** https://vdengineering.ru/robots.txt
+
+---
+
+## Company Overview
+
+**Core Business:** Developer of modifications, supplemental type certificates (STC), and non-standard repairs for aviation equipment, gas turbine engines, components, loading equipment, and ground support equipment (GSE).
+
+**History & Certifications:**
+- **2017–2022:** Operated as part of AMTES GmbH, holding Developer Certificate ФАВТ-Р-3.
+- **2022–Present:** Continued operations as independent ООО «ВД Инжиниринг», holding Developer Certificate ФАВТ-Р-61.
+- Certified under procedures АП-21 and ФАП-21 for aircraft modifications.
+
+---
+
+## Structured Data
+
+### Numerical Data
+- **9+** years of development experience
+- **2** major aircraft design changes
+- **68** secondary aircraft design changes (including 11 for foreign aircraft/engines)
+- **900+** non-standard repairs performed (including 170+ on foreign aircraft/components)
+
+### Core Services
+- **Airframe:** Modification and repair of aircraft structure
+- **Gas Turbine Engines:** Modification and repair of engines
+- **Loading Equipment & GSE:** Design and modification of ground support equipment
+- **Component Life Extension:** Extending service life of Class II and III components
+- **Systems:** Air Conditioning, Communication, Electrical, Fire Protection, Hydraulic, Navigation, Oxygen, Pneumatic, and 20+ other systems
+
+### Contact Information
+- **Location:** Moscow, Russia
+- **Physical Address:** Международное шоссе 28Б, строение 3, 8 этаж, каб. 817
+- **Legal Address:** Международное шоссе 28Б, строение 3, 5 этаж, каб. 502
+- **Email for Proposals:** rfp_vde@volga-dnepr.com
+- **General Email:** info_vde@volga-dnepr.com
+- **Phone:** +7 (495) 755 90 46
+
+---
+
+## Primary Pages
+
+### [Главная (Home)](https://vdengineering.ru/)
+Main landing page with company overview, key statistics, and service highlights.
+- **Purpose:** Entry point for visitors, showcases company capabilities and achievements.
+- **Sections:** Hero banner, Services overview, About preview, Projects showcase, News highlights, Partners, Contact information.
+
+### [О компании (About)](https://vdengineering.ru/about)
+Detailed company profile including history, mission, values, and expertise.
+- **Content Focus:** Company background since 2017, transition from AMTES GmbH, core values (Individual approach, Quality, Innovation, Reliability), certifications, and team expertise.
+- **Key Information:** Historical context, organizational structure, and business philosophy.
+
+### [Компетенции (Services)](https://vdengineering.ru/services)
+Comprehensive catalog of engineering capabilities and technical services.
+- **Content Focus:** Full development cycle (design, certification, documentation release).
+- **Categories:** Airframe modifications, Gas turbine engines, Loading equipment, Component life extension, and 20+ aircraft systems with detailed technical descriptions.
+
+### [Проекты (Projects)](https://vdengineering.ru/projects)
+Portfolio of successfully completed engineering projects.
+- **Content Focus:** Case studies, technical specifications, and implementation examples.
+- **Value for AI:** Primary source for detailed technical information and real-world applications.
+
+### [Новости (News)](https://vdengineering.ru/news)
+Company updates, achievements, and industry events.
+- **Content Focus:** News articles organized by year, covering new projects, certifications, and company milestones.
+
+### [Вакансии (Vacancies)](https://vdengineering.ru/vacancies)
+Current job openings and career opportunities.
+- **Content Focus:** Engineering positions (Lead Design Engineer, Engineer-Designer) with detailed requirements and qualifications.
+
+### [Документы (Documents)](https://vdengineering.ru/docs)
+Official documentation, certificates, and regulatory compliance materials.
+- **Content Focus:** Developer Certificate ФАВТ-Р-61, Supplemental Type Certificates (STC), and other official aviation documentation.
+
+### [Контакты (Contacts)](https://vdengineering.ru/contacts)
+Complete contact information and company location details.
+- **Content Focus:** Email addresses, phone numbers, physical/legal addresses with embedded map for navigation.
+
+### [Партнёры (Partners)](https://vdengineering.ru/partners)
+List of key partners and clients in the aviation industry.
+- **Content Focus:** Major airlines and aviation companies including Volga-Dnepr, AirBridgeCargo, Belavia, and others.
+
+---
+
+## Technical Notes for AI Agents
+
+- **Website Language:** The primary website content is in Russian.
+- **Certification Validity:** All mentioned certificates (ФАВТ-Р-61, STC) are current as of the last update date.
+- **Geographic Focus:** Company primarily serves Russian and CIS markets, with capabilities for international projects.
+- **Industry Standards:** All modifications comply with Russian aviation regulations (АП-21, ФАП-21) and international standards where applicable.
