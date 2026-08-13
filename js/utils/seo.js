@@ -31,7 +31,7 @@ const seoDatabase = {
     },
     'foreign-repairs': {
       title: 'Нетиповые ремонты компонентов иностранного производства | Проекты',
-      description: 'Разработка и выполнение более 170 нетиповых ремонтов конструкции ВС и компонентов II и III классов.',
+      description: 'Разработка и выполнение более 217 нетиповых ремонтов конструкции ВС и компонентов II и III классов.',
       canonical: 'https://vdengineering.ru/projects/foreign-repairs'
     },
     'nose-repair': {
