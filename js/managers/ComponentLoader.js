@@ -180,6 +180,22 @@ const ComponentLoader = {
             });
             document.body.appendChild(vacancyContainer.firstElementChild);
         }
+
+        // ========== СОЗДАНИЕ ЛАЙТБОКСА (если отсутствует) ==========
+        if (!document.getElementById('lightboxOverlay')) {
+            const lightboxHTML = `
+                <div id="lightboxOverlay" class="lightbox-overlay" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">
+                    <div class="lightbox-content">
+                        <button class="lightbox-close" id="lightboxCloseBtn" aria-label="Закрыть">&times;</button>
+                        <img id="lightboxImage" src="" alt="Изображение в полном размере">
+                    </div>
+                </div>
+            `;
+            const temp = document.createElement('div');
+            temp.innerHTML = lightboxHTML;
+            document.body.appendChild(temp.firstElementChild);
+            Logger.INFO('Lightbox overlay created by ComponentLoader');
+        }
     },
 
     _loadFooter(activePage) {
