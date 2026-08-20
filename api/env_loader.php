@@ -59,11 +59,11 @@ foreach ($possiblePaths as $path) {
 }
 
 // Используем error_log, а не Logger
-if (!$envLoaded) {
-    error_log("[WARNING] .env file not found, searched: " . json_encode($possiblePaths));
-} else {
-    error_log("[DEBUG] .env loaded from: $loadedFrom");
-}
+// if (!$envLoaded) {
+//     error_log("[WARNING] .env file not found, searched: " . json_encode($possiblePaths));
+// } else {
+//     error_log("[DEBUG] .env loaded from: $loadedFrom");
+// }
 
 $requiredVars = ['SMTP_USER', 'SMTP_PASS'];
 $missing = [];
