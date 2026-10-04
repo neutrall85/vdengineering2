@@ -1,7 +1,7 @@
 /**
  * ConsentManager.js
  * Менеджер согласий пользователя (cookie, аналитика)
- * Версия 3.0 – делегирует работу с Metrika модулю YandexMetricaModule
+ * Версия 3.0
  */
 
 const ConsentManager = {
@@ -31,7 +31,14 @@ const ConsentManager = {
     _destroyed: false
   },
 
+  // [P0-FIX] Сохраняем ссылку на глобальный document.click для снятия в destroy().
+  _globalCookieSettingsHandler: null,
+  _initialized: false,   // [P0-FIX] guard
+
   init() {
+    if (this._initialized) return;   // [P0-FIX]
+    this._initialized = true;
+
     if (!window.Services?.eventBus) {
       Logger.ERROR('ConsentManager: EventBus not available');
       return;
@@ -40,11 +47,8 @@ const ConsentManager = {
     const storage = window.Services.storage;
 
     const consent = this.getConsent(storage);
-    if (!consent) {
-      this.state.eventBus.emit('preferences:required');
-    } else {
-      this._applyConsent(consent.categories, storage);
-    }
+    if (!consent) this.state.eventBus.emit('preferences:required');
+    else this._applyConsent(consent.categories, storage);
 
     this._render();
     this._setupMutationObserver();
@@ -84,19 +88,12 @@ const ConsentManager = {
   _applyConsent(categories, storage) {
     Logger.INFO('ConsentManager: _applyConsent called with categories:', categories);
     const analyticsEnabled = categories && categories.analytics === true;
-
-    if (analyticsEnabled) {
-      if (typeof YandexMetricaModule !== 'undefined') {
-        YandexMetricaModule.enable();
-      } else {
-        Logger.WARN('YandexMetricaModule not available');
-      }
+    if (typeof YandexMetricaModule === 'undefined') {
+      Logger.WARN('YandexMetricaModule not available');
+    } else if (analyticsEnabled) {
+      YandexMetricaModule.enable();
     } else {
-      if (typeof YandexMetricaModule !== 'undefined') {
-        if (YandexMetricaModule.state && YandexMetricaModule.state.counterId) {
-            YandexMetricaModule.disable();
-        }
-      }
+      YandexMetricaModule.disable();
     }
     this.state.eventBus.emit('preferences:applied', categories);
   },
@@ -150,11 +147,8 @@ const ConsentManager = {
     this.state.banner = document.getElementById('user-notice-banner');
     const storage = window.Services.storage;
     const consent = this.getConsent(storage);
-    if (!consent) {
-      this.show();
-    } else {
-      this.hide();
-    }
+    if (!consent) this.show();
+    else this.hide();
   },
 
   _attachEvents() {
@@ -174,38 +168,29 @@ const ConsentManager = {
     });
     document.getElementById('user-privacy-link')?.addEventListener('click', (e) => {
       e.preventDefault();
-      if (typeof PolicyModalManager !== 'undefined') {
-        PolicyModalManager.openPolicyModal('privacy');
-      } else {
-        Logger.WARN('ConsentManager: PolicyModalManager not available');
-      }
+      if (typeof PolicyModalManager !== 'undefined') PolicyModalManager.openPolicyModal('privacy');
+      else Logger.WARN('ConsentManager: PolicyModalManager not available');
     });
     document.getElementById('user-cookie-policy-link')?.addEventListener('click', (e) => {
       e.preventDefault();
-      if (typeof PolicyModalManager !== 'undefined') {
-        PolicyModalManager.openPolicyModal('cookies');
-      } else {
-        Logger.WARN('ConsentManager: PolicyModalManager not available');
-      }
+      if (typeof PolicyModalManager !== 'undefined') PolicyModalManager.openPolicyModal('cookies');
+      else Logger.WARN('ConsentManager: PolicyModalManager not available');
     });
 
-    // Обработчик для ссылки "Настройки cookie"
-    document.addEventListener('click', (e) => {
+    // [P0-FIX] Сохраняем ссылку — снимем в destroy().
+    this._globalCookieSettingsHandler = (e) => {
       const link = e.target.closest('#cookie-settings-link');
       if (link) {
         e.preventDefault();
-        const storage = window.Services?.storage;
-        if (storage && typeof this.withdrawConsent === 'function') {
-          this.withdrawConsent(storage);
-        }
+        const s = window.Services?.storage;
+        if (s && typeof this.withdrawConsent === 'function') this.withdrawConsent(s);
       }
-    });
+    };
+    document.addEventListener('click', this._globalCookieSettingsHandler);
   },
 
   show() {
-    if (!this.state.banner || !document.getElementById('user-notice-banner')) {
-      this._render();
-    }
+    if (!this.state.banner || !document.getElementById('user-notice-banner')) this._render();
     if (this.state.banner) {
       this.state.banner.classList.add('active', 'visible');
       this.state.banner.classList.remove('hidden');
@@ -231,10 +216,7 @@ const ConsentManager = {
         });
       });
     });
-    this.state.observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+    this.state.observer.observe(document.body, { childList: true, subtree: true });
   },
 
   _scheduleRecovery() {
@@ -268,6 +250,11 @@ const ConsentManager = {
 
   destroy() {
     this.state._destroyed = true;
+    // [P0-FIX] Снимаем document.click — раньше оставался навсегда.
+    if (this._globalCookieSettingsHandler) {
+      document.removeEventListener('click', this._globalCookieSettingsHandler);
+      this._globalCookieSettingsHandler = null;
+    }
     if (this.state.observer) {
       this.state.observer.disconnect();
       this.state.observer = null;
@@ -279,6 +266,7 @@ const ConsentManager = {
     if (this.state.banner) this.state.banner.remove();
     this.state.banner = null;
     this.state.eventBus = null;
+    this._initialized = false;
   }
 };
 

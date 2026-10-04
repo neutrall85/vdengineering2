@@ -7,11 +7,10 @@ class NewsRenderer {
     this.newsData = newsData;
     this.loadedYears = new Set();
     this.cardStaggerMs = window.CONFIG?.ANIMATION?.CARD_STAGGER_MS || 50;
+    this.batchSize = window.CONFIG?.ANIMATION?.NEWS_BATCH_SIZE || 4;
+    this._imageObserver = null;   // [P0-FIX]
   }
 
-  /**
-   * Приводит путь к абсолютному (добавляет / в начале, если нет)
-   */
   _normalizePath(path) {
     if (!path) return '/assets/images/placeholder.jpg';
     if (path.startsWith('/')) return path;
@@ -19,62 +18,15 @@ class NewsRenderer {
     return '/' + path;
   }
 
-  // ИЗМЕНЕНО: добавлена функция расчёта класса задержки
   _getDelayClass(index, stagger = 50) {
     const delay = index * stagger;
     const rounded = Math.round(delay / 50) * 50;
-    const clamped = Math.min(rounded, 900);
+    const clamped = Math.max(100, Math.min(rounded, 900));
     return `delay-${clamped}`;
   }
 
-  renderPreview(container, count = 3) {
-    if (!container) return;
-
-    const parseDate = (dateStr) => {
-      const months = {
-        'январь': 0, 'февраль': 1, 'март': 2, 'апрель': 3, 'май': 4, 'июнь': 5,
-        'июль': 6, 'август': 7, 'сентябрь': 8, 'октябрь': 9, 'ноябрь': 10, 'декабрь': 11
-      };
-      const parts = dateStr.toLowerCase().split(' ');
-      const month = months[parts[0]];
-      const year = parseInt(parts[1], 10);
-      if (isNaN(year) || month === undefined) return new Date(0);
-      return new Date(year, month);
-    };
-
-    const allNews = Object.values(this.newsData).flat();
-    const latestNews = allNews.sort((a, b) => parseDate(b.date) - parseDate(a.date)).slice(0, count);
-
-    if (latestNews.length === 0) {
-      const noNews = document.createElement('p');
-      noNews.classList.add('no-news');
-      noNews.textContent = 'Нет новостей';
-      container.appendChild(noNews);
-      return;
-    }
-
-    container.replaceChildren();
-    const fragment = document.createDocumentFragment();
-    latestNews.forEach((news, index) => {
-      const card = this._createNewsCard(news, index);
-      fragment.appendChild(card);
-    });
-    container.appendChild(fragment);
-
-    this._lazyLoadImages(container);
-    this._animateCards(container);
-    this._checkVisibilityAndAddVisibleClass(container);
-
-    if (window.animationManager) {
-      window.animationManager.observeNewElements(container);
-    }
-  }
-
   render(year, container, options = {}) {
-    if (!container) {
-      Logger.WARN('Container not found for year:', year);
-      return;
-    }
+    if (!container) { Logger.WARN('Container not found for year:', year); return; }
     if (this.loadedYears.has(year)) return;
 
     this.loadedYears.add(year);
@@ -88,39 +40,148 @@ class NewsRenderer {
       return;
     }
 
-    const DEFAULT_VISIBLE = 2;
-    const fragment = document.createDocumentFragment();
-    newsList.forEach((news, index) => {
-      const card = this._createNewsCard(news, index);
-      if (index >= DEFAULT_VISIBLE) {
-        card.classList.add('hidden-news');
-      }
-      fragment.appendChild(card);
-    });
-    container.replaceChildren(fragment);
+    container._newsLazyState = { year, newsList, renderedCount: 0, batchSize: this.batchSize };
+    container.replaceChildren();
+    this._renderNextBatch(container);
+  }
 
-    if (newsList.length > DEFAULT_VISIBLE) {
-      this._addAccordionButton(container, newsList.length, DEFAULT_VISIBLE);
+  renderPreview(container, limit = 3) {
+    if (!container) { Logger.WARN('Container not found for news preview'); return; }
+
+    if (!this.newsData || typeof this.newsData !== 'object') {
+      const noNews = document.createElement('p');
+      noNews.classList.add('no-news');
+      noNews.textContent = 'Новости временно недоступны';
+      container.replaceChildren();
+      container.appendChild(noNews);
+      return;
     }
+
+    const allNews = [];
+    Object.values(this.newsData).forEach(yearNews => {
+      if (Array.isArray(yearNews)) yearNews.forEach(news => allNews.push(news));
+    });
+    allNews.sort((a, b) => (parseInt(b.id, 10) || 0) - (parseInt(a.id, 10) || 0));
+    const latestNews = allNews.slice(0, limit);
+
+    if (latestNews.length === 0) {
+      const noNews = document.createElement('p');
+      noNews.classList.add('no-news');
+      noNews.textContent = 'Новости временно недоступны';
+      container.replaceChildren();
+      container.appendChild(noNews);
+      return;
+    }
+
+    container.replaceChildren();
+    const fragment = document.createDocumentFragment();
+    latestNews.forEach((news, index) => fragment.appendChild(this._createNewsCard(news, index)));
+    container.appendChild(fragment);
 
     this._lazyLoadImages(container);
-    this._animateCards(container);
-    this._checkVisibilityAndAddVisibleClass(container);
+    if (window.animationManager) window.animationManager.observeNewElements(container);
 
-    if (window.animationManager) {
-      window.animationManager.observeNewElements(container);
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        const cards = container.querySelectorAll('.news-card');
+        const windowHeight = window.innerHeight;
+        const offset = 100;
+        cards.forEach(card => {
+          const rect = card.getBoundingClientRect();
+          if (rect.top < windowHeight - offset && rect.bottom > offset) card.classList.add('visible');
+        });
+      });
+    }, 100);
+  }
+
+  _renderNextBatch(container) {
+    const state = container._newsLazyState;
+    if (!state) return;
+
+    const { newsList, batchSize } = state;
+    const start = state.renderedCount;
+    const end = Math.min(start + batchSize, newsList.length);
+
+    const oldSentinel = container.querySelector('.news-sentinel');
+    if (oldSentinel) oldSentinel.remove();
+
+    const fragment = document.createDocumentFragment();
+    const batchCards = [];
+    for (let i = start; i < end; i++) {
+      const card = this._createNewsCard(newsList[i], i);
+      fragment.appendChild(card);
+      batchCards.push(card);
     }
+    container.appendChild(fragment);
+    state.renderedCount = end;
+
+    this._animateBatchEnter(batchCards);
+    this._lazyLoadImages(container);
+    if (window.animationManager) window.animationManager.observeNewElements(container);
+
+    if (state.renderedCount < newsList.length) this._attachSentinel(container);
+    else this._destroySentinel(container);
+  }
+
+  _animateBatchEnter(cards) {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    cards.forEach((card, i) => {
+      if (prefersReduced) { card.classList.remove('news-card--enter'); return; }
+      card.classList.add('news-card--enter');
+      const delay = i * this.cardStaggerMs;
+      setTimeout(() => {
+        void card.offsetWidth;
+        card.classList.remove('news-card--enter');
+        card.classList.add('news-card--entered');
+        const cleanup = () => {
+          card.classList.remove('news-card--entered');
+          card.removeEventListener('animationend', cleanup);
+        };
+        card.addEventListener('animationend', cleanup);
+      }, delay);
+    });
+  }
+
+  _attachSentinel(container) {
+    if (container._newsSentinelObserver) {
+      container._newsSentinelObserver.disconnect();
+      container._newsSentinelObserver = null;
+    }
+    const sentinel = document.createElement('div');
+    sentinel.className = 'news-sentinel';
+    sentinel.setAttribute('aria-hidden', 'true');
+    container.appendChild(sentinel);
+
+    container._newsSentinelObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          container._newsSentinelObserver.disconnect();
+          container._newsSentinelObserver = null;
+          requestAnimationFrame(() => this._renderNextBatch(container));
+        }
+      });
+    }, { rootMargin: '300px 0px' });
+    container._newsSentinelObserver.observe(sentinel);
+  }
+
+  _destroySentinel(container) {
+    if (container._newsSentinelObserver) {
+      container._newsSentinelObserver.disconnect();
+      container._newsSentinelObserver = null;
+    }
+    const sentinel = container.querySelector('.news-sentinel');
+    if (sentinel) sentinel.remove();
   }
 
   _createNewsCard(news, index) {
     const article = document.createElement('article');
-    article.classList.add('news-card', 'animate-on-scroll', 'fade-up');
-    // ИЗМЕНЕНО: вместо style.animationDelay добавляем класс задержки
-    const delayClass = this._getDelayClass(index, this.cardStaggerMs);
-    article.classList.add(delayClass);
+    article.classList.add('news-card');
     article.dataset.modalOpen = 'news';
     article.dataset.newsId = news.id;
     article.dataset.once = 'true';
+
+    const topRow = document.createElement('div');
+    topRow.className = 'news-card-top';
 
     const imageContainer = document.createElement('div');
     imageContainer.classList.add('news-card-image');
@@ -129,31 +190,32 @@ class NewsRenderer {
     placeholder.classList.add('image-placeholder');
 
     const img = document.createElement('img');
-    const previewImage = (news.images && news.images[0]) || news.image || 'assets/images/placeholder.jpg';
+    const previewImage = (news.images && news.images[0]) || news.image || '/assets/images/placeholder.jpg';
     const normalizedSrc = this._normalizePath(previewImage);
-    img.setAttribute('data-src', Utils.Sanitizer.escapeHtml(normalizedSrc));
-    img.setAttribute('alt', Utils.Sanitizer.escapeHtml(news.title));
+    img.alt = news.title;
+    let fallbackApplied = false;
     img.addEventListener('error', function () {
+      if (fallbackApplied) return;
+      fallbackApplied = true;
       this.src = '/assets/images/placeholder.jpg';
     });
+    img.src = normalizedSrc;
 
     imageContainer.appendChild(placeholder);
     imageContainer.appendChild(img);
+    topRow.appendChild(imageContainer);
 
-    const contentDiv = document.createElement('div');
-    contentDiv.classList.add('news-card-content');
+    const headerBlock = document.createElement('div');
+    headerBlock.className = 'news-card-header';
 
     const category = document.createElement('span');
     category.classList.add('news-card-category', 'category-trigger');
     category.textContent = Utils.Sanitizer.escapeHtml(news.category);
-    category.dataset.modalOpen = 'category'; 
+    category.dataset.modalOpen = 'category';
     category.dataset.category = news.category;
-    
-    contentDiv.appendChild(category);
 
     const dateDiv = document.createElement('div');
     dateDiv.classList.add('news-card-date');
-
     const dateSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     dateSvg.setAttribute('viewBox', '0 0 24 24');
     const datePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -165,6 +227,14 @@ class NewsRenderer {
     const title = document.createElement('h3');
     title.classList.add('news-card-title');
     title.textContent = Utils.Sanitizer.escapeHtml(news.title);
+
+    headerBlock.appendChild(category);
+    headerBlock.appendChild(dateDiv);
+    headerBlock.appendChild(title);
+    topRow.appendChild(headerBlock);
+
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'news-card-bottom';
 
     const excerpt = document.createElement('p');
     excerpt.classList.add('news-card-excerpt');
@@ -184,135 +254,73 @@ class NewsRenderer {
     linkSvg.appendChild(linkPath);
     link.appendChild(linkSvg);
 
-    contentDiv.appendChild(dateDiv);
-    contentDiv.appendChild(title);
-    contentDiv.appendChild(excerpt);
-    contentDiv.appendChild(link);
+    bottomRow.appendChild(excerpt);
+    bottomRow.appendChild(link);
 
-    article.appendChild(imageContainer);
-    article.appendChild(contentDiv);
+    article.appendChild(topRow);
+    article.appendChild(bottomRow);
     return article;
   }
 
-  _addAccordionButton(container, totalNews, defaultVisible) {
-    const existing = container.querySelector('.news-accordion-container');
-    if (existing) existing.remove();
-
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('news-accordion-container');
-
-    const button = document.createElement('button');
-    button.classList.add('news-accordion-btn');
-    button.textContent = `Показать ещё (${totalNews - defaultVisible})`;
-
-    const svgIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svgIcon.classList.add('accordion-icon');
-    svgIcon.setAttribute('viewBox', '0 0 24 24');
-    const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    svgPath.setAttribute('d', 'M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z');
-    svgIcon.appendChild(svgPath);
-    button.appendChild(svgIcon);
-
-    let expanded = false;
-
-    button.addEventListener('click', () => {
-      const hiddenNews = container.querySelectorAll('.news-card.hidden-news');
-
-      if (!expanded) {
-        hiddenNews.forEach(card => card.classList.remove('hidden-news'));
-        button.firstChild.textContent = `Свернуть`;
-        button.classList.add('expanded');
-        expanded = true;
-        setTimeout(() => this._checkVisibilityAndAddVisibleClass(container), 50);
-      } else {
-        const allCards = container.querySelectorAll('.news-card');
-        allCards.forEach((card, idx) => {
-          if (idx >= defaultVisible) {
-            card.classList.add('hidden-news');
-          }
-        });
-        button.firstChild.textContent = `Показать ещё (${totalNews - defaultVisible})`;
-        button.classList.remove('expanded');
-        expanded = false;
-      }
-    });
-
-    wrapper.appendChild(button);
-    container.appendChild(wrapper);
-  }
-
-  _checkVisibilityAndAddVisibleClass(container) {
-    const cards = container.querySelectorAll('.news-card:not(.hidden-news)');
-    const windowHeight = window.innerHeight;
-    const offset = 100;
-    cards.forEach(card => {
-      const rect = card.getBoundingClientRect();
-      const isVisible = rect.top < windowHeight - offset && rect.bottom > offset;
-      if (isVisible) {
-        card.classList.add('visible');
-      }
-    });
-  }
-
+  // [P0-FIX] Переиспользуем один observer, старый отключаем.
   _lazyLoadImages(container) {
     const images = container.querySelectorAll('.news-card-image img');
+    if (this._imageObserver) this._imageObserver.disconnect();
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            const src = img.getAttribute('data-src');
-            if (src && !img.src) {
-              const onLoadHandler = () => {
-                img.classList.add('loaded');
-                const placeholder = img.parentElement?.querySelector('.image-placeholder');
-                if (placeholder) placeholder.style.display = 'none';
-                img.removeEventListener('load', onLoadHandler);
-                img.removeEventListener('error', onErrorHandler);
-              };
-              const onErrorHandler = () => {
-                Logger.WARN('Failed to load image:', src);
-                img.src = '/assets/images/placeholder.jpg';
-                img.classList.add('loaded');
-                img.removeEventListener('load', onLoadHandler);
-                img.removeEventListener('error', onErrorHandler);
-              };
-              img.addEventListener('load', onLoadHandler);
-              img.addEventListener('error', onErrorHandler);
-              img.src = src;
-              img.removeAttribute('data-src');
-            }
-            observer.unobserve(img);
+    this._imageObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        if (img.dataset.srcLoaded === 'true') { this._imageObserver.unobserve(img); return; }
+        img.dataset.srcLoaded = 'true';
+        const src = img.getAttribute('data-src') || img.src;
+        if (src) {
+          const onLoad = () => {
+            img.classList.add('loaded');
+            const placeholder = img.parentElement?.querySelector('.image-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+            img.removeEventListener('load', onLoad);
+            img.removeEventListener('error', onError);
+          };
+          const onError = () => {
+            Logger.WARN('Failed to load image:', src);
+            img.src = '/assets/images/placeholder.jpg';
+            img.classList.add('loaded');
+            img.removeEventListener('load', onLoad);
+            img.removeEventListener('error', onError);
+          };
+          img.addEventListener('load', onLoad);
+          img.addEventListener('error', onError);
+          if (!img.src || img.getAttribute('data-src')) {
+            img.src = src;
+            img.removeAttribute('data-src');
           }
-        });
-      },
-      { threshold: 0.1, rootMargin: '100px' }
-    );
+        }
+        this._imageObserver.unobserve(img);
+      });
+    }, { threshold: 0.1, rootMargin: '100px' });
 
-    images.forEach(img => observer.observe(img));
-  }
-
-  _animateCards(container) {
-    const cards = container.querySelectorAll('.news-card');
-    cards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.add('loaded');
-      }, index * this.cardStaggerMs);
+    images.forEach(img => {
+      if (img.dataset.srcLoaded !== 'true') this._imageObserver.observe(img);
     });
   }
 
   _escapeHtml(str) {
     if (!str) return '';
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   destroy() {
+    if (this._imageObserver) {
+      this._imageObserver.disconnect();
+      this._imageObserver = null;
+    }
+    document.querySelectorAll('[id^="newsGrid-"]').forEach(container => {
+      if (container._newsSentinelObserver) {
+        container._newsSentinelObserver.disconnect();
+        container._newsSentinelObserver = null;
+      }
+    });
     this.loadedYears.clear();
   }
 }

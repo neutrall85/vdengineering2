@@ -1,10 +1,6 @@
 /**
- * Управление анимациями при скролле (расширенная версия)
+ * Управление анимациями при скролле
  * ООО "ВД Инжиниринг"
- * Поддерживает повторные анимации, безопасная работа с памятью
- * 
- * Исправление: добавлен метод _forceVisibleCheck() для немедленного показа
- * элементов, уже находящихся в видимой области при загрузке страницы.
  */
 class AnimationManager {
   constructor() {
@@ -18,7 +14,6 @@ class AnimationManager {
   init() {
     this._initScrollAnimations();
     this._initCounters();
-    // Принудительная проверка видимости уже загруженных элементов
     this._forceVisibleCheck();
     Logger.INFO('AnimationManager initialized');
   }
@@ -28,76 +23,60 @@ class AnimationManager {
       threshold: window.CONFIG?.ANIMATION?.OBSERVER_THRESHOLD || 0.2,
       rootMargin: window.CONFIG?.ANIMATION?.ROOT_MARGIN || '0px 0px 20px 0px'
     };
-
     this.scrollObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const el = entry.target;
-        
         if (!el.isConnected) {
           this.scrollObserver.unobserve(el);
           this.observedElements.delete(el);
           return;
         }
-        
         if (entry.isIntersecting) {
-          if (el.classList.contains('text-reveal') && !el.dataset.revealProcessed) {
-            this._processTextReveal(el);
-          }
-          
+          if (el.classList.contains('text-reveal') && !el.dataset.revealProcessed) this._processTextReveal(el);
           el.classList.add('visible');
-          
           if (el.dataset.once !== 'false') {
             this.scrollObserver.unobserve(el);
             this.observedElements.delete(el);
           }
         } else {
-          if (el.dataset.once === 'false') {
-            el.classList.remove('visible');
-          }
+          if (el.dataset.once === 'false') el.classList.remove('visible');
         }
       });
     }, options);
 
-    const animatedElements = document.querySelectorAll('.animate-on-scroll');
-    animatedElements.forEach(el => {
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
       this.scrollObserver.observe(el);
       this.observedElements.add(el);
     });
     this.observers.push(this.scrollObserver);
   }
 
-  /**
-   * Принудительная проверка видимости элементов (синхронно)
-   * Решает проблему задержки появления контента на мобильных устройствах
-   */
   _forceVisibleCheck() {
-    // Используем requestAnimationFrame, чтобы не блокировать основной поток
     requestAnimationFrame(() => {
-        const elements = document.querySelectorAll('.animate-on-scroll');
-        const windowHeight = window.innerHeight;
-        const offset = 50;
-
-        elements.forEach(el => {
-            const rect = el.getBoundingClientRect();
-            const isVisible = rect.top < windowHeight - offset && rect.bottom > offset;
-            if (isVisible && !el.classList.contains('visible')) {
-                el.classList.add('visible');
-            }
-        });
+      const elements = document.querySelectorAll('.animate-on-scroll');
+      const windowHeight = window.innerHeight;
+      const offset = 50;
+      elements.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < windowHeight - offset && rect.bottom > offset && !el.classList.contains('visible')) {
+          el.classList.add('visible');
+        }
+      });
     });
   }
 
-  // ИЗМЕНЕНИЕ: переписан метод _processTextReveal – без инлайн-стилей, через классы и таймер
+  // [P0-FIX] Проверка element.isConnected в каждом тике — очищаем interval
+  // при выпадении элемента из DOM, устраняем утечку.
   _processTextReveal(element) {
     if (element.dataset.revealProcessed) return;
     element.dataset.revealProcessed = 'true';
-    
+
     const originalText = element.innerText;
     if (!originalText.trim()) return;
-    
+
     const fragment = document.createDocumentFragment();
     const charSpans = [];
-    
+
     for (let i = 0; i < originalText.length; i++) {
       const ch = originalText[i];
       if (ch === ' ' || ch === '\n' || ch === '\t') {
@@ -113,26 +92,22 @@ class AnimationManager {
         charSpans.push(span);
       }
     }
-    
     element.innerHTML = '';
     element.appendChild(fragment);
-    
-    // Последовательно добавляем класс .visible к каждому символу с задержкой 30ms
+
     let index = 0;
-    const interval = setInterval(() => {
-      if (index >= charSpans.length) {
-        clearInterval(interval);
-        return;
-      }
+    const intervalId = setInterval(() => {
+      if (!element.isConnected) { clearInterval(intervalId); return; }
+      if (index >= charSpans.length) { clearInterval(intervalId); return; }
       charSpans[index].classList.add('visible');
       index++;
     }, 30);
+    element._revealInterval = intervalId;
   }
 
   _initCounters() {
     const counters = document.querySelectorAll('.stat-number');
     if (counters.length === 0) return;
-
     this.counterObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -141,7 +116,6 @@ class AnimationManager {
         }
       });
     }, { threshold: 0.5 });
-
     counters.forEach(counter => this.counterObserver.observe(counter));
     this.observers.push(this.counterObserver);
   }
@@ -150,11 +124,9 @@ class AnimationManager {
     const target = parseInt(element.getAttribute('data-target'), 10);
     const suffix = element.getAttribute('data-suffix') || '';
     if (!target || isNaN(target)) return;
-
     let current = 0;
     const steps = window.CONFIG?.ANIMATION?.COUNTER_STEPS || 100;
     const step = target / steps;
-    
     const update = () => {
       current += step;
       if (current < target) {
@@ -176,11 +148,17 @@ class AnimationManager {
       this.scrollObserver.observe(el);
       this.observedElements.add(el);
     });
-    // Проверяем видимость новых элементов (например, после загрузки через компоненты)
     this._forceVisibleCheck();
   }
 
   destroy() {
+    // [P0-FIX] Очищаем все висящие интервалы анимации символов.
+    document.querySelectorAll('.text-reveal').forEach(el => {
+      if (el._revealInterval) {
+        clearInterval(el._revealInterval);
+        delete el._revealInterval;
+      }
+    });
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
     this.observedElements = new WeakSet();

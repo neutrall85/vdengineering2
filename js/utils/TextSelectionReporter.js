@@ -124,19 +124,17 @@ class TextSelectionReporter {
     const contextText = this._getContextText(selection, selectedText);
     const fullText = contextText || selectedText;
 
-    // Открываем модальное окно ошибки
     if (typeof modalManager !== 'undefined') {
-      // Экранируем текст для безопасности
-      const safeText = Utils.Sanitizer ? Utils.Sanitizer.escapeHtml(fullText) : fullText;
+      // [FIX] Убрано двойное экранирование: textContent/value сами безопасны,
+      // а экранирование показывало пользователю HTML-сущности (`&lt;` вместо `<`).
       const display = document.getElementById('errorReportTextDisplay');
       const hidden = document.getElementById('errorReportText');
-      if (display) display.textContent = safeText;
-      if (hidden) hidden.value = safeText;
+      if (display) display.textContent = fullText;
+      if (hidden) hidden.value = fullText;
       const comment = document.getElementById('errorReportComment');
       if (comment) comment.value = '';
       modalManager.open('error-report');
     } else {
-      // fallback – отправляем сразу
       this.submitReport(fullText, '');
     }
   }
@@ -199,11 +197,18 @@ class TextSelectionReporter {
     try {
       const apiUrl = '/api/report-error.php';
 
+      const csrfToken = await FormUtils.fetchCsrfToken();
+      if (!csrfToken) {
+        alert('❌ Ошибка безопасности. Обновите страницу и попробуйте снова.');
+        return;
+      }
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
           type: 'error_report',

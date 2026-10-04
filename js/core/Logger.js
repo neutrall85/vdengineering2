@@ -1,7 +1,7 @@
 /**
  * Logger Service - Централизованное логирование
  * ООО "ВД Инжиниринг"
- * 
+ *
  * Уровни логирования:
  * - DEBUG: Отладочная информация (отключена в production)
  * - INFO: Информационные сообщения (отключены в production)
@@ -17,8 +17,9 @@ const Logger = (function() {
     ERROR: 3
   };
 
-  // В production отключаем DEBUG и INFO
-  const isProduction = window.CONFIG?.PRODUCTION !== false;
+  // [FIX] Было `!== false` — неочевидное поведение при отсутствии ключа.
+  // Теперь явный default: production = true, если не сказано иное.
+  const isProduction = window.CONFIG?.PRODUCTION ?? true;
   const currentLevel = isProduction ? LEVELS.WARN : LEVELS.DEBUG;
 
   function formatMessage(level, message, ...args) {
@@ -47,11 +48,9 @@ const Logger = (function() {
     },
 
     ERROR(message, ...args) {
-      // Ошибки логируем всегда
       console.error(...formatMessage('ERROR', message, ...args));
     },
 
-    // Метод для временного включения подробного логирования в production
     enableDebug() {
       if (isProduction) {
         console.info('[Logger] Debug mode enabled for this session');
@@ -60,5 +59,4 @@ const Logger = (function() {
   };
 })();
 
-// Экспортируем Logger для глобального доступа
 window.Logger = Logger;

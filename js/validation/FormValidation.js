@@ -23,7 +23,6 @@ const FormValidation = (function() {
       if (!formElement || formElement.tagName !== 'FORM') {
         throw new Error('FormValidator требует элемент FORM');
       }
-
       this.form = formElement;
       this.options = {
         errorClass: options.errorClass || 'error-message',
@@ -32,126 +31,85 @@ const FormValidation = (function() {
         validateOnInput: options.validateOnInput !== undefined ? options.validateOnInput : true,
         messages: { ...ERROR_MESSAGES, ...options.messages }
       };
-
       this.errors = new Map();
       this.fields = new Map();
-      
+      this._submitHandler = null;
       this._init();
     }
 
     _init() {
       this._collectFields();
-      
+      // [P0-FIX] Убран анонимный addEventListener('submit', ...) из _init().
+      // Он дублировал _submitHandler из _attachInputListeners/_attachBlurListeners
+      // и не удалялся в destroy().
       if (this.options.validateOnInput) {
         this._attachInputListeners();
       } else {
-        // Валидируем только при потере фокуса и отправке формы
         this._attachBlurListeners();
       }
-
-      this.form.addEventListener('submit', (e) => this._handleSubmit(e));
     }
 
     _collectFields() {
-      const fieldSelectors = [
+      const selectors = [
         'input[type="text"]:not([type="hidden"])',
-        'input[type="email"]',
-        'input[type="tel"]',
-        'input[type="password"]',
-        'textarea',
-        'select',
-        'input[type="checkbox"]',
-        'input[type="radio"]',
-        'input[type="file"]'
+        'input[type="email"]', 'input[type="tel"]', 'input[type="password"]',
+        'textarea', 'select',
+        'input[type="checkbox"]', 'input[type="radio"]', 'input[type="file"]'
       ];
-
-      const fields = this.form.querySelectorAll(fieldSelectors.join(', '));
-      
+      const fields = this.form.querySelectorAll(selectors.join(', '));
       fields.forEach(field => {
         const name = field.name || field.id;
         if (!name) return;
-
         const rules = this._parseRules(field);
-        this.fields.set(name, {
-          element: field,
-          rules,
-          errors: []
-        });
+        this.fields.set(name, { element: field, rules, errors: [] });
       });
     }
 
     _parseRules(field) {
       const rules = [];
-
-      if (field.hasAttribute('required')) {
-        rules.push({ type: 'required', message: this.options.messages.required });
-      }
-
-      if (field.type === 'email') {
-        rules.push({ type: 'email', message: this.options.messages.email });
-      }
-
-      if (field.type === 'tel') {
-        rules.push({ type: 'phone', message: this.options.messages.phone });
-      }
+      if (field.hasAttribute('required')) rules.push({ type: 'required', message: this.options.messages.required });
+      if (field.type === 'email') rules.push({ type: 'email', message: this.options.messages.email });
+      if (field.type === 'tel') rules.push({ type: 'phone', message: this.options.messages.phone });
 
       if (field.hasAttribute('pattern')) {
         const pattern = field.getAttribute('pattern');
-        rules.push({
-          type: 'pattern',
-          value: new RegExp(pattern),
-          message: field.getAttribute('data-pattern-error') || 'Некорректный формат'
-        });
+        // [P0-FIX] Обёртка в try/catch — если паттерн содержит '/', форма падала при инициализации.
+        try {
+          rules.push({
+            type: 'pattern',
+            value: new RegExp(pattern),
+            message: field.getAttribute('data-pattern-error') || 'Некорректный формат'
+          });
+        } catch (e) {
+          Logger?.WARN?.('Invalid pattern attribute:', pattern);
+        }
       }
 
       const minLength = field.getAttribute('minlength');
-      if (minLength) {
-        rules.push({ 
-          type: 'minLength', 
-          value: parseInt(minLength, 10),
-          message: this.options.messages.minLength(parseInt(minLength, 10))
-        });
-      }
+      if (minLength) rules.push({ type: 'minLength', value: parseInt(minLength, 10), message: this.options.messages.minLength(parseInt(minLength, 10)) });
 
       const maxLength = field.getAttribute('maxlength');
-      if (maxLength) {
-        rules.push({ 
-          type: 'maxLength', 
-          value: parseInt(maxLength, 10),
-          message: this.options.messages.maxLength(parseInt(maxLength, 10))
-        });
-      }
+      if (maxLength) rules.push({ type: 'maxLength', value: parseInt(maxLength, 10), message: this.options.messages.maxLength(parseInt(maxLength, 10)) });
 
       if (field.type === 'checkbox' && (field.name.includes('consent') || field.id.includes('consent'))) {
         rules.push({ type: 'consent', message: this.options.messages.consent });
       }
-
       if (field.type === 'file' && field.hasAttribute('required')) {
         rules.push({ type: 'fileRequired', message: this.options.messages.fileRequired });
       }
-
       return rules;
     }
 
     _attachInputListeners() {
       this.fields.forEach((fieldData, name) => {
         const { element } = fieldData;
-        
-        const inputHandler = () => {
-          this.validateField(name);
-          this._clearError(name);
-        };
-        const blurHandler = () => {
-          this.validateField(name);
-        };
-        
+        const inputHandler = () => { this.validateField(name); this._clearError(name); };
+        const blurHandler = () => { this.validateField(name); };
         const eventType = element.type === 'file' ? 'change' : 'input';
         element.addEventListener(eventType, inputHandler);
         element.addEventListener('blur', blurHandler);
-        
         fieldData.handlers = { input: inputHandler, blur: blurHandler, eventType };
       });
-      
       this._submitHandler = (e) => this._handleSubmit(e);
       this.form.addEventListener('submit', this._submitHandler);
     }
@@ -159,137 +117,92 @@ const FormValidation = (function() {
     _attachBlurListeners() {
       this.fields.forEach((fieldData, name) => {
         const { element } = fieldData;
-        
-        const blurHandler = () => {
-          this.validateField(name);
-        };
+        const blurHandler = () => { this.validateField(name); };
         element.addEventListener('blur', blurHandler);
-        
         fieldData.handlers = { blur: blurHandler };
       });
-      
       this._submitHandler = (e) => this._handleSubmit(e);
       this.form.addEventListener('submit', this._submitHandler);
     }
 
     _handleSubmit(e) {
       e.preventDefault();
-      
       const isValid = this.validate();
-      
       if (isValid) {
-        this.form.dispatchEvent(new CustomEvent('form:valid', { 
-          bubbles: true,
-          detail: { formData: new FormData(this.form) }
-        }));
+        this.form.dispatchEvent(new CustomEvent('form:valid', { bubbles: true, detail: { formData: new FormData(this.form) } }));
       } else {
-        this.form.dispatchEvent(new CustomEvent('form:invalid', { 
-          bubbles: true,
-          detail: { errors: this.errors }
-        }));
+        this.form.dispatchEvent(new CustomEvent('form:invalid', { bubbles: true, detail: { errors: this.errors } }));
       }
-
       return isValid;
     }
 
     validateField(name) {
       const fieldData = this.fields.get(name);
       if (!fieldData) return true;
-
       const { element, rules } = fieldData;
       const value = this._getFieldValue(element);
       const errors = [];
-
       for (const rule of rules) {
-        const isValid = this._validateRule(value, rule, element);
-        if (!isValid) {
-          errors.push(rule.message);
-        }
+        if (!this._validateRule(value, rule, element)) errors.push(rule.message);
       }
-
       fieldData.errors = errors;
-      
-      if (errors.length > 0) {
-        this._showError(name, errors[0]);
-        return false;
-      } else {
-        this._clearError(name);
-        return true;
-      }
+      if (errors.length > 0) { this._showError(name, errors[0]); return false; }
+      this._clearError(name);
+      return true;
     }
 
     _getFieldValue(element) {
-      if (element.type === 'checkbox') {
-        return element.checked;
-      }
+      if (element.type === 'checkbox') return element.checked;
       if (element.type === 'radio') {
         const radios = this.form.querySelectorAll(`input[name="${element.name}"]`);
-        for (const radio of radios) {
-          if (radio.checked) return radio.value;
-        }
+        for (const r of radios) if (r.checked) return r.value;
         return null;
       }
-      if (element.type === 'file') {
-        return element.files;
-      }
+      if (element.type === 'file') return element.files;
       return element.value;
     }
 
     _validateRule(value, rule, element) {
       switch (rule.type) {
         case 'required':
-          if (element.type === 'file') {
-            return value && value.length > 0;
-          }
+          if (element.type === 'file') return value && value.length > 0;
           return Utils.Validator.required(value);
-        case 'email':
-          return Utils.Validator.email(value);
-        case 'phone':
-          return Utils.Validator.phone(value);
-        case 'pattern':
-          return rule.value.test(String(value))
-        case 'minLength':
-          return Utils.Validator.minLength(value, rule.value);
-        case 'maxLength':
-          return Utils.Validator.maxLength(value, rule.value);
-        case 'consent':
-          return value === true;
-        case 'fileRequired':
-          return value && value.length > 0;
-        default:
-          return true;
+        case 'email': return Utils.Validator.email(value);
+        case 'phone': return Utils.Validator.phone(value);
+        case 'pattern': return rule.value.test(String(value));
+        case 'minLength': return Utils.Validator.minLength(value, rule.value);
+        case 'maxLength': return Utils.Validator.maxLength(value, rule.value);
+        case 'consent': return value === true;
+        case 'fileRequired': return value && value.length > 0;
+        default: return true;
       }
+    }
+
+    _findErrorElement(errorId) {
+      if (!this.form) return null;
+      const selector = `#${CSS.escape ? CSS.escape(errorId) : errorId}`;
+      return this.form.querySelector(selector);
     }
 
     _showError(name, message) {
       const fieldData = this.fields.get(name);
       if (!fieldData) return;
-
       const { element } = fieldData;
       const errorId = `${name}Error`;
-      let errorElement = document.getElementById(errorId);
-
+      let errorElement = this._findErrorElement(errorId);
       if (!errorElement) {
         errorElement = document.createElement('p');
         errorElement.id = errorId;
         errorElement.className = this.options.errorClass;
-        
-        if (element.type === 'checkbox' || element.type === 'radio') {
-          element.parentElement.appendChild(errorElement);
-        } else if (element.type === 'file') {
+        if (element.type === 'checkbox' || element.type === 'radio') element.parentElement.appendChild(errorElement);
+        else if (element.type === 'file') {
           const fileDrop = element.closest('.form-file');
-          if (fileDrop) {
-            fileDrop.parentElement.appendChild(errorElement);
-          } else {
-            element.parentElement?.appendChild(errorElement);
-          }
-        } else {
-          element.parentElement?.appendChild(errorElement);
-        }
+          if (fileDrop) fileDrop.parentElement.appendChild(errorElement);
+          else element.parentElement?.appendChild(errorElement);
+        } else element.parentElement?.appendChild(errorElement);
       }
-
       errorElement.textContent = message;
-      errorElement.classList.add('show');     
+      errorElement.classList.add('show');
       element.setAttribute('aria-invalid', 'true');
       element.classList.add('error');
     }
@@ -297,15 +210,9 @@ const FormValidation = (function() {
     _clearError(name) {
       const fieldData = this.fields.get(name);
       if (!fieldData) return;
-
       const { element } = fieldData;
-      const errorId = `${name}Error`;
-      const errorElement = document.getElementById(errorId);
-
-      if (errorElement) {
-        errorElement.classList.remove('show');
-      }
-
+      const errorElement = this._findErrorElement(`${name}Error`);
+      if (errorElement) errorElement.classList.remove('show');
       element.removeAttribute('aria-invalid');
       element.classList.remove('error');
     }
@@ -313,19 +220,12 @@ const FormValidation = (function() {
     validate() {
       let isValid = true;
       let firstErrorField = null;
-
       this.fields.forEach((fieldData, name) => {
-        const fieldValid = this.validateField(name);
-        if (!fieldValid && !firstErrorField) {
-          firstErrorField = fieldData.element;
-        }
-        isValid = isValid && fieldValid;
+        const ok = this.validateField(name);
+        if (!ok && !firstErrorField) firstErrorField = fieldData.element;
+        isValid = isValid && ok;
       });
-
-      if (!isValid && firstErrorField) {
-        firstErrorField.focus();
-      }
-
+      if (!isValid && firstErrorField) firstErrorField.focus();
       return isValid;
     }
 
@@ -335,15 +235,9 @@ const FormValidation = (function() {
     }
 
     getData() {
-      if (!this.validate()) {
-        return null;
-      }
-
+      if (!this.validate()) return null;
       const data = {};
-      const formData = new FormData(this.form);
-      formData.forEach((value, key) => {
-        data[key] = value;
-      });
+      new FormData(this.form).forEach((value, key) => { data[key] = value; });
       return data;
     }
 
@@ -352,21 +246,14 @@ const FormValidation = (function() {
         this.form.removeEventListener('submit', this._submitHandler);
         this._submitHandler = null;
       }
-      
       this.fields.forEach((fieldData, name) => {
-        const errorId = `${name}Error`;
-        const errorElement = document.getElementById(errorId);
-        if (errorElement && errorElement.parentNode) {
-          errorElement.parentNode.removeChild(errorElement);
-        }
+        const errorElement = this._findErrorElement(`${name}Error`);
+        if (errorElement?.parentNode) errorElement.parentNode.removeChild(errorElement);
       });
-      
       this.fields.forEach((fieldData) => {
         const { element, handlers } = fieldData;
         if (element && handlers) {
-          if (handlers.eventType) {
-            element.removeEventListener(handlers.eventType, handlers.input);
-          }
+          if (handlers.eventType) element.removeEventListener(handlers.eventType, handlers.input);
           element.removeEventListener('blur', handlers.blur);
           fieldData.handlers = null;
         }
@@ -382,18 +269,13 @@ const FormValidation = (function() {
     validate(file, config = window.CONFIG?.FORM) {
       if (!file) return { valid: true };
       const result = Utils.Validator.file(file, config);
-      if (!result.valid) {
-        return { valid: false, message: result.error };
-      }
-      return { valid: true };
+      return result.valid ? { valid: true } : { valid: false, message: result.error };
     },
     validateMultiple(files, config = window.CONFIG?.FORM) {
       const errors = [];
       for (const file of files) {
         const result = this.validate(file, config);
-        if (!result.valid) {
-          errors.push({ file: file.name, message: result.message });
-        }
+        if (!result.valid) errors.push({ file: file.name, message: result.message });
       }
       return { valid: errors.length === 0, errors };
     }
@@ -403,12 +285,7 @@ const FormValidation = (function() {
     return new FormValidator(formElement, options);
   }
 
-  return {
-    FormValidator,
-    FileValidator,
-    createValidator,
-    ERROR_MESSAGES
-  };
+  return { FormValidator, FileValidator, createValidator, ERROR_MESSAGES };
 })();
 
 window.FormValidation = FormValidation;

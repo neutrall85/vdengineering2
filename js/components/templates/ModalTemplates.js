@@ -4,7 +4,7 @@
  */
 
 const ModalTemplates = {
-    proposalModal: `
+  proposalModal: `
 <!-- Commercial Proposal Modal -->
 <div class="modal-overlay modal-overlay-proposal" id="proposalModalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-container modal-container-proposal">
@@ -20,7 +20,7 @@ const ModalTemplates = {
         <p>⚠️ Слишком много запросов. Пожалуйста, подождите 60 секунд перед следующей отправкой.</p>
       </div>
 
-      <input type="hidden" id="csrfToken" name="csrf_token" value="">
+      <input type="hidden" id="csrfToken-proposal" name="csrf_token" value="">
 
       <div class="hp-field">
         <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -30,19 +30,19 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="companyName">Название компании <span class="required">*</span></label>
           <input type="text" class="form-input" id="companyName" name="companyName" placeholder="Введите название компании" required minlength="2" maxlength="200" autocomplete="organization">
-          <p class="error-message" id="companyNameError">Пожалуйста, введите корректное название компании</p>
+          <p class="error-message" id="companyNameError" data-error-for="companyName">Пожалуйста, введите корректное название компании</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="contactPerson">Контактное лицо <span class="required">*</span></label>
           <input type="text" class="form-input" id="contactPerson" name="contactPerson" placeholder="Ваше полное имя" required minlength="2" maxlength="100" autocomplete="name">
-          <p class="error-message" id="contactPersonError">Пожалуйста, введите Ваше имя</p>
+          <p class="error-message" id="contactPersonError" data-error-for="contactPerson">Пожалуйста, введите Ваше имя</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="proposalEmail">Электронная почта <span class="required">*</span></label>
           <input type="email" class="form-input" id="proposalEmail" name="email" placeholder="Ваш.email@company.com" required maxlength="255" autocomplete="email">
-          <p class="error-message" id="emailError">Пожалуйста, введите корректный email</p>
+          <p class="error-message" id="emailError-proposal" data-error-for="email">Пожалуйста, введите корректный email</p>
         </div>
 
         <div class="form-group">
@@ -51,19 +51,19 @@ const ModalTemplates = {
             <input type="tel" class="form-input form-input-phone" id="phone-proposal" name="phone" placeholder="9990001122" required maxlength="20" autocomplete="tel">
             <input type="text" class="form-input form-input-extension" id="extension" name="extension" placeholder="доб." autocomplete="off">
           </div>
-          <p class="error-message" id="phoneError">Пожалуйста, введите корректный номер телефона</p>
+          <p class="error-message" id="phoneError-proposal" data-error-for="phone">Пожалуйста, введите корректный номер телефона</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="aircraftType">Тип воздушного судна <span class="required">*</span></label>
           <input type="text" class="form-input" id="aircraftType" name="aircraftType" placeholder="Например, Boeing 777" required minlength="2" maxlength="100" autocomplete="off">
-          <p class="error-message" id="aircraftTypeError">Пожалуйста, введите тип воздушного судна</p>
+          <p class="error-message" id="aircraftTypeError" data-error-for="aircraftType">Пожалуйста, введите тип воздушного судна</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="serviceType">Требуемая услуга <span class="required">*</span></label>
           <input type="text" class="form-input" id="serviceType" name="serviceType" placeholder="Например, модификация систем" required minlength="2" maxlength="100" autocomplete="off">
-          <p class="error-message" id="serviceTypeError">Пожалуйста, выберите тип услуги</p>
+          <p class="error-message" id="serviceTypeError" data-error-for="serviceType">Пожалуйста, выберите тип услуги</p>
         </div>
 
         <div class="form-group-row">
@@ -76,18 +76,18 @@ const ModalTemplates = {
               <option value="NORM">NORM</option>
               <option value="ROUTINE">ROUTINE</option>
             </select>
-            <p class="error-message" id="requestCategoryError">Пожалуйста, выберите категорию</p>
+            <p class="error-message" id="requestCategoryError" data-error-for="requestCategory">Пожалуйста, выберите категорию</p>
           </div>
           <div class="form-group-col">
             <div class="form-group">
               <label class="form-label" for="desiredDate">Планируемая дата получения КП <span class="required">*</span></label>
               <input type="text" class="form-input" id="desiredDate" name="desiredDate" placeholder="ДД.ММ.ГГГГ" required maxlength="10" autocomplete="off">
-              <p class="error-message" id="desiredDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
+              <p class="error-message" id="desiredDateError" data-error-for="desiredDate">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
             <div class="form-group">
               <label class="form-label" for="desiredApprovalDate">Ожидаемый срок выполнения работ</label>
               <input type="text" class="form-input" id="desiredApprovalDate" name="desiredApprovalDate" placeholder="ДД.ММ.ГГГГ" maxlength="10" autocomplete="off">
-              <p class="error-message" id="desiredApprovalDateError">Введите дату в формате ДД.ММ.ГГГГ</p>
+              <p class="error-message" id="desiredApprovalDateError" data-error-for="desiredApprovalDate">Введите дату в формате ДД.ММ.ГГГГ</p>
             </div>
             <p class="error-message" id="dateOrderError">Ожидаемый срок выполнения работ не может быть раньше планируемой даты получения КП.</p>
           </div>
@@ -96,13 +96,13 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="taskDescription">Краткое описание задачи <span class="required">*</span></label>
           <textarea class="form-textarea" id="taskDescription" name="taskDescription" placeholder="Пожалуйста, опишите требования к заявке, сроки и любые конкретные детали" required minlength="10" maxlength="2000"></textarea>
-          <p class="error-message" id="taskDescriptionError">Пожалуйста, опишите Вашу задачу (минимум 10 символов)</p>
+          <p class="error-message" id="taskDescriptionError" data-error-for="taskDescription">Пожалуйста, опишите Вашу задачу (минимум 10 символов)</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="proposalFileAttachment">Вложение</label>
           <div class="form-file" id="fileDrop">
-            <input type="file" id="proposalFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
+            <input type="file" id="proposalFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -119,7 +119,7 @@ const ModalTemplates = {
               Я даю <a href="#" data-policy="consent" target="_blank" rel="noopener noreferrer">согласие</a> с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Политикой обработки персональных данных</a> <span class="required">*</span>
             </span>
           </label>
-          <p class="error-message" id="personalDataConsentError">Необходимо согласие с Политикой обработки персональных данных</p>
+          <p class="error-message" id="personalDataConsentError" data-error-for="personalDataConsent">Необходимо согласие с Политикой обработки персональных данных</p>
         </div>
 
         <button type="submit" class="form-submit" id="submitBtn">
@@ -131,7 +131,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    universalApplicationModal: `
+  universalApplicationModal: `
 <!-- Universal Application Modal -->
 <div class="modal-overlay modal-overlay-universal" id="universalApplicationModalOverlay" role="dialog" aria-modal="true" aria-labelledby="universalApplicationModalTitle">
   <div class="modal-container">
@@ -152,31 +152,31 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="fullName">ФИО <span class="required">*</span></label>
           <input type="text" class="form-input" id="fullName" name="fullName" placeholder="Введите Ваши ФИО полностью" required minlength="2" maxlength="200" autocomplete="name">
-          <p class="error-message" id="fullNameError">Пожалуйста, введите корректное ФИО</p>
+          <p class="error-message" id="fullNameError" data-error-for="fullName">Пожалуйста, введите корректное ФИО</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="phone-universal">Номер телефона <span class="required">*</span></label>
           <input type="tel" class="form-input" id="phone-universal" name="phone" placeholder="9990001122" required maxlength="20" autocomplete="tel">
-          <p class="error-message" id="phoneError">Пожалуйста, введите корректный номер телефона</p>
+          <p class="error-message" id="phoneError-universal" data-error-for="phone">Пожалуйста, введите корректный номер телефона</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="universalEmail">Адрес e-mail <span class="required">*</span></label>
           <input type="email" class="form-input" id="universalEmail" name="email" placeholder="Ваш.email@example.com" required maxlength="255" autocomplete="email">
-          <p class="error-message" id="emailError">Пожалуйста, введите корректный email</p>
+          <p class="error-message" id="emailError-universal" data-error-for="email">Пожалуйста, введите корректный email</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="about">Расскажите о себе <span class="required">*</span></label>
           <textarea class="form-textarea" id="about" name="about" placeholder="Расскажите о Вашем опыте, навыках и почему вы хотите работать у нас..." required minlength="10" maxlength="2000"></textarea>
-          <p class="error-message" id="aboutError">Пожалуйста, расскажите о себе (минимум 10 символов)</p>
+          <p class="error-message" id="aboutError" data-error-for="about">Пожалуйста, расскажите о себе (минимум 10 символов)</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="universalFileAttachment">Резюме (файл) <span class="required">*</span></label>
           <div class="form-file" id="universalFileDrop">
-            <input type="file" id="universalFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" required multiple>
+            <input type="file" id="universalFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif" aria-label="Загрузить файл" required multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -184,7 +184,7 @@ const ModalTemplates = {
             <p class="form-file-hint">PDF, DOC, DOCX, XLS, XLSX, ZIP, PPT, PPTX, JPG, PNG, GIF (Не более 5 файлов общим размером 24MB)</p>
             <div class="form-file-list" id="universalFileList"></div>
           </div>
-          <p class="error-message" id="fileAttachmentError">Пожалуйста, прикрепите резюме</p>
+          <p class="error-message" id="fileAttachmentError" data-error-for="fileAttachment">Пожалуйста, прикрепите резюме</p>
         </div>
 
         <div class="form-agreement form-agreement-checkbox">
@@ -194,7 +194,7 @@ const ModalTemplates = {
               Я даю <a href="#" data-policy="consent" target="_blank" rel="noopener noreferrer">согласие</a> с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Политикой обработки персональных данных</a> <span class="required">*</span>
             </span>
           </label>
-          <p class="error-message" id="consentError">Необходимо согласие с Политикой обработки персональных данных</p>
+          <p class="error-message" id="consentError" data-error-for="consent">Необходимо согласие с Политикой обработки персональных данных</p>
         </div>
 
         <button type="submit" class="form-submit" id="universalSubmitBtn">
@@ -206,7 +206,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    successModal: `
+  successModal: `
 <!-- Success Modal -->
 <div class="modal-overlay modal-overlay-success" id="successModalOverlay" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
   <div class="modal-container modal-container-success">
@@ -222,7 +222,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    feedbackModal: `
+  feedbackModal: `
 <!-- Feedback Modal -->
 <div class="modal-overlay modal-overlay-feedback" id="feedbackModalOverlay" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
   <div class="modal-container modal-container-feedback">
@@ -238,7 +238,7 @@ const ModalTemplates = {
         <p>⚠️ Слишком много запросов. Пожалуйста, подождите 60 секунд перед следующей отправкой.</p>
       </div>
 
-      <input type="hidden" id="csrfToken" name="csrf_token" value="">
+      <input type="hidden" id="csrfToken-feedback" name="csrf_token" value="">
       <input type="hidden" name="form_type" value="feedback">
 
       <div class="hp-field">
@@ -250,19 +250,19 @@ const ModalTemplates = {
         <div class="form-group">
           <label class="form-label" for="feedbackFullName">ФИО <span class="required">*</span></label>
           <input type="text" class="form-input" id="feedbackFullName" name="fullName" placeholder="Введите Ваши ФИО" required minlength="2" maxlength="200" autocomplete="name">
-          <p class="error-message" id="feedbackFullNameError">Пожалуйста, введите корректное ФИО</p>
+          <p class="error-message" id="feedbackFullNameError" data-error-for="fullName">Пожалуйста, введите корректное ФИО</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="feedbackOrganization">Организация <span class="required">*</span></label>
           <input type="text" class="form-input" id="feedbackOrganization" name="organization" placeholder="Введите название организации" required minlength="2" maxlength="200" autocomplete="organization">
-          <p class="error-message" id="feedbackOrganizationError">Пожалуйста, введите название организации</p>
+          <p class="error-message" id="feedbackOrganizationError" data-error-for="organization">Пожалуйста, введите название организации</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="feedbackEmail">Электронная почта <span class="required">*</span></label>
           <input type="email" class="form-input" id="feedbackEmail" name="email" placeholder="Ваш.email@example.com" required maxlength="255" autocomplete="email">
-          <p class="error-message" id="feedbackEmailError">Пожалуйста, введите корректный email</p>
+          <p class="error-message" id="feedbackEmailError" data-error-for="email">Пожалуйста, введите корректный email</p>
         </div>
 
         <div class="form-group">
@@ -280,19 +280,19 @@ const ModalTemplates = {
               </label>
             </div>
           </fieldset>
-          <p class="error-message" id="sentimentError">...</p>
+          <p class="error-message" id="sentimentError" data-error-for="sentiment">Пожалуйста, выберите тип отзыва</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="feedbackMessage">Сообщение <span class="required">*</span></label>
           <textarea class="form-textarea" id="feedbackMessage" name="message" placeholder="Ваше сообщение..." required minlength="10" maxlength="2000"></textarea>
-          <p class="error-message" id="feedbackMessageError">Пожалуйста, введите сообщение не менее 10 символов</p>
+          <p class="error-message" id="feedbackMessageError" data-error-for="message">Пожалуйста, введите сообщение не менее 10 символов</p>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="feedbackFileAttachment">Вложение</label>
           <div class="form-file" id="feedbackFileDrop">
-            <input type="file" id="feedbackFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream" aria-label="Загрузить файл" multiple>
+            <input type="file" id="feedbackFileAttachment" name="fileAttachment[]" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.ppt,.pptx,.jpg,.jpeg,.png,.gif" aria-label="Загрузить файл" multiple>
             <div class="form-file-icon">
               <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
             </div>
@@ -309,7 +309,7 @@ const ModalTemplates = {
               Я даю <a href="#" data-policy="consent" target="_blank" rel="noopener noreferrer">согласие</a> с <a href="#" data-policy="personal-data" target="_blank" rel="noopener noreferrer">Политикой обработки персональных данных</a> <span class="required">*</span>
             </span>
           </label>
-          <p class="error-message" id="feedbackConsentError">Необходимо согласие с Политикой обработки персональных данных</p>
+          <p class="error-message" id="feedbackConsentError" data-error-for="consent">Необходимо согласие с Политикой обработки персональных данных</p>
         </div>
 
         <button type="submit" class="form-submit" id="feedbackSubmitBtn">
@@ -321,7 +321,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    categoryNewsModal: `
+  categoryNewsModal: `
 <!-- Category News Modal -->
 <div class="modal-overlay" id="categoryNewsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
   <div class="modal-container modal-category-container">
@@ -336,7 +336,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    projectCategoryModal: `
+  projectCategoryModal: `
 <!-- Project Category Modal -->
 <div class="modal-overlay" id="projectCategoryModalOverlay" role="dialog" aria-modal="true" aria-labelledby="projectCategoryModalTitle">
   <div class="modal-container modal-category-container">
@@ -351,26 +351,78 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    newsModal: `
+  newsModal: `
 <!-- News Modal -->
 <div class="modal-overlay modal-overlay-news" id="newsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
   <div class="modal-container">
     <button class="modal-close" aria-label="Закрыть">
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
-    <div class="modal-image-container" id="newsModalImageContainer">
-      <img class="modal-image" id="newsModalImage" src="" alt="" loading="lazy">
+
+    <div class="modal-news-top">
+      <div class="modal-image-container" id="newsModalImageContainer">
+        <img class="modal-image" id="newsModalImage" src="" alt="" loading="lazy">
+      </div>
+      <div class="modal-news-header">
+        <button type="button"
+                class="modal-category category-trigger"
+                id="newsModalCategory"
+                aria-label="Показать все новости этой категории"></button>
+        <span class="modal-date" id="newsModalDate"></span>
+        <h2 class="modal-title" id="newsModalTitle"></h2>
+      </div>
     </div>
+
     <div class="modal-body">
-      <span class="modal-category" id="newsModalCategory"></span>
-      <span class="modal-date" id="newsModalDate"></span>
-      <h2 class="modal-title" id="newsModalTitle"></h2>
       <div class="modal-content" id="newsModalContent"></div>
     </div>
   </div>
 </div>`,
 
-    errorReportModal: `
+  projectModal: `
+<!-- Project Modal -->
+<div class="modal-overlay modal-overlay-project" id="projectModalOverlay" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+  <div class="modal-container">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+
+    <div class="modal-image-container" id="projectModalImageContainer">
+      <img class="modal-image" id="projectModalImage" src="" alt="" loading="lazy">
+    </div>
+
+    <div class="modal-body">
+      <button type="button"
+              class="modal-category category-trigger"
+              id="projectModalCategory"
+              aria-label="Показать все проекты этой категории"></button>
+      <h2 class="modal-title" id="projectModalTitle"></h2>
+      <div class="modal-content" id="projectModalContent"></div>
+    </div>
+  </div>
+</div>`,
+
+  serviceModal: `
+<!-- Service Modal -->
+<div class="modal-overlay modal-overlay-service" id="serviceModalOverlay" role="dialog" aria-modal="true" aria-labelledby="serviceModalTitle">
+  <div class="modal-container">
+    <button class="modal-close" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+
+    <div class="modal-image-container" id="serviceModalImageContainer">
+      <img class="modal-image" id="serviceModalImage" src="" alt="" loading="lazy">
+    </div>
+
+    <div class="modal-body">
+      <span class="modal-category" id="serviceModalCategory"></span>
+      <h2 class="modal-title" id="serviceModalTitle"></h2>
+      <div class="modal-content" id="serviceModalContent"></div>
+    </div>
+  </div>
+</div>`,
+
+  errorReportModal: `
 <div class="modal-overlay modal-overlay-error-report" id="errorReportModalOverlay" role="dialog" aria-modal="true" aria-labelledby="errorReportModalTitle">
   <div class="modal-container modal-container-error-report">
     <button class="modal-close" aria-label="Закрыть">
@@ -383,8 +435,10 @@ const ModalTemplates = {
     <div class="modal-body">
       <form id="errorReportForm" novalidate>
         <div class="form-group">
-          <span class="form-label">Выделенный текст</label>
-          <div id="errorReportTextDisplay" class="error-report-text-display" role="textbox" aria-label="Выделенный текст" readonly></div>
+          <span class="form-label" id="errorReportTextLabel">Выделенный текст</span>
+          <div id="errorReportTextDisplay"
+               class="error-report-text-display"
+               aria-labelledby="errorReportTextLabel"></div>
           <input type="hidden" id="errorReportText" name="errorText" value="">
         </div>
         <div class="form-group">
@@ -400,7 +454,7 @@ const ModalTemplates = {
   </div>
 </div>`,
 
-    vacancyModal: `
+  vacancyModal: `
 <!-- Vacancy Detail Modal -->
 <div class="modal-overlay modal-overlay-vacancy" id="vacancyModalOverlay" role="dialog" aria-modal="true" aria-labelledby="vacancyModalTitle">
   <div class="modal-container modal-container-vacancy">
@@ -412,7 +466,6 @@ const ModalTemplates = {
       <p class="modal-subtitle" id="vacancyModalDepartment"></p>
     </div>
     <div class="modal-body vacancy-full" id="vacancyModalBody">
-      <!-- динамическое содержимое -->
     </div>
     <div class="vacancy-modal-footer">
       <button class="btn-primary vacancy-respond-btn" data-vacancy-id="">Откликнуться</button>
@@ -422,5 +475,5 @@ const ModalTemplates = {
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ModalTemplates;
+  module.exports = ModalTemplates;
 }

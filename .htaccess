@@ -7,16 +7,15 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-    
-    # Принудительный редирект с HTTP на HTTPS
+    RewriteCond %{HTTP_HOST} ^(www\.)?vdengineering\.ru$ [NC]
     RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^(.*)$ https://vdengineering.ru/$1 [R=301,L]
 </IfModule>
 
 # Кастомные страницы ошибок
 ErrorDocument 404 /404.html
 ErrorDocument 403 /403.html
-ErrorDocument 500 /500.html
 
 # ============================================================
 # 1. ЗАЩИТА ЧУВСТВИТЕЛЬНЫХ ФАЙЛОВ
@@ -68,51 +67,27 @@ ErrorDocument 500 /500.html
 
 Options -Indexes -MultiViews
 
-<IfModule mod_rewrite.c>
-    RewriteRule ^private_uploads/ - [F,L]
-    RewriteRule ^logs/ - [F,L]
-    RewriteRule ^data/ - [F,L]
-    RewriteRule ^sessions/ - [F,L]
-</IfModule>
-
 # ============================================================
 # 3. ЗАЩИТНЫЕ HTTP-ЗАГОЛОВКИ
 # ============================================================
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "DENY"
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set Cross-Origin-Opener-Policy "same-origin"
-    
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com ; style-src 'self' https://yastatic.net; img-src 'self' data: https://cdn.yandex.ru https://mc.yandex.ru https://mc.yandex.com; font-src 'self' https://yastatic.net; connect-src 'self' https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru wss://mc.yandex.com wss://yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; object-src 'none'; base-uri 'self'; form-action 'self';"
-    
-    Header always unset X-Powered-By
-    Header always unset Server
-    
+    Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://api-maps.yandex.ru https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; style-src 'self' https://yastatic.net; img-src 'self' data: https://cdn.yandex.ru https://mc.yandex.ru https://mc.yandex.com; font-src 'self' https://yastatic.net; connect-src 'self' https://yastatic.net https://yandex.ru https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru wss://mc.yandex.com wss://yandex.ru; frame-src 'self' https://yandex.ru https://mc.yandex.ru https://mc.yandex.com; object-src 'none'; base-uri 'self'; form-action 'self';"
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
-    
-    <FilesMatch "\.(php)$">
-        Header always set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
-        Header always set Pragma "no-cache"
-        Header always set Expires "0"
-        Header always set X-Accel-Expires "0"
-        Header always set X-Cache-Status "BYPASS"
-    </FilesMatch>
-    
-    <FilesMatch "\.(json)$">
-        Header always set Cache-Control "no-store, no-cache, must-revalidate"
-        Header always set Pragma "no-cache"
-        Header always set Expires "0"
-        Header always set X-Accel-Expires "0"
-    </FilesMatch>
 </IfModule>
 
 # ============================================================
 # 4. ЧПУ ДЛЯ СТРАНИЦ И МОДАЛЬНЫХ ОКОН (единый блок)
 # ============================================================
 <IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/api/
+    RewriteRule ^(.+)/$ /$1 [R=301,L]
+
     # ---- ЯВНЫЕ ПРАВИЛА ДЛЯ БАЗОВЫХ СТРАНИЦ (без .html) ----
     RewriteRule ^about$ /about.html [L]
     RewriteRule ^contacts$ /contacts.html [L]
@@ -125,7 +100,6 @@ Options -Indexes -MultiViews
     RewriteRule ^search$ /search.html [L]
 
     # ---- СПЕЦИАЛЬНЫЕ ПРАВИЛА ДЛЯ МОДАЛЬНЫХ ОКОН (без .html) ----
-    # /feedback и /proposal → index.html (это модальные окна на главной)
     RewriteRule ^feedback$ /index.html [L]
     RewriteRule ^proposal$ /index.html [L]
 
@@ -156,8 +130,6 @@ Options -Indexes -MultiViews
     RewriteRule ^policy/(.+)$ /index.html?modal=policy&key=$1 [L,QSA]
 
     # ---- ОБЩЕЕ ПРАВИЛО ДЛЯ ВСЕХ ОСТАЛЬНЫХ ПУТЕЙ ----
-    # Если файл не существует, пытаемся добавить .html
-    # (для обычных страниц, которых нет в явных правилах)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} !^/api/ [NC]
@@ -222,24 +194,15 @@ LimitRequestBody 35000000
 # ============================================================
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_REFERER} !^$
-    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?normacode\.ru [NC]
     RewriteCond %{HTTP_REFERER} !^https?://(www\.)?vdengineering\.ru [NC]
-    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
-    RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F,NC,L]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost(:\d+)?/ [NC]
+    RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F,NC]
 </IfModule>
 
 # ============================================================
 # 9. ЗАЩИТА ОТ СПАМ-БОТОВ
 # ============================================================
 <IfModule mod_rewrite.c>
-    RewriteCond %{HTTP_USER_AGENT} (havij|libwww-perl|wget|python|nikto|scan|java|winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} ^$
+    RewriteCond %{HTTP_USER_AGENT} (havij|nikto|sqlmap|masscan|nmap|acunetix|netsparker|libwww-perl|httrack|wget\/) [NC]
     RewriteRule ^ - [F,L]
-</IfModule>
-
-# ============================================================
-# 10. ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА
-# ============================================================
-<IfModule mod_rewrite.c>
-    RewriteRule ^private_uploads/.*\.php$ - [F,L]
 </IfModule>

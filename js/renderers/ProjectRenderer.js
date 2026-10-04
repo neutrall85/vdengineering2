@@ -23,11 +23,12 @@ class ProjectRenderer {
     return '/' + path;
   }
 
-  // ИЗМЕНЕНО: добавлена функция расчёта класса задержки
+  // [FIX] Минимальная задержка — 100 мс. Классы delay-0/delay-50 в CSS
+  // не определены, из-за чего первые карточки могли не анимироваться.
   _getDelayClass(index, stagger = 50) {
     const delay = index * stagger;
-    const rounded = Math.round(delay / 50) * 50; // классы идут с шагом 50
-    const clamped = Math.min(rounded, 900);      // максимум – delay-900
+    const rounded = Math.round(delay / 50) * 50;
+    const clamped = Math.max(100, Math.min(rounded, 900));
     return `delay-${clamped}`;
   }
 
@@ -75,7 +76,6 @@ class ProjectRenderer {
 
     const article = document.createElement('article');
     article.className = 'project-card card animate-on-scroll fade-up';
-    // ИЗМЕНЕНО: вместо style.animationDelay добавляем класс задержки
     const delayClass = this._getDelayClass(index, this.cardStaggerMs);
     article.classList.add(delayClass);
     article.dataset.modalOpen = 'project';

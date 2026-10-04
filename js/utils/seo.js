@@ -1,7 +1,7 @@
 /**
  * SEO-модуль для динамических страниц (БЕЗ ES6 EXPORT)
  * ООО "ВД Инжиниринг"
- * 
+ *
  * Расширен: добавлены хлебные крошки для статических страниц
  * и мета-теги (title, description, canonical) для всех страниц.
  */
@@ -26,12 +26,12 @@ const seoDatabase = {
     },
     'foreign-mods': {
       title: 'Модификация ВС и двигателей иностранного производства | Проекты',
-      description: 'Разработка и одобрение 11 изменений типовой конструкции для самолётов и двигателей иностранного производства.',
+      description: 'Разработка и одобрение 17 изменений типовой конструкции для самолётов и двигателей иностранного производства.',
       canonical: 'https://vdengineering.ru/projects/foreign-mods'
     },
     'foreign-repairs': {
       title: 'Нетиповые ремонты компонентов иностранного производства | Проекты',
-      description: 'Разработка и выполнение более 217 нетиповых ремонтов конструкции ВС и компонентов II и III классов.',
+      description: 'Разработка и выполнение более 235 нетиповых ремонтов конструкции ВС и компонентов II и III классов.',
       canonical: 'https://vdengineering.ru/projects/foreign-repairs'
     },
     'nose-repair': {
@@ -66,11 +66,12 @@ const seoDatabase = {
     }
   },
 
-  // Данные для новостей (ключи – id новости)
+  // Частичные ручные overrides для новостей.
+  // Для остальных id данные берутся из window.NEWS_DATA (см. updateMetaTags).
   news: {
     '20260619': {
       title: 'Год подтверждения соответствия | Новости',
-      description: 'ООО «ВД-Днепр Инжиниринг» успешно подтвердило соответствие требованиям ФАП-21.',
+      description: 'ООО «ВД Инжиниринг» успешно подтвердило соответствие требованиям ФАП-21.',
       canonical: 'https://vdengineering.ru/news/20260619'
     },
     '20230922': {
@@ -80,7 +81,7 @@ const seoDatabase = {
     },
     '20220628': {
       title: 'Год сертификации и правопреемства | Новости',
-      description: 'ООО «ВД-Днепр Инжиниринг» стало правопреемником AMTES GmbH.',
+      description: 'ООО «ВД Инжиниринг» стало правопреемником AMTES GmbH.',
       canonical: 'https://vdengineering.ru/news/20220628'
     }
   },
@@ -89,7 +90,7 @@ const seoDatabase = {
   page: {
     'about': {
       title: 'О компании | Ведущий разработчик модификаций авиационной техники',
-      description: 'ООО "ВД Инжиниринг" — 7+ лет опыта, 100+ проектов. Разработка и сертификация модификаций авиационной техники, двигателей и компонентов. Узнайте больше о компании.',
+      description: 'ООО "ВД Инжиниринг" — 9+ лет опыта, 100+ проектов. Разработка и сертификация модификаций авиационной техники, двигателей и компонентов. Узнайте больше о компании.',
       canonical: 'https://vdengineering.ru/about'
     },
     'contacts': {
@@ -113,7 +114,7 @@ const seoDatabase = {
       canonical: 'https://vdengineering.ru/vacancies'
     },
     'docs': {
-      title: 'Документы | Сертификаты и лицензии ООО «ВД-Днепр Инжиниринг»',
+      title: 'Документы | Сертификаты и лицензии ООО «ВД Инжиниринг»',
       description: 'Сертификат разработчика № ФАВТ-Р-61, дополнительные сертификаты типа (STC), документация компании Волга-Днепр Инжиниринг.',
       canonical: 'https://vdengineering.ru/docs'
     },
@@ -154,8 +155,33 @@ function updateOrCreateLinkTag(selector, rel, href) {
   element.href = sanitizeString(href);
 }
 
+/**
+ * Достаёт данные новости из NEWS_DATA по id и формирует SEO-объект.
+ * @param {string} id
+ * @returns {{title:string, description:string, canonical:string}|null}
+ */
+function getNewsSeoFromData(id) {
+  if (!window.NEWS_DATA) return null;
+  const allNews = Object.values(window.NEWS_DATA).flat();
+  const news = allNews.find(n => String(n.id) === String(id));
+  if (!news) return null;
+
+  const title = news.title ? `${news.title} | Новости` : 'Новости';
+  const description = news.excerpt || (news.content ? news.content.replace(/<[^>]+>/g, '').slice(0, 200) + '…' : '');
+  const canonical = `https://vdengineering.ru/news/${news.id}`;
+
+  return { title, description, canonical };
+}
+
 function updateMetaTags(type, id) {
-  const data = seoDatabase[type]?.[id];
+  let data = seoDatabase[type]?.[id];
+
+  // Fallback для новостей — берём данные из window.NEWS_DATA,
+  // если в seoDatabase.news явной записи нет.
+  if (!data && type === 'news') {
+    data = getNewsSeoFromData(id);
+  }
+
   if (!data) return;
 
   try {
@@ -167,7 +193,7 @@ function updateMetaTags(type, id) {
   }
 }
 
-// --- ФУНКЦИИ ДЛЯ ХЛЕБНЫХ КРОШЕК (Breadcrumbs) ---
+// --- ХЛЕБНЫЕ КРОШКИ (Breadcrumbs) ---
 
 function generateBreadcrumbJSONLD(items) {
   return {
@@ -183,7 +209,6 @@ function generateBreadcrumbJSONLD(items) {
 }
 
 function injectJSONLD(data) {
-  // Удаляем старый скрипт с хлебными крошками, чтобы не было дублей
   const existingScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb]');
   if (existingScript) existingScript.remove();
 
@@ -199,7 +224,7 @@ function injectJSONLD(data) {
 function initDynamicSEO() {
   const path = window.location.pathname;
 
-  // 1. Проверяем, открыта ли новость (URL вида /news/123)
+  // 1. Новость (URL вида /news/123)
   const newsMatch = path.match(/^\/news\/(\d+)/);
   if (newsMatch) {
     const newsId = newsMatch[1];
@@ -216,7 +241,7 @@ function initDynamicSEO() {
     return;
   }
 
-  // 2. Проверяем, открыт ли проект (URL вида /projects/ads-b-out)
+  // 2. Проект (URL вида /projects/ads-b-out)
   const projectMatch = path.match(/^\/projects\/(.+)/);
   if (projectMatch) {
     const projectId = projectMatch[1];
@@ -232,8 +257,8 @@ function initDynamicSEO() {
     return;
   }
 
-  // 3. Если это страница обратной связи (/feedback или /feedback.html)
-  if (path === '/feedback' || path === '/feedback.html') {
+  // 3. Обратная связь
+  if (path === '/feedback') {
     injectJSONLD(generateBreadcrumbJSONLD([
       { name: 'Главная', url: '/' },
       { name: 'Обратная связь', url: '/feedback' }
@@ -242,7 +267,7 @@ function initDynamicSEO() {
     return;
   }
 
-  // 4. СТАТИЧЕСКИЕ СТРАНИЦЫ (about, contacts, partners, services, vacancies, docs)
+  // 4. Статические страницы
   const staticPages = {
     '/about': 'about',
     '/contacts': 'contacts',
@@ -252,10 +277,9 @@ function initDynamicSEO() {
     '/docs': 'docs'
   };
 
-  // Убираем .html из пути, если есть
   let cleanPath = path.replace(/\.html$/, '');
   if (staticPages[cleanPath]) {
-    const pageKey = staticPages[cleanPath]; // например 'about'
+    const pageKey = staticPages[cleanPath];
     const pageName = {
       'about': 'О компании',
       'contacts': 'Контакты',
@@ -265,36 +289,19 @@ function initDynamicSEO() {
       'docs': 'Документы'
     }[pageKey];
 
-    // Генерируем хлебные крошки: Главная → Текущая страница
     injectJSONLD(generateBreadcrumbJSONLD([
       { name: 'Главная', url: '/' },
       { name: pageName, url: cleanPath }
     ]));
 
-    // Обновляем мета-теги (title, description, canonical) из seoDatabase.page
     updateMetaTags('page', pageKey);
     return;
-  }
-
-  // Если ничего не подошло – ничего не делаем (например, главная страница)
-}
-
-// --- ГЛОБАЛЬНЫЙ ХУК ДЛЯ МОДАЛОК (используется при открытии модальных окон) ---
-function handleModalOpen(type, id, modalOpenCallback) {
-  // Обновляем мета-теги и хлебные крошки при открытии модалки
-  // (этот вызов уже используется в вашем коде)
-  updateMetaTags(type, id);
-  // Для модалок хлебные крошки генерируются отдельно в зависимости от типа,
-  // но здесь мы можем добавить обновление URL в истории (уже есть в modalManager)
-  window.history.pushState({ type, id }, '', `/${type}/${id}`);
-  if (typeof modalOpenCallback === 'function') {
-    modalOpenCallback(id);
   }
 }
 
 // --- АВТОМАТИЧЕСКИЙ ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ---
-// Функция initDynamicSEO уже вызывается из app.js.
-// Дублируем вызов на случай, если app.js не инициализирован (запасной вариант)
+// initDynamicSEO также вызывается из app.js.
+// Дублируем вызов на случай, если app.js не инициализирован.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof initDynamicSEO === 'function') initDynamicSEO();

@@ -48,11 +48,9 @@ const FormUtils = {
     if (fileDrop._handlers) {
       const { fileInput: oldInput, changeHandler, dragOverHandler, dragLeaveHandler, dropHandler } = fileDrop._handlers;
       if (oldInput) oldInput.removeEventListener('change', changeHandler);
-      if (fileDrop) {
-        fileDrop.removeEventListener('dragover', dragOverHandler);
-        fileDrop.removeEventListener('dragleave', dragLeaveHandler);
-        fileDrop.removeEventListener('drop', dropHandler);
-      }
+      fileDrop.removeEventListener('dragover', dragOverHandler);
+      fileDrop.removeEventListener('dragleave', dragLeaveHandler);
+      fileDrop.removeEventListener('drop', dropHandler);
     }
 
     const allowedTypes = window.CONFIG?.FORM?.ALLOWED_FILE_TYPES || [
@@ -138,7 +136,7 @@ const FormUtils = {
 
   async fetchCsrfToken() {
     try {
-      const response = await fetch('/api/csrf_token.php');
+      const response = await fetch('/api/csrf_token.php', { credentials: 'same-origin' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const data = await response.json();
       return data.csrf_token;
@@ -154,26 +152,26 @@ const FormUtils = {
     const originalText = submitBtn?.textContent || 'Отправить';
     let isSubmitting = true;
     let timeoutId = null;
-  
+
+    // [P0-FIX] AbortController — прерывает fetch при таймауте.
+    const controller = new AbortController();
+
     try {
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = 'Отправка... <span class="spinner"></span>';
       }
-  
+
       timeoutId = setTimeout(() => {
         if (isSubmitting) {
           Logger.ERROR('Form submission timeout');
-          if (onError) onError('Превышено время ожидания ответа сервера. Попробуйте позже.');
-          _resetSubmitState(submitBtn, originalText);
-          isSubmitting = false;
+          controller.abort();
         }
       }, 30000);
-  
+
       const formData = new FormData();
-  
-      const inputs = form.querySelectorAll('input, select, textarea');
-      inputs.forEach(input => {
+
+      form.querySelectorAll('input, select, textarea').forEach(input => {
         if (input.type === 'file') return;
         if (input.type === 'checkbox' || input.type === 'radio') {
           if (input.checked) formData.append(input.name, input.value);
@@ -181,54 +179,24 @@ const FormUtils = {
           formData.append(input.name, input.value);
         }
       });
-  
+
       files.forEach(file => {
         formData.append('fileAttachment[]', file);
       });
 
-      const dateReceived = formData.get('desiredDate');
-      const dateApproval = formData.get('desiredApprovalDate');
-
-      if (dateReceived && dateApproval) {
-        const parseDate = (str) => {
-          if (!str) return null;
-          const parts = str.split('.');
-          if (parts.length !== 3) return null;
-          const day = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1;
-          const year = parseInt(parts[2], 10);
-          if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-          return new Date(year, month, day);
-        };
-
-        const receivedDate = parseDate(dateReceived);
-        const approvalDate = parseDate(dateApproval);
-
-        if (receivedDate && approvalDate && approvalDate < receivedDate) {
-          const errorMsg = 'Дата одобрения не может быть раньше даты получения КП.';
-          if (onError) onError(errorMsg);
-          _resetSubmitState(submitBtn, originalText);
-          isSubmitting = false;
-          clearTimeout(timeoutId);
-          return;
-        }
-      }
-
-      let csrfToken = await FormUtils.fetchCsrfToken();
+      const csrfToken = await FormUtils.fetchCsrfToken();
       if (!csrfToken) {
         if (onError) onError('Ошибка безопасности. Обновите страницу.');
-        _resetSubmitState(submitBtn, originalText);
-        isSubmitting = false;
-        clearTimeout(timeoutId);
         return;
       }
       formData.append('csrf_token', csrfToken);
-  
+
       const response = await fetch('/api/submit.php', {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       });
-  
+
       const text = await response.text();
       let result;
       try {
@@ -236,29 +204,30 @@ const FormUtils = {
       } catch (e) {
         Logger.ERROR('Сервер вернул не JSON:', text.substring(0, 200));
         if (onError) onError('Ошибка на сервере. Проверьте логи.');
-        _resetSubmitState(submitBtn, originalText);
-        isSubmitting = false;
-        clearTimeout(timeoutId);
         return;
       }
-  
+
       if (!response.ok) {
         const msg = result.error || result.errors?.join(', ') || 'Ошибка сервера';
         if (onError) onError(msg);
-        _resetSubmitState(submitBtn, originalText);
-        isSubmitting = false;
-        clearTimeout(timeoutId);
         return;
       }
-  
+
       if (result.success) {
         if (onSuccess) onSuccess(result);
       } else {
         if (onError) onError(result.error || 'Ошибка при отправке');
       }
     } catch (error) {
-      Logger.ERROR('Form submission error:', error);
-      if (onError) onError(error.message || 'Произошла ошибка. Попробуйте позже.');
+      if (error.name === 'AbortError') {
+        Logger.ERROR('Form submission aborted by timeout');
+        if (isSubmitting && onError) {
+          onError('Превышено время ожидания ответа сервера. Попробуйте позже.');
+        }
+      } else {
+        Logger.ERROR('Form submission error:', error);
+        if (onError) onError(error.message || 'Произошла ошибка. Попробуйте позже.');
+      }
     } finally {
       clearTimeout(timeoutId);
       _resetSubmitState(submitBtn, originalText);
@@ -285,40 +254,30 @@ const FormUtils = {
         fileUpload.fileInput.value = '';
       }
       const listContainer = fileUpload.fileDrop?.querySelector('.form-file-list');
-      if (listContainer) {
-        listContainer.replaceChildren();
-      }
+      if (listContainer) listContainer.replaceChildren();
       const textEl = fileUpload.fileDrop?.querySelector('.form-file-text');
-      if (textEl) {
-        textEl.textContent = 'Выбрать файл...';
-      }
+      if (textEl) textEl.textContent = 'Выбрать файл...';
       const warning = fileUpload.fileDrop?.querySelector('.upload-warning-container');
       if (warning) {
         warning.classList.add('form-file-limit-hidden');
         warning.replaceChildren();
       }
-      if (typeof fileUpload.renderFileList === 'function') {
-        fileUpload.renderFileList();
-      }
+      if (typeof fileUpload.renderFileList === 'function') fileUpload.renderFileList();
     } else {
-      if (form) {
-        const fileInput = form.querySelector('input[type="file"]');
-        if (fileInput) fileInput.value = '';
-        const fileList = form.querySelector('.form-file-list');
-        if (fileList) fileList.replaceChildren();
-        const fileText = form.querySelector('.form-file-text');
-        if (fileText) fileText.textContent = 'Выбрать файл...';
-        const warning = form.querySelector('.upload-warning-container');
-        if (warning) {
-          warning.classList.add('form-file-limit-hidden');
-          warning.replaceChildren();
-        }
+      const fileInput = form.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
+      const fileList = form.querySelector('.form-file-list');
+      if (fileList) fileList.replaceChildren();
+      const fileText = form.querySelector('.form-file-text');
+      if (fileText) fileText.textContent = 'Выбрать файл...';
+      const warning = form.querySelector('.upload-warning-container');
+      if (warning) {
+        warning.classList.add('form-file-limit-hidden');
+        warning.replaceChildren();
       }
     }
 
-    if (validator && typeof validator.reset === 'function') {
-      validator.reset();
-    }
+    if (validator && typeof validator.reset === 'function') validator.reset();
 
     form.classList.remove('hidden-form');
 
@@ -341,11 +300,8 @@ const FormUtils = {
       el.removeAttribute('aria-invalid');
     });
 
-    // Обновляем состояние кнопки отправки (она должна стать неактивной)
     const submitBtn = form.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-    }
+    if (submitBtn) submitBtn.disabled = true;
   }
 };
 
@@ -356,22 +312,7 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize
     'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'ppt', 'pptx',
     'jpg', 'jpeg', 'png', 'gif'
   ];
-  const defMimes = allowedMimes || window.CONFIG?.FORM?.ALLOWED_MIME_TYPES || [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/zip',
-    'application/x-zip-compressed',
-    'multipart/x-zip',
-    'application/octet-stream',
-    'image/jpeg',
-    'image/png',
-    'image/gif'
-  ];
+  const defMimes = allowedMimes || window.CONFIG?.FORM?.ALLOWED_MIME_TYPES || [];
 
   const formatList = defTypes.map(ext => ext.toUpperCase()).join(', ');
   const maxSizeMB = Math.round(maxTotalSize / 1024 / 1024);
@@ -418,9 +359,7 @@ function _handleFileSelect(files, fileDrop, currentFiles, maxFiles, maxTotalSize
     }
   }
 
-  if (errors.length > 0) {
-    _showUploadWarning(fileDrop, errors.join(' '));
-  }
+  if (errors.length > 0) _showUploadWarning(fileDrop, errors.join(' '));
   onUpdate([...currentFiles, ...filesToAdd]);
 }
 
@@ -573,6 +512,7 @@ class ModalFormHandler {
     this.isSubmitting = false;
     this._boundSubmitHandler = null;
     this._initialized = false;
+    this._dateValidator = null;
   }
 
   init() {
@@ -593,9 +533,7 @@ class ModalFormHandler {
         maxFiles: this.fileOptions.maxFiles || 10,
         maxTotalSize: this.fileOptions.maxTotalSize || 24 * 1024 * 1024
       });
-      if (this.fileUpload && typeof this.fileUpload.renderFileList === 'function') {
-        this.fileUpload.renderFileList();
-      }
+      if (this.fileUpload?.renderFileList) this.fileUpload.renderFileList();
     }
 
     this._boundSubmitHandler = (e) => this._handleSubmit(e);
@@ -618,55 +556,37 @@ class ModalFormHandler {
       }
     });
 
-    // Инициализация чекбоксов согласия (управление кнопкой)
     this._initConsentCheckboxes();
-
-    // Инициализация валидации дат (только отображение ошибки, не блокирует кнопку)
     this._initDateValidation();
-
-    // Устанавливаем начальное состояние кнопки
     this._updateSubmitButton();
-
     this._initialized = true;
   }
 
-  /**
-   * Управление кнопкой отправки ТОЛЬКО на основе состояния чекбоксов согласия
-   */
   _initConsentCheckboxes() {
-    // Находим все чекбоксы с атрибутом required (обычно это чекбокс согласия)
     const consentCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
     if (consentCheckboxes.length === 0) return;
-
-    // Вешаем обработчики на каждый такой чекбокс
     consentCheckboxes.forEach(cb => {
       cb.addEventListener('change', () => this._updateSubmitButton());
     });
   }
 
-  /**
-   * Обновляет состояние кнопки отправки: активна, если все обязательные чекбоксы отмечены
-   */
   _updateSubmitButton() {
     const submitBtn = this.form.querySelector('button[type="submit"]');
     if (!submitBtn) return;
-
     const requiredCheckboxes = this.form.querySelectorAll('input[type="checkbox"][required]');
     const allChecked = Array.from(requiredCheckboxes).every(cb => cb.checked);
-
-    // Кнопка активна только если все обязательные чекбоксы отмечены
     submitBtn.disabled = !allChecked;
   }
 
-  /**
-   * Валидация дат (только отображение ошибки, кнопку не блокирует)
-   */
   _initDateValidation() {
     const dateReceived = this.form.querySelector('#desiredDate');
     const dateApproval = this.form.querySelector('#desiredApprovalDate');
     const errorEl = this.form.querySelector('#dateOrderError');
 
-    if (!dateReceived || !dateApproval || !errorEl) return;
+    if (!dateReceived || !dateApproval || !errorEl) {
+      this._dateValidator = () => true;
+      return;
+    }
 
     const parseDate = (str) => {
       if (!str) return null;
@@ -693,26 +613,17 @@ class ModalFormHandler {
     const validateDates = () => {
       const receivedVal = dateReceived.value.trim();
       const approvalVal = dateApproval.value.trim();
-
-      if (!approvalVal) {
-        errorEl.classList.remove('show');
-        return;
-      }
-
+      if (!approvalVal) { errorEl.classList.remove('show'); return true; }
       const receivedDate = parseDate(receivedVal);
       const approvalDate = parseDate(approvalVal);
-
-      if (!receivedDate || !approvalDate) {
-        errorEl.classList.remove('show');
-        return;
-      }
-
+      if (!receivedDate || !approvalDate) { errorEl.classList.remove('show'); return true; }
       if (approvalDate < receivedDate) {
         errorEl.textContent = 'Дата одобрения не может быть раньше даты получения КП.';
         errorEl.classList.add('show');
-      } else {
-        errorEl.classList.remove('show');
+        return false;
       }
+      errorEl.classList.remove('show');
+      return true;
     };
 
     dateReceived.addEventListener('input', validateDates);
@@ -720,11 +631,24 @@ class ModalFormHandler {
     dateApproval.addEventListener('input', validateDates);
     dateApproval.addEventListener('blur', validateDates);
 
+    this._dateValidator = validateDates;
     validateDates();
+  }
+
+  _validateDatesOnSubmit() {
+    if (typeof this._dateValidator === 'function') return this._dateValidator();
+    return true;
   }
 
   async _handleSubmit(e) {
     if (this.isSubmitting) return;
+
+    if (!this._validateDatesOnSubmit()) {
+      const dateApproval = this.form.querySelector('#desiredApprovalDate');
+      if (dateApproval) dateApproval.focus();
+      return;
+    }
+
     this.isSubmitting = true;
 
     if (this.rateLimiter && !this.rateLimiter.canProceed()) {
@@ -737,12 +661,8 @@ class ModalFormHandler {
     const files = this.fileUpload ? this.fileUpload.currentFiles : [];
 
     await FormUtils.submitForm(this.form, {
-      onSuccess: (result) => {
-        this._defaultSuccess(result);
-      },
-      onError: (msg) => {
-        this._defaultError(msg);
-      },
+      onSuccess: (result) => this._defaultSuccess(result),
+      onError: (msg) => this._defaultError(msg),
       onFinally: () => {
         this.isSubmitting = false;
         this.onFinally();
@@ -754,25 +674,16 @@ class ModalFormHandler {
 
   _defaultSuccess(result) {
     this.form.classList.add('hidden-form');
-    const success = document.querySelector(this.successSelector);
-    if (success) success.classList.remove('show');
-    
     if (this.modalKey && typeof modalManager !== 'undefined') {
       modalManager.close(this.modalKey);
     }
-    
     if (typeof modalManager !== 'undefined') {
       modalManager.open('success');
       setTimeout(() => {
-        if (typeof modalManager !== 'undefined') {
-          modalManager.close('success');
-        }
+        if (typeof modalManager !== 'undefined') modalManager.close('success');
       }, 3000);
     }
-    
-    if (typeof this.onSuccess === 'function') {
-      this.onSuccess(result);
-    }
+    if (typeof this.onSuccess === 'function') this.onSuccess(result);
   }
 
   _defaultError(msg) {
@@ -804,6 +715,7 @@ class ModalFormHandler {
 
   resetForm() {
     FormUtils.resetForm(this.form, this.successSelector, this.fileUpload, this.validatorInstance);
+    if (typeof this._dateValidator === 'function') this._dateValidator();
   }
 
   destroy() {
@@ -811,19 +723,29 @@ class ModalFormHandler {
       this.form?.removeEventListener('form:valid', this._boundSubmitHandler);
       this._boundSubmitHandler = null;
     }
-    if (this.fileUpload) {
-      this.fileUpload = null;
+
+    if (this.form) {
+      const dateInputs = this.form.querySelectorAll('#desiredDate, #desiredApprovalDate');
+      dateInputs.forEach(input => {
+        if (typeof input._cleanupDatePicker === 'function') {
+          input._cleanupDatePicker();
+          delete input._cleanupDatePicker;
+          input._datePickerInitialized = false;
+        }
+      });
     }
+
+    this.fileUpload = null;
     if (this.validatorInstance) {
       this.validatorInstance.destroy?.();
       this.validatorInstance = null;
     }
+    this._dateValidator = null;
     this.form = null;
     this._initialized = false;
   }
 }
 
-// Экспорт
 if (typeof window !== 'undefined') {
   window.FormUtils = FormUtils;
   window.ModalFormHandler = ModalFormHandler;
@@ -834,7 +756,7 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 // ============================================================
-// DateInputHelper с поддержкой visualViewport и оверлеем (улучшенная версия)
+// DateInputHelper
 // ============================================================
 const DateInputHelper = {
   initDateInput: function(input, options) {
@@ -935,12 +857,8 @@ const DateInputHelper = {
             cell.style.opacity = '0.4';
             cell.style.cursor = 'not-allowed';
           } else {
-            if (dateObj.getTime() === today.getTime()) {
-              cell.classList.add('today');
-            }
-            if (selectedDate && dateObj.getTime() === selectedDate.getTime()) {
-              cell.classList.add('selected');
-            }
+            if (dateObj.getTime() === today.getTime()) cell.classList.add('today');
+            if (selectedDate && dateObj.getTime() === selectedDate.getTime()) cell.classList.add('selected');
             cell.addEventListener('pointerdown', function(e) {
               e.preventDefault();
               e.stopPropagation();
@@ -956,25 +874,6 @@ const DateInputHelper = {
         }
       };
 
-      const changeMonth = (delta) => {
-        const newDate = new Date(+yearSelect.value, +monthSelect.value + delta, 1);
-        render(newDate, getSelectedDateFromInput());
-      };
-      prevBtn.addEventListener('click', e => { e.stopPropagation(); changeMonth(-1); });
-      nextBtn.addEventListener('click', e => { e.stopPropagation(); changeMonth(1); });
-      monthSelect.addEventListener('change', () => {
-        render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
-      });
-      yearSelect.addEventListener('change', () => {
-        render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
-      });
-
-      document.addEventListener('pointerdown', function(e) {
-        if (picker && !picker.contains(e.target) && e.target !== input) {
-          closePicker();
-        }
-      });
-
       const getSelectedDateFromInput = () => {
         const val = input.value.trim();
         if (!val) return null;
@@ -989,6 +888,28 @@ const DateInputHelper = {
         date.setHours(0, 0, 0, 0);
         return date;
       };
+
+      const changeMonth = (delta) => {
+        const newDate = new Date(+yearSelect.value, +monthSelect.value + delta, 1);
+        render(newDate, getSelectedDateFromInput());
+      };
+      prevBtn.addEventListener('click', e => { e.stopPropagation(); changeMonth(-1); });
+      nextBtn.addEventListener('click', e => { e.stopPropagation(); changeMonth(1); });
+      monthSelect.addEventListener('change', () => {
+        render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
+      });
+      yearSelect.addEventListener('change', () => {
+        render(new Date(+yearSelect.value, +monthSelect.value, 1), getSelectedDateFromInput());
+      });
+
+      // [P0-FIX] Сохраняем ссылку, чтобы удалить в _cleanupDatePicker.
+      const outsidePointerHandler = function(e) {
+        if (picker && !picker.contains(e.target) && e.target !== input) {
+          closePicker();
+        }
+      };
+      document.addEventListener('pointerdown', outsidePointerHandler);
+      container._outsidePointerHandler = outsidePointerHandler;
 
       let initialDate = new Date();
       const selected = getSelectedDateFromInput();
@@ -1014,48 +935,33 @@ const DateInputHelper = {
 
     const repositionPicker = () => {
       if (!picker) return;
-      // Получаем координаты поля
       let rect = input.getBoundingClientRect();
       const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-      
-      // Если поле скрыто – используем fallback
+
       if (rect.height === 0 || rect.width === 0) {
         const clientRects = input.getClientRects();
-        if (clientRects.length > 0) {
-          rect = clientRects[0];
-        } else {
-          rect = {
-            top: viewportHeight / 2 - 100,
-            bottom: viewportHeight / 2 + 100,
-            left: viewportWidth / 2 - 100,
-            right: viewportWidth / 2 + 100,
-            width: 200,
-            height: 200
-          };
-        }
+        if (clientRects.length > 0) rect = clientRects[0];
+        else rect = { top: viewportHeight / 2 - 100, bottom: viewportHeight / 2 + 100, left: viewportWidth / 2 - 100, right: viewportWidth / 2 + 100, width: 200, height: 200 };
       }
 
       const isMobile = window.innerWidth <= 480;
       let topPos = rect.bottom + window.scrollY + 8;
       const spaceBelow = viewportHeight - rect.bottom - 8;
       const pickerHeight = picker.offsetHeight || 260;
-      
-      // Если снизу не хватает места – ставим сверху
+
       if (spaceBelow < pickerHeight) {
         let newTop = rect.top + window.scrollY - pickerHeight - 8;
         if (newTop < 10) newTop = 10;
         topPos = newTop;
       }
 
-      // Применяем позицию
       picker.style.setProperty('--picker-top', topPos + 'px');
-      
+
       if (isMobile) {
         picker.style.removeProperty('--picker-left');
         picker.style.left = '50%';
         picker.style.transform = 'translateX(-50%)';
-        // Убедимся, что календарь не выходит за левый и правый край
         const pickerWidth = picker.offsetWidth || 260;
         if (pickerWidth > viewportWidth - 20) {
           picker.style.left = '10px';
@@ -1066,9 +972,7 @@ const DateInputHelper = {
         }
       } else {
         let leftPos = rect.left + window.scrollX;
-        if (leftPos + 260 > viewportWidth) {
-          leftPos = viewportWidth - 280;
-        }
+        if (leftPos + 260 > viewportWidth) leftPos = viewportWidth - 280;
         if (leftPos < 10) leftPos = 10;
         picker.style.setProperty('--picker-left', leftPos + 'px');
         picker.style.left = '';
@@ -1109,71 +1013,49 @@ const DateInputHelper = {
     };
 
     const openPicker = () => {
-      if (!picker) {
-        picker = createPicker();
-      }
-      // Показываем календарь
+      if (!picker) picker = createPicker();
       picker.classList.add('visible');
       isVisible = true;
-      
-      // Сначала позиционируем сразу
+
       repositionPicker();
-      
-      // Затем через небольшую задержку повторяем позиционирование (для клавиатуры)
+
       if (repositionTimeout) clearTimeout(repositionTimeout);
       repositionTimeout = setTimeout(() => {
         if (isVisible) repositionPicker();
         repositionTimeout = null;
       }, 300);
 
-      // Оверлей
       ensureOverlay();
       overlay.classList.remove('hidden');
-      requestAnimationFrame(() => {
-        overlay.classList.add('active');
-      });
+      requestAnimationFrame(() => overlay.classList.add('active'));
 
-      // Подписка на visualViewport (клавиатура)
       if (window.visualViewport) {
-        const onViewportResize = () => {
-          if (isVisible) repositionPicker();
-        };
+        const onViewportResize = () => { if (isVisible) repositionPicker(); };
         window.visualViewport.addEventListener('resize', onViewportResize);
         picker._viewportHandler = onViewportResize;
       }
 
-      // Подписка на resize окна
       let resizeTimeout = null;
       const onResize = () => {
         if (resizeTimeout) clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          if (isVisible) repositionPicker();
-          resizeTimeout = null;
-        }, 100);
+        resizeTimeout = setTimeout(() => { if (isVisible) repositionPicker(); resizeTimeout = null; }, 100);
       };
       window.addEventListener('resize', onResize);
       picker._resizeHandler = onResize;
 
-      // Подписка на scroll (для случаев, когда клавиатура вызывает скролл)
       let scrollTimeout = null;
       const onScroll = () => {
         if (scrollTimeout) clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-          if (isVisible) repositionPicker();
-          scrollTimeout = null;
-        }, 50);
+        scrollTimeout = setTimeout(() => { if (isVisible) repositionPicker(); scrollTimeout = null; }, 50);
       };
       window.addEventListener('scroll', onScroll, { passive: true });
       picker._scrollHandler = onScroll;
 
-      // Обработчики скролла внутри родительских контейнеров
       const scrollableParents = [];
       let parent = input.parentElement;
       while (parent) {
         const style = window.getComputedStyle(parent);
-        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-          scrollableParents.push(parent);
-        }
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') scrollableParents.push(parent);
         parent = parent.parentElement;
       }
 
@@ -1182,21 +1064,18 @@ const DateInputHelper = {
       window.addEventListener('scroll', windowHandler, { passive: true });
       handlers.push({ element: window, handler: windowHandler });
 
-      scrollableParents.forEach(parent => {
+      scrollableParents.forEach(p => {
         const handler = () => { if (isVisible) closePicker(); };
-        parent.addEventListener('scroll', handler, { passive: true });
-        handlers.push({ element: parent, handler: handler });
+        p.addEventListener('scroll', handler, { passive: true });
+        handlers.push({ element: p, handler });
       });
 
       scrollCleanup = () => {
-        handlers.forEach(({ element, handler }) => {
-          element.removeEventListener('scroll', handler);
-        });
+        handlers.forEach(({ element, handler }) => element.removeEventListener('scroll', handler));
         handlers.length = 0;
       };
     };
 
-    // Обработчики событий (input, blur, focus, click) - без изменений
     input.addEventListener('input', function() {
       let digits = this.value.replace(/\D/g, '');
       if (digits.length > 8) digits = digits.slice(0, 8);
@@ -1237,8 +1116,7 @@ const DateInputHelper = {
 
       if (picker && picker._render && isVisible) {
         const val = this.value.trim();
-        let displayDate = null;
-        let selectedDate = null;
+        let displayDate = null, selectedDate = null;
         let day = null, month = null, year = null;
         const parts = val.split('.');
         if (parts.length >= 1 && parts[0].length > 0) day = parseInt(parts[0], 10);
@@ -1254,7 +1132,6 @@ const DateInputHelper = {
           }
         }
         const now = new Date();
-        const displayDay = (day !== null && !isNaN(day)) ? day : 1;
         const displayMonth = (month !== null && !isNaN(month)) ? month : now.getMonth();
         const displayYear = (year !== null && !isNaN(year)) ? year : now.getFullYear();
         displayDate = new Date(displayYear, displayMonth, 1);
@@ -1271,13 +1148,8 @@ const DateInputHelper = {
             }
           }
         }
-        if (val.length === 0) {
-          displayDate = new Date();
-          selectedDate = null;
-        }
-        if (displayDate) {
-          picker._render(displayDate, selectedDate);
-        }
+        if (val.length === 0) { displayDate = new Date(); selectedDate = null; }
+        if (displayDate) picker._render(displayDate, selectedDate);
       }
 
       if (this.value.length === 10 && picker && isVisible) {
@@ -1327,18 +1199,28 @@ const DateInputHelper = {
       const related = e.relatedTarget;
       if (related && picker && picker.contains(related)) return;
       closeTimeout = setTimeout(() => {
-        if (picker && !picker.contains(document.activeElement)) {
-          closePicker();
-        }
+        if (picker && !picker.contains(document.activeElement)) closePicker();
       }, 150);
     });
 
     input._datePicker = picker;
+    // [P0-FIX] Полная очистка: снимаем document.pointerdown, удаляем picker и overlay из DOM.
     input._cleanupDatePicker = () => {
       closePicker();
       if (scrollCleanup) scrollCleanup();
-      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      overlay = null;
+      if (picker && picker._outsidePointerHandler) {
+        document.removeEventListener('pointerdown', picker._outsidePointerHandler);
+        picker._outsidePointerHandler = null;
+      }
+      if (picker && picker.parentNode) {
+        picker.parentNode.removeChild(picker);
+        picker = null;
+      }
+      if (overlay && overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+        overlay = null;
+      }
+      input._datePickerInitialized = false;
     };
   },
 

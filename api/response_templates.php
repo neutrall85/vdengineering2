@@ -171,7 +171,7 @@ class ResponseBuilder {
 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
   <tr>
     <td style="padding:30px 30px 20px; border-bottom:4px solid #004E96; text-align:center;">
-      <img src="https://neutrall85.tw1.ru/assets/images/logo.webp" alt="Волга-Днепр Инжиниринг" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
+      <img src="https://vdengineering.ru/assets/images/logo.webp" alt="Волга-Днепр Инжиниринг" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
       <p style="margin:0; font-size:14px; color:#6c757d;">Подтверждение получения запроса</p>
     </td>
   </tr>
@@ -187,7 +187,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД Инжиниринг»</p>
     </td>
   </tr>
 </table>
@@ -229,7 +229,7 @@ class ResponseBuilder {
 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
   <tr>
     <td style="padding:30px 30px 20px; border-bottom:4px solid #004E96; text-align:center;">
-      <img src="https://neutrall85.tw1.ru/assets/images/logo.webp" alt="Волга-Днепр Инжиниринг" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
+      <img src="https://vdengineering.ru/assets/images/logo.webp" alt="Волга-Днепр Инжиниринг" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
       <p style="margin:0; font-size:14px; color:#6c757d;">Подтверждение отклика на вакансию</p>
     </td>
   </tr>
@@ -247,7 +247,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД Инжиниринг»</p>
     </td>
   </tr>
 </table>
@@ -286,7 +286,7 @@ class ResponseBuilder {
 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
   <tr>
     <td style="padding:30px 30px 20px; border-bottom:4px solid #004E96; text-align:center;">
-      <img src="https://neutrall85.tw1.ru/assets/images/logo.webp" alt="Волга-Днепр Инжиниринг" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
+      <img src="https://vdengineering.ru/assets/images/logo.webp" alt="Волга-Днепр Инжиниринг" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
       <p style="margin:0; font-size:14px; color:#6c757d;">Подтверждение получения резюме</p>
     </td>
   </tr>
@@ -303,7 +303,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД Инжиниринг»</p>
     </td>
   </tr>
 </table>
@@ -357,7 +357,7 @@ class ResponseBuilder {
 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
   <tr>
     <td style="padding:30px 30px 20px; border-bottom:4px solid #004E96; text-align:center;">
-      <img src="https://neutrall85.tw1.ru/assets/images/logo.webp" alt="' . $companyEsc . '" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
+      <img src="https://vdengineering.ru/assets/images/logo.webp" alt="' . $companyEsc . '" style="height:50px; width:auto; display:block; margin:0 auto 5px;">
       <p style="margin:0; font-size:14px; color:#6c757d;">Подтверждение получения сообщения</p>
     </td>
   </tr>
@@ -373,7 +373,7 @@ class ResponseBuilder {
   <tr>
     <td style="padding:20px 30px; background-color:#f8f9fa; border-top:1px solid #e9ecef; text-align:center; font-size:12px; color:#6c757d;">
       <p style="margin:0;">Это автоматическое письмо. Пожалуйста, не отвечайте на него.</p>
-      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД-Днепр Инжиниринг»</p>
+      <p style="margin:5px 0 0;">&copy; ' . date('Y') . ' ООО «ВД Инжиниринг»</p>
     </td>
   </tr>
 </table>

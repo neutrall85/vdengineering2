@@ -1,7 +1,6 @@
 /**
  * Главный файл инициализации приложения
  * ООО "ВД Инжиниринг"
- * Строгий ООП стиль: нулевое использование инлайновых коллбэков
  */
 
 class Application {
@@ -10,25 +9,25 @@ class Application {
     this.modules = [];
     this.errors = [];
     this.services = {};
+    this.themeManager = null;
 
     this._boundProgressHandler = null;
     this._boundResizeHandler = null;
     this._boundPopstateHandler = null;
-    this._boundVisibilityHandler = null;
     this._boundHeroObserver = null;
     this._boundFloatingScrollHandler = null;
-    this._boundImageObserver = null;
     this._boundMotionChangeHandler = null;
-    this._boundCookieClickHandler = null;
     this._boundComponentsLoadedScrollHandler = null;
     this._boundHashScrollTimeout = null;
 
+    // [FIX] Ссылки на обработчики формы отчёта об ошибках.
+    this._boundErrorReportHandler = null;
+    this._boundErrorReportCancelHandler = null;
+
     this.scrollProgressElements = null;
     this._heroObserverInstance = null;
-    this._imageObserverInstance = null;
     this._prefersReducedMotion = null;
     this._modalsRegistered = false;
-    this._visibilityHandlerAdded = false;
   }
 
   async init() {
@@ -47,14 +46,11 @@ class Application {
         }
       }
 
-      // Нормализуем путь для определения текущей страницы
       const currentPage = window.location.pathname.replace(/^\/|\/$/g, '').split('/')[0] || 'index';
 
-      // Ждём загрузки компонентов (навбар, футер, модалки)
       const componentsLoadedPromise = new Promise(this._resolveOnComponentsLoaded.bind(this));
       await componentsLoadedPromise;
 
-      // После загрузки компонентов инициализируем остальное
       const currentPath = window.location.pathname;
       if ((currentPath.startsWith('/projects') || currentPath.startsWith('/project-category')) && typeof initProjectsPage === 'function') {
         initProjectsPage();
@@ -62,188 +58,66 @@ class Application {
 
       this._hidePageLoader();
       this._initGlobalHelpers();
-      this._setCurrentYear();
       this._registerModules();
       this._registerModals();
+      this._initThemeManager();
 
       await this._initAllModules();
 
       this._handleDirectUrlAfterLoad();
-
       this._initFormManagers();
 
-      // ===== ИНИЦИАЛИЗАЦИЯ СТРАНИЦ (projects, services, vacancies) =====
-      // Вызываем только после того, как компоненты точно загружены
-      // Используем обработчик события components:loaded для гарантии
       document.addEventListener('components:loaded', () => {
-        const pageInitMap = {
-          'projects': 'initProjectsPage',
-          'services': 'initServicesPage',
-          'vacancies': 'initVacanciesPage'
-        };
-
+        const pageInitMap = { projects: 'initProjectsPage', services: 'initServicesPage', vacancies: 'initVacanciesPage' };
         if (pageInitMap[currentPage]) {
           const initFn = window[pageInitMap[currentPage]];
           if (typeof initFn === 'function') {
-            // Даём браузеру время на отрисовку перед инициализацией
             requestAnimationFrame(() => {
               initFn();
-              if (currentPage === 'vacancies') {
-                window._vacanciesPageInitialized = true;
-              }
+              if (currentPage === 'vacancies') window._vacanciesPageInitialized = true;
             });
           }
         }
       });
 
-      // Также вызываем сразу, если компоненты уже загружены (на случай, если событие уже произошло)
-      // Проверяем, загружены ли компоненты (есть ли навбар)
       if (document.querySelector('.navbar')) {
-        const pageInitMap = {
-          'projects': 'initProjectsPage',
-          'services': 'initServicesPage',
-          'vacancies': 'initVacanciesPage'
-        };
-
+        const pageInitMap = { projects: 'initProjectsPage', services: 'initServicesPage', vacancies: 'initVacanciesPage' };
         if (pageInitMap[currentPage]) {
           const initFn = window[pageInitMap[currentPage]];
           if (typeof initFn === 'function') {
             requestAnimationFrame(() => {
               initFn();
-              if (currentPage === 'vacancies') {
-                window._vacanciesPageInitialized = true;
-              }
+              if (currentPage === 'vacancies') window._vacanciesPageInitialized = true;
             });
           }
         }
       }
 
       this._initFloatingCTA();
-      this._initImageLazyLoading();
       this._initPrefersReducedMotion();
       this._handleHashScroll();
       this._initScrollProgressBar();
       this._initMapLoader();
 
-      // ========== ИНИЦИАЛИЗАЦИЯ ПОИСКА ==========
       if (typeof SearchManager !== 'undefined') {
         const searchManager = new SearchManager();
         searchManager.init();
         this.services.searchManager = searchManager;
-
-        document.addEventListener('components:loaded', () => {
-          if (this.services.searchManager && typeof this.services.searchManager.reindex === 'function') {
-            this.services.searchManager.reindex();
-            Logger.INFO('Search index rebuilt after components loaded');
-          }
-        });
-
-        setTimeout(() => {
-          if (this.services.searchManager && typeof this.services.searchManager.reindex === 'function') {
-            this.services.searchManager.reindex();
-            Logger.INFO('Search index rebuilt after timeout');
-          }
-        }, 2000);
       }
 
-      // ========== ПОДСВЕТКА ИЗ ПАРАМЕТРА highlight С ПРОКРУТКОЙ ==========
       const params = new URLSearchParams(window.location.search);
       const highlightQuery = params.get('highlight');
-
       if (highlightQuery && typeof HighlightUtils !== 'undefined') {
-        const applyHighlightWithRetry = (retryCount = 0) => {
-          HighlightUtils.highlight(highlightQuery);
-          
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              const allMarks = document.querySelectorAll('mark.search-highlight');
-              let targetMark = null;
-              
-              for (const mark of allMarks) {
-                const rect = mark.getBoundingClientRect();
-                if (rect.width > 0 && rect.height > 0) {
-                  targetMark = mark;
-                  break;
-                }
-              }
-              
-              if (targetMark) {
-                const rect = targetMark.getBoundingClientRect();
-                const isInViewport = rect.top >= 0 && rect.bottom <= window.innerHeight;
-                
-                if (!isInViewport) {
-                  const navbar = document.querySelector('.navbar');
-                  const navbarHeight = navbar ? navbar.offsetHeight : 70;
-                  const topOffset = navbarHeight + 20;
-                  const bottomOffset = 30;
-                  
-                  const distanceFromBottom = document.documentElement.scrollHeight - rect.bottom;
-                  let finalPosition;
-                  if (distanceFromBottom < window.innerHeight / 2) {
-                    finalPosition = rect.top + window.scrollY - (window.innerHeight - rect.height - bottomOffset);
-                  } else {
-                    finalPosition = rect.top + window.scrollY - (window.innerHeight / 2) + (rect.height / 2);
-                    finalPosition = Math.max(finalPosition, rect.top + window.scrollY - topOffset);
-                  }
-                  
-                  window.scrollTo({
-                    top: Math.max(0, finalPosition),
-                    behavior: 'smooth'
-                  });
-                  
-                  if (retryCount < 3) {
-                    setTimeout(() => {
-                      const newRect = targetMark.getBoundingClientRect();
-                      const newIsInViewport = newRect.top >= 0 && newRect.bottom <= window.innerHeight;
-                      if (!newIsInViewport) {
-                        window.scrollTo({
-                          top: Math.max(0, finalPosition + 50),
-                          behavior: 'auto'
-                        });
-                        setTimeout(() => {
-                          const finalRect = targetMark.getBoundingClientRect();
-                          if (!(finalRect.top >= 0 && finalRect.bottom <= window.innerHeight)) {
-                            targetMark.scrollIntoView({ block: 'center', behavior: 'auto' });
-                          }
-                        }, 200);
-                      }
-                    }, 300);
-                  }
-                }
-              }
-            });
-          });
-        };
-
-        const executeWithDelay = () => {
-          setTimeout(() => {
-            applyHighlightWithRetry(0);
-          }, 100);
-        };
-
-        if (document.querySelector('#navbar') && document.querySelector('footer.footer')) {
-          executeWithDelay();
-        } else {
-          document.addEventListener('components:loaded', () => {
-            setTimeout(() => {
-              applyHighlightWithRetry(0);
-            }, 100);
-          }, { once: true });
-          setTimeout(() => {
-            applyHighlightWithRetry(0);
-          }, 990);
-        }
+        this._applyHighlightWithRetry(highlightQuery);
       }
 
-      // ========== ПОДПИСКА НА ОТКРЫТИЕ МОДАЛОК ДЛЯ ПОДСВЕТКИ И ПРОКРУТКИ ==========
       if (typeof modalManager !== 'undefined' && typeof HighlightUtils !== 'undefined') {
         const highlightHandler = (event) => {
           const overlay = event.overlay;
-          const params = new URLSearchParams(window.location.search);
-          const query = params.get('highlight');
-          if (query && overlay) {
+          const q = new URLSearchParams(window.location.search).get('highlight');
+          if (q && overlay) {
             setTimeout(() => {
-              HighlightUtils.highlight(query, overlay);
+              HighlightUtils.highlight(q, overlay);
               const firstMark = overlay.querySelector('mark.search-highlight');
               if (firstMark) {
                 const modalBody = overlay.querySelector('.modal-body');
@@ -262,22 +136,13 @@ class Application {
         window.Services?.eventBus?.on('modal:opened', highlightHandler);
       }
 
-      // ========== СКРЫВАЕМ ПОИСК В ФУТЕРЕ НА СТРАНИЦЕ /SEARCH ==========
       if (currentPath === '/search' || currentPath === '/search.html') {
         const footerSearch = document.querySelector('.footer-search');
-        if (footerSearch) {
-          footerSearch.style.display = 'none';
-        }
+        if (footerSearch) footerSearch.style.display = 'none';
       }
 
       if (typeof textSelectionReporter !== 'undefined') {
         textSelectionReporter.init();
-      }
-
-      if (!this._visibilityHandlerAdded) {
-        this._boundVisibilityHandler = this._handleVisibilityChange.bind(this);
-        document.addEventListener('visibilitychange', this._boundVisibilityHandler);
-        this._visibilityHandlerAdded = true;
       }
 
       this.initialized = true;
@@ -290,14 +155,74 @@ class Application {
         window.Services.eventBus.emit('app:ready');
       }
     } catch (error) {
+      this._hidePageLoader();
       this._showError(error);
     }
+  }
+
+  _applyHighlightWithRetry(query, retryCount = 0) {
+    HighlightUtils.highlight(query);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const allMarks = document.querySelectorAll('mark.search-highlight');
+        let targetMark = null;
+        for (const mark of allMarks) {
+          const rect = mark.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) { targetMark = mark; break; }
+        }
+        if (!targetMark) return;
+
+        const rect = targetMark.getBoundingClientRect();
+        const isInViewport = rect.top >= 0 && rect.bottom <= window.innerHeight;
+        if (isInViewport) return;
+
+        const navbar = document.querySelector('.navbar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 70;
+        const topOffset = navbarHeight + 20;
+        const bottomOffset = 30;
+        const distanceFromBottom = document.documentElement.scrollHeight - rect.bottom;
+        let finalPosition;
+
+        if (distanceFromBottom < window.innerHeight / 2) {
+          finalPosition = rect.top + window.scrollY - (window.innerHeight - rect.height - bottomOffset);
+        } else {
+          finalPosition = rect.top + window.scrollY - (window.innerHeight / 2) + (rect.height / 2);
+          finalPosition = Math.max(finalPosition, rect.top + window.scrollY - topOffset);
+        }
+
+        window.scrollTo({ top: Math.max(0, finalPosition), behavior: 'smooth' });
+
+        if (retryCount < 3) {
+          setTimeout(() => {
+            const newRect = targetMark.getBoundingClientRect();
+            if (!(newRect.top >= 0 && newRect.bottom <= window.innerHeight)) {
+              window.scrollTo({ top: Math.max(0, finalPosition + 50), behavior: 'auto' });
+              setTimeout(() => {
+                const finalRect = targetMark.getBoundingClientRect();
+                if (!(finalRect.top >= 0 && finalRect.bottom <= window.innerHeight)) {
+                  targetMark.scrollIntoView({ block: 'center', behavior: 'auto' });
+                }
+              }, 200);
+            }
+          }, 300);
+        }
+      });
+    });
+  }
+
+  _initThemeManager() {
+    if (typeof ThemeManager === 'undefined') {
+      Logger.WARN('ThemeManager not available');
+      return;
+    }
+    this.themeManager = new ThemeManager();
+    this.themeManager.init();
+    this.services.themeManager = this.themeManager;
   }
 
   _handleDirectUrlAfterLoad() {
     const path = window.location.pathname;
 
-    // ========== ОБРАБОТКА ПРЯМЫХ ССЫЛОК НА ВАКАНСИИ ==========
     const vacancyMatch = path.match(/^\/vacancy\/(.+)/);
     if (vacancyMatch) {
       const vacancyId = vacancyMatch[1];
@@ -319,19 +244,19 @@ class Application {
             if (bodyEl) {
               const content = document.createElement('div');
               content.className = 'vacancy-details';
-              if (vacancy.responsibilities && vacancy.responsibilities.length) {
+              if (vacancy.responsibilities?.length) {
                 const respDiv = document.createElement('div');
                 const items = vacancy.responsibilities.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
                 respDiv.innerHTML = `<h4>Обязанности:</h4><ul>${items}</ul>`;
                 content.appendChild(respDiv);
               }
-              if (vacancy.requirements && vacancy.requirements.length) {
+              if (vacancy.requirements?.length) {
                 const reqDiv = document.createElement('div');
                 const items = vacancy.requirements.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
                 reqDiv.innerHTML = `<h4>Требования:</h4><ul>${items}</ul>`;
                 content.appendChild(reqDiv);
               }
-              if (vacancy.conditions && vacancy.conditions.length) {
+              if (vacancy.conditions?.length) {
                 const condDiv = document.createElement('div');
                 const items = vacancy.conditions.map(c => `<li>${Utils.Sanitizer.escapeHtml(c)}</li>`).join('');
                 condDiv.innerHTML = `<h4>Условия:</h4><ul>${items}</ul>`;
@@ -348,74 +273,45 @@ class Application {
       return;
     }
 
-    // ========== НОВОСТИ ==========
     const newsMatch = path.match(/^\/news\/(\d+)/);
-    if (newsMatch) {
-      const newsId = newsMatch[1];
-      if (typeof modalManager !== 'undefined' && typeof modalManager.openNewsById === 'function') {
-        modalManager.openNewsById(newsId);
-      }
+    if (newsMatch && typeof modalManager !== 'undefined' && typeof modalManager.openNewsById === 'function') {
+      modalManager.openNewsById(newsMatch[1]);
       return;
     }
 
-    // ========== ПРОЕКТЫ ==========
     const projectMatch = path.match(/^\/projects\/(.+)/);
-    if (projectMatch) {
-      const projectId = projectMatch[1];
-      if (typeof modalManager !== 'undefined' && typeof modalManager.openProjectById === 'function') {
-        if (typeof initProjectsPage === 'function' && !window._projectsPageInitialized) {
-          initProjectsPage();
-        }
-        modalManager.openProjectById(projectId);
-      }
+    if (projectMatch && typeof modalManager !== 'undefined' && typeof modalManager.openProjectById === 'function') {
+      if (typeof initProjectsPage === 'function' && !window._projectsPageInitialized) initProjectsPage();
+      modalManager.openProjectById(projectMatch[1]);
       return;
     }
 
-    // ========== КАТЕГОРИЯ НОВОСТЕЙ ==========
     const categoryMatch = path.match(/^\/category\/(.+)/);
-    if (categoryMatch) {
-      const categoryName = decodeURIComponent(categoryMatch[1]);
-      if (typeof modalManager !== 'undefined' && typeof modalManager.openCategoryByName === 'function') {
-        modalManager.openCategoryByName(categoryName);
-      }
+    if (categoryMatch && typeof modalManager?.openCategoryByName === 'function') {
+      modalManager.openCategoryByName(decodeURIComponent(categoryMatch[1]));
       return;
     }
 
-    // ========== КАТЕГОРИЯ ПРОЕКТОВ ==========
     const projectCategoryMatch = path.match(/^\/project-category\/(.+)/);
-    if (projectCategoryMatch) {
-      const categoryName = decodeURIComponent(projectCategoryMatch[1]);
-      if (typeof modalManager !== 'undefined' && typeof modalManager.openProjectCategoryByName === 'function') {
-        modalManager.openProjectCategoryByName(categoryName);
-      }
+    if (projectCategoryMatch && typeof modalManager?.openProjectCategoryByName === 'function') {
+      modalManager.openProjectCategoryByName(decodeURIComponent(projectCategoryMatch[1]));
       return;
     }
 
-    // ========== ОБРАТНАЯ СВЯЗЬ ==========
-    if (path === '/feedback' || path === '/feedback.html') {
-      if (typeof modalManager !== 'undefined') {
-        modalManager.open('feedback', { skipUrlUpdate: true, direct: true });
-      }
+    if (path === '/feedback' && typeof modalManager !== 'undefined') {
+      modalManager.open('feedback', { skipUrlUpdate: true, direct: true });
       return;
     }
 
-    // ========== КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ ==========
-    if (path === '/proposal' || path === '/proposal.html') {
-      if (typeof modalManager !== 'undefined') {
-        modalManager.open('proposal', { skipUrlUpdate: true, direct: true });
-      }
+    if (path === '/proposal' && typeof modalManager !== 'undefined') {
+      modalManager.open('proposal', { skipUrlUpdate: true, direct: true });
       return;
     }
 
-    // ========== ПОЛИТИКИ (ДОБАВЛЕНО) ==========
     const policyMatch = path.match(/^\/policy\/(.+)/);
-    if (policyMatch) {
-      const policyKey = policyMatch[1];
-      if (typeof PolicyModalManager !== 'undefined') {
-        PolicyModalManager.openPolicyModal(policyKey);
-        window.history.pushState({ modal: 'policy', key: policyKey }, '', path);
-      }
-      return;
+    if (policyMatch && typeof PolicyModalManager !== 'undefined') {
+      PolicyModalManager.openPolicyModal(policyMatch[1]);
+      window.history.pushState({ modal: 'policy', key: policyMatch[1] }, '', path);
     }
   }
 
@@ -425,41 +321,47 @@ class Application {
       PolicyModalManager.openPolicyModal(state.key);
       return;
     }
-    if (typeof initDynamicSEO === 'function') {
-      initDynamicSEO();
-    }
+    if (typeof initDynamicSEO === 'function') initDynamicSEO();
   }
 
   _resolveOnComponentsLoaded(resolve) {
-    const onComponentsLoaded = function() {
+    let resolved = false;
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
       document.removeEventListener('components:loaded', onComponentsLoaded);
       resolve();
     };
+    const onComponentsLoaded = () => done();
+
     document.addEventListener('components:loaded', onComponentsLoaded);
+    setTimeout(done, 3000);
 
     if (typeof ComponentLoader !== 'undefined') {
-      const currentPage = window.location.pathname.replace(/^\/|\/$/g, '').split('/')[0] || 'index';
-      ComponentLoader.init({
-        loadNavbar: true,
-        loadFooter: true,
-        loadModal: true,
-        activePage: currentPage === 'index' ? '' : currentPage
-      });
+      try {
+        const currentPage = window.location.pathname.replace(/^\/|\/$/g, '').split('/')[0] || 'index';
+        ComponentLoader.init({
+          loadNavbar: true,
+          loadFooter: true,
+          loadModal: true,
+          activePage: currentPage === 'index' ? '' : currentPage
+        });
+      } catch (err) {
+        Logger.ERROR('ComponentLoader.init() threw:', err);
+        done();
+      }
     } else {
-      resolve();
+      done();
     }
   }
 
   async _initAllModules() {
-    for (let i = 0; i < this.modules.length; i++) {
-      const module = this.modules[i];
+    for (const module of this.modules) {
       try {
-        if (module && typeof module.init === 'function') {
-          await module.init();
-        }
+        if (module && typeof module.init === 'function') await module.init();
       } catch (err) {
-        const moduleName = (module.constructor && module.constructor.name) || 'unknown';
-        this.errors.push('Module ' + moduleName + ' init failed: ' + err.message);
+        const name = module.constructor?.name || 'unknown';
+        this.errors.push('Module ' + name + ' init failed: ' + err.message);
       }
     }
   }
@@ -467,22 +369,18 @@ class Application {
   _initFormManagers() {
     const proposalForm = document.getElementById('proposalForm');
     if (proposalForm) {
-      if (typeof FormManager !== 'undefined' && window.Services && window.Services.apiClient) {
+      if (typeof FormManager !== 'undefined' && window.Services?.apiClient) {
         const rateLimiter = new Utils.RateLimiter(window.Services.storage);
         window.formManager = new FormManager(window.Services.apiClient, rateLimiter);
         this.services.formManager = window.formManager;
       } else {
         Logger.WARN('FormManager or apiClient not available');
       }
-    } else {
-      Logger.WARN('Form #proposalForm not found, FormManager not created');
     }
 
     if (typeof UniversalApplicationModalManager !== 'undefined') {
       UniversalApplicationModalManager.init();
       this.services.universalModalManager = UniversalApplicationModalManager;
-    } else {
-      Logger.WARN('UniversalApplicationModalManager not available');
     }
 
     const feedbackForm = document.getElementById('feedbackForm');
@@ -493,7 +391,7 @@ class Application {
         successSelector: '#feedbackSuccessMessage',
         fileDropSelector: '.form-file',
         apiClient: window.Services.apiClient,
-        rateLimiter: rateLimiter,
+        rateLimiter,
         modalKey: 'feedback',
         fileOptions: { maxFiles: 10, maxTotalSize: 24 * 1024 * 1024 },
         messages: {
@@ -507,79 +405,75 @@ class Application {
       this.services.feedbackFormManager = window.feedbackFormManager;
     }
 
-    const dateInput = document.getElementById('desiredDate');
-    if (dateInput && typeof DateInputHelper !== 'undefined') {
-      DateInputHelper.initDateInput(dateInput);
-    }
-
-    const approvalDateInput = document.getElementById('desiredApprovalDate');
-    if (approvalDateInput && typeof DateInputHelper !== 'undefined') {
-      DateInputHelper.initDateInput(approvalDateInput);
-    }
-
     const errorForm = document.getElementById('errorReportForm');
     if (errorForm) {
-        errorForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = document.getElementById('errorReportText').value.trim();
-            if (!text) {
-                alert('Нет текста для отправки.');
-                return;
-            }
-            const comment = document.getElementById('errorReportComment').value.trim();
-            if (comment.length > 1000) {
-                alert('Комментарий не может превышать 1000 символов.');
-                return;
-            }
-            const submitBtn = document.getElementById('errorReportSubmitBtn');
-            const originalText = submitBtn.textContent;
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Отправка...';
-            try {
-                const response = await fetch('/api/report-error.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'error_report',
-                        selectedText: text,
-                        comment: comment,
-                        url: window.location.href,
-                        userAgent: navigator.userAgent
-                    })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    alert('✅ Спасибо! Сообщение об ошибке отправлено.');
-                    if (window.textSelectionReporter) {
-                        window.textSelectionReporter._recordRateLimit();
-                    }
-                    if (typeof modalManager !== 'undefined') {
-                        modalManager.close('error-report');
-                    }
-                } else {
-                    throw new Error(result.error || 'Ошибка отправки');
-                }
-            } catch (err) {
-                alert('❌ Не удалось отправить: ' + err.message);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
-            }
-        });
-        const cancelBtn = document.getElementById('errorReportCancelBtn');
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                if (typeof modalManager !== 'undefined') {
-                    modalManager.close('error-report');
-                }
-            });
+      // [FIX] Обработчики сохраняются в this._bound... и снимаются в destroy().
+      this._boundErrorReportHandler = async (e) => {
+        e.preventDefault();
+
+        const text = document.getElementById('errorReportText').value.trim();
+        if (!text) { alert('Нет текста для отправки.'); return; }
+
+        const comment = document.getElementById('errorReportComment').value.trim();
+        if (comment.length > 1000) { alert('Комментарий не может превышать 1000 символов.'); return; }
+
+        const submitBtn = document.getElementById('errorReportSubmitBtn');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка...';
+
+        try {
+          const csrfToken = await FormUtils.fetchCsrfToken();
+          if (!csrfToken) {
+            alert('❌ Ошибка безопасности. Обновите страницу и попробуйте снова.');
+            return;
+          }
+
+          const response = await fetch('/api/report-error.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+              type: 'error_report',
+              selectedText: text,
+              comment,
+              url: window.location.href,
+              userAgent: navigator.userAgent
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            alert('✅ Спасибо! Сообщение об ошибке отправлено.');
+            if (window.textSelectionReporter) window.textSelectionReporter._recordRateLimit();
+            if (typeof modalManager !== 'undefined') modalManager.close('error-report');
+          } else {
+            throw new Error(result.error || 'Ошибка отправки');
+          }
+        } catch (err) {
+          alert('❌ Не удалось отправить: ' + err.message);
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
         }
+      };
+      errorForm.addEventListener('submit', this._boundErrorReportHandler);
+
+      const cancelBtn = document.getElementById('errorReportCancelBtn');
+      if (cancelBtn) {
+        this._boundErrorReportCancelHandler = () => {
+          if (typeof modalManager !== 'undefined') modalManager.close('error-report');
+        };
+        cancelBtn.addEventListener('click', this._boundErrorReportCancelHandler);
+      }
     }
   }
 
   _registerModules() {
     const modulesToRegister = [];
-
     if (typeof navigationManager !== 'undefined') {
       this.services.navigationManager = navigationManager;
       modulesToRegister.push(navigationManager);
@@ -592,78 +486,54 @@ class Application {
       this.services.newsManager = newsManager;
       modulesToRegister.push(newsManager);
     }
-    if (typeof newsRenderer !== 'undefined') {
-      this.services.newsRenderer = newsRenderer;
-    }
-    if (typeof modalManager !== 'undefined') {
-      this.services.modalManager = modalManager;
-    }
-
+    if (typeof newsRenderer !== 'undefined') this.services.newsRenderer = newsRenderer;
+    if (typeof modalManager !== 'undefined') this.services.modalManager = modalManager;
     this.modules = modulesToRegister;
   }
 
   _registerModals() {
     if (typeof modalManager === 'undefined' || this._modalsRegistered) return;
-
     const modalsToRegister = [
-      { key: 'about', overlayId: 'aboutModalOverlay', required: false },
-      { key: 'details', overlayId: 'detailsModalOverlay', required: false },
-      { key: 'news', overlayId: 'newsModalOverlay', required: false },
-      { key: 'proposal', overlayId: 'proposalModalOverlay', required: false, focusSelector: '#companyName', onClose: this._handleProposalClose.bind(this) },
-      { key: 'universal', overlayId: 'universalApplicationModalOverlay', required: false, focusSelector: 'input[type="text"], input[type="email"], textarea', onClose: this._handleUniversalClose.bind(this) },
-      { key: 'project', overlayId: 'projectModalOverlay', required: false },
-      { key: 'service', overlayId: 'serviceModalOverlay', required: false },
-      { key: 'policy', overlayId: 'policyModalOverlay', required: false },
-      { key: 'success', overlayId: 'successModalOverlay', required: false },
-      { key: 'feedback', overlayId: 'feedbackModalOverlay', required: false, onClose: this._handleFeedbackClose.bind(this) },
-      { key: 'category', overlayId: 'categoryNewsModalOverlay', required: false },
-      { key: 'project-category', overlayId: 'projectCategoryModalOverlay', required: false },
-      { key: 'error-report', overlayId: 'errorReportModalOverlay', required: false, onClose: this._handleErrorReportClose.bind(this) },
-      { key: 'vacancy', overlayId: 'vacancyModalOverlay', required: false }
+      { key: 'news', overlayId: 'newsModalOverlay' },
+      { key: 'proposal', overlayId: 'proposalModalOverlay', focusSelector: '#companyName', onClose: this._handleProposalClose.bind(this) },
+      { key: 'universal', overlayId: 'universalApplicationModalOverlay', focusSelector: 'input[type="text"], input[type="email"], textarea', onClose: this._handleUniversalClose.bind(this) },
+      { key: 'project', overlayId: 'projectModalOverlay' },
+      { key: 'service', overlayId: 'serviceModalOverlay' },
+      { key: 'policy', overlayId: 'policyModalOverlay' },
+      { key: 'success', overlayId: 'successModalOverlay' },
+      { key: 'feedback', overlayId: 'feedbackModalOverlay', onClose: this._handleFeedbackClose.bind(this) },
+      { key: 'category', overlayId: 'categoryNewsModalOverlay' },
+      { key: 'project-category', overlayId: 'projectCategoryModalOverlay' },
+      { key: 'error-report', overlayId: 'errorReportModalOverlay', onClose: this._handleErrorReportClose.bind(this) },
+      { key: 'vacancy', overlayId: 'vacancyModalOverlay' }
     ];
-
-    for (let i = 0; i < modalsToRegister.length; i++) {
-      this._processModalRegistration(modalsToRegister[i]);
-    }
+    for (const cfg of modalsToRegister) this._processModalRegistration(cfg);
     this._modalsRegistered = true;
   }
 
   _processModalRegistration(config) {
-    const key = config.key;
-    const overlayId = config.overlayId;
-    const required = config.required;
-    const onClose = config.onClose;
-    const onOpen = config.onOpen;
-    const focusSelector = config.focusSelector;
-
-    const overlay = document.getElementById(overlayId);
+    const overlay = document.getElementById(config.overlayId);
     if (overlay) {
-      modalManager.register(key, { overlayId: overlayId, onClose: onClose, onOpen: onOpen, focusSelector: focusSelector });
-    } else if (required) {
-      Logger.WARN('Required modal "' + key + '" not found');
+      modalManager.register(config.key, {
+        overlayId: config.overlayId,
+        onClose: config.onClose,
+        onOpen: config.onOpen,
+        focusSelector: config.focusSelector
+      });
     }
   }
 
   _handleProposalClose() {
-    if (window.formManager) {
-      window.formManager.resetForm();
-    } else {
-      Logger.WARN('formManager not available on proposal close');
-    }
+    if (window.formManager) window.formManager.resetForm();
+    else Logger.WARN('formManager not available on proposal close');
   }
 
   _handleUniversalClose() {
-    if (typeof UniversalApplicationModalManager !== 'undefined') {
-      UniversalApplicationModalManager.resetForm();
-    } else {
-      Logger.WARN('UniversalApplicationModalManager not available on universal close');
-    }
+    if (typeof UniversalApplicationModalManager !== 'undefined') UniversalApplicationModalManager.resetForm();
   }
 
   _handleFeedbackClose() {
-    if (window.feedbackFormManager) {
-      window.feedbackFormManager.resetForm();
-    }
+    if (window.feedbackFormManager) window.feedbackFormManager.resetForm();
   }
 
   _handleErrorReportClose() {
@@ -678,86 +548,17 @@ class Application {
     window.toggleMobileMenu = this._globalToggleMobileMenu.bind(this);
     window.closeMobileMenu = this._globalCloseMobileMenu.bind(this);
     window.removeFile = this._globalRemoveFile.bind(this);
-    window.toggleWidget = this._globalToggleWidget.bind(this);
-
-    this._boundCookieClickHandler = this._handleCookieSettingsClick.bind(this);
-    document.addEventListener('click', this._boundCookieClickHandler);
   }
 
-  _globalScrollToTop() {
-    if (typeof navigationManager !== 'undefined') {
-      navigationManager.scrollToTop();
-    }
-  }
-
-  _globalToggleMobileMenu() {
-    if (typeof navigationManager !== 'undefined') {
-      navigationManager.toggleMobileMenu();
-    }
-  }
-
-  _globalCloseMobileMenu() {
-    if (typeof navigationManager !== 'undefined') {
-      navigationManager.closeMobileMenu();
-    }
-  }
+  _globalScrollToTop() { if (typeof navigationManager !== 'undefined') navigationManager.scrollToTop(); }
+  _globalToggleMobileMenu() { if (typeof navigationManager !== 'undefined') navigationManager.toggleMobileMenu(); }
+  _globalCloseMobileMenu() { if (typeof navigationManager !== 'undefined') navigationManager.closeMobileMenu(); }
 
   _globalRemoveFile(event, index) {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-    if (window.formManager && typeof window.formManager.removeFile === 'function') {
-      window.formManager.removeFile(index);
-    } else if (typeof UniversalApplicationModalManager !== 'undefined' && UniversalApplicationModalManager.removeFile) {
-      UniversalApplicationModalManager.removeFile(index);
-    } else if (window.feedbackFormManager && typeof window.feedbackFormManager.removeFile === 'function') {
-      window.feedbackFormManager.removeFile(index);
-    }
-  }
-
-  _globalToggleWidget(header) {
-    const widget = header.closest('.certificate-widget');
-    if (widget) {
-      widget.classList.toggle('active');
-    }
-  }
-
-  _handleCookieSettingsClick(e) {
-    const link = e.target.closest('#cookie-settings-link');
-    if (!link) return;
-
-    e.preventDefault();
-    const storage = window.Services && window.Services.storage;
-    if (storage && typeof ConsentManager.withdrawConsent === 'function') {
-      ConsentManager.withdrawConsent(storage);
-    }
-
-    setTimeout(this._switchMapToStatic.bind(this), 150);
-  }
-
-  _switchMapToStatic() {
-    const container = document.getElementById('mapContainer');
-    if (!container) return;
-
-    const staticUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.STATIC_URL;
-    if (!staticUrl) return;
-
-    const iframe = container.querySelector('iframe');
-    if (iframe) iframe.remove();
-
-    let img = container.querySelector('img');
-    if (img) return;
-
-    img = document.createElement('img');
-    img.id = 'staticMap';
-    img.className = 'static-map';
-    img.src = staticUrl;
-    img.alt = 'Карта проезда к офису';
-    img.loading = 'lazy';
-    container.appendChild(img);
-
-    Logger.INFO('Карта принудительно переключена на статику (прямой обработчик)');
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    if (window.formManager?.removeFile) window.formManager.removeFile(index);
+    else if (typeof UniversalApplicationModalManager !== 'undefined' && UniversalApplicationModalManager.removeFile) UniversalApplicationModalManager.removeFile(index);
+    else if (window.feedbackFormManager?.removeFile) window.feedbackFormManager.removeFile(index);
   }
 
   _hidePageLoader() {
@@ -767,7 +568,6 @@ class Application {
       setTimeout(this._finishHideLoader.bind(this), 100);
     }
   }
-
   _finishHideLoader() {
     const loader = document.getElementById('pageLoader');
     if (loader) {
@@ -775,37 +575,21 @@ class Application {
       setTimeout(this._completelyHideLoader.bind(this), 300);
     }
   }
-
   _completelyHideLoader() {
     const loader = document.getElementById('pageLoader');
-    if (loader) {
-      loader.style.display = 'none';
-    }
-  }
-
-  _setCurrentYear() {
-    const yearElement = document.getElementById('currentYear');
-    if (yearElement) {
-      yearElement.textContent = new Date().getFullYear();
-    }
+    if (loader) loader.style.display = 'none';
   }
 
   _initFloatingCTA() {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
-
     const currentPath = window.location.pathname;
-
     if (currentPath === '/partners.html' || currentPath === '/contacts.html') {
       floatingBtn.classList.add('visible');
       return;
     }
-
     const isHomePage = currentPath === '/' || currentPath.endsWith('index.html') || currentPath === '';
-    if (!isHomePage) {
-      floatingBtn.remove();
-      return;
-    }
+    if (!isHomePage) { floatingBtn.remove(); return; }
 
     const heroSection = document.querySelector('.hero');
     if (heroSection) {
@@ -813,8 +597,7 @@ class Application {
       this._heroObserverInstance = new IntersectionObserver(this._boundHeroObserver, { threshold: [0, 0.5, 1] });
       this._heroObserverInstance.observe(heroSection);
     } else {
-      const SCROLL_THRESHOLD = 150;
-      this._boundFloatingScrollHandler = this._handleFloatingScroll.bind(this, SCROLL_THRESHOLD, floatingBtn);
+      this._boundFloatingScrollHandler = this._handleFloatingScroll.bind(this, 150, floatingBtn);
       window.addEventListener('scroll', this._boundFloatingScrollHandler);
       this._boundFloatingScrollHandler();
     }
@@ -823,135 +606,62 @@ class Application {
   _handleHeroIntersection(entries) {
     const floatingBtn = document.querySelector('.floating-cta-btn');
     if (!floatingBtn) return;
-
-    for (let i = 0; i < entries.length; i++) {
-      this._processHeroEntry(floatingBtn, entries[i]);
-    }
-  }
-
-  _processHeroEntry(btn, entry) {
-    if (entry.intersectionRatio < 0.5) {
-      btn.classList.add('visible');
-    } else {
-      btn.classList.remove('visible');
+    for (const entry of entries) {
+      if (entry.intersectionRatio < 0.5) floatingBtn.classList.add('visible');
+      else floatingBtn.classList.remove('visible');
     }
   }
 
   _handleFloatingScroll(threshold, btn) {
-    if (window.scrollY > threshold) {
-      btn.classList.add('visible');
-    } else {
-      btn.classList.remove('visible');
-    }
-  }
-
-  _initImageLazyLoading() {
-    const lazyImages = document.querySelectorAll('img[data-src]');
-
-    if ('IntersectionObserver' in window) {
-      this._boundImageObserver = this._handleImageIntersection.bind(this);
-      this._imageObserverInstance = new IntersectionObserver(this._boundImageObserver, { rootMargin: '100px' });
-      for (let i = 0; i < lazyImages.length; i++) {
-        this._observeImage(lazyImages[i]);
-      }
-    } else {
-      for (let i = 0; i < lazyImages.length; i++) {
-        this._loadImageImmediately(lazyImages[i]);
-      }
-    }
-  }
-
-  _observeImage(img) {
-    this._imageObserverInstance.observe(img);
-  }
-
-  _handleImageIntersection(entries) {
-    for (let i = 0; i < entries.length; i++) {
-      this._processImageEntry(entries[i]);
-    }
-  }
-
-  _processImageEntry(entry) {
-    if (entry.isIntersecting) {
-      const img = entry.target;
-      const src = img.getAttribute('data-src');
-      if (src) {
-        img.src = src;
-        img.removeAttribute('data-src');
-        img.classList.add('loaded');
-      }
-      this._imageObserverInstance.unobserve(img);
-    }
-  }
-
-  _loadImageImmediately(img) {
-    const src = img.getAttribute('data-src');
-    if (src) {
-      img.src = src;
-      img.removeAttribute('data-src');
-    }
+    if (window.scrollY > threshold) btn.classList.add('visible');
+    else btn.classList.remove('visible');
   }
 
   _initPrefersReducedMotion() {
     this._prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-    if (this._prefersReducedMotion.matches) {
-      document.body.classList.add('reduced-motion');
-    }
-
+    if (this._prefersReducedMotion.matches) document.body.classList.add('reduced-motion');
     this._boundMotionChangeHandler = this._handleMotionChange.bind(this);
     this._prefersReducedMotion.addEventListener('change', this._boundMotionChangeHandler);
   }
 
   _handleMotionChange(e) {
-    if (e.matches) {
-      document.body.classList.add('reduced-motion');
-    } else {
-      document.body.classList.remove('reduced-motion');
-    }
+    if (e.matches) document.body.classList.add('reduced-motion');
+    else document.body.classList.remove('reduced-motion');
   }
 
   _handleHashScroll() {
     const hash = window.location.hash;
     if (!hash || hash === '#') return;
-
-    const targetId = hash.substring(1);
-    const targetElement = document.getElementById(targetId);
+    const targetElement = document.getElementById(hash.substring(1));
     if (!targetElement) return;
-
     this._boundComponentsLoadedScrollHandler = this._scrollToTarget.bind(this, targetElement);
     document.addEventListener('components:loaded', this._boundComponentsLoadedScrollHandler, { once: true });
     this._boundHashScrollTimeout = setTimeout(this._boundComponentsLoadedScrollHandler, 800);
   }
 
   _scrollToTarget(targetElement) {
-    const delay = (window.CONFIG && window.CONFIG.PERFORMANCE && window.CONFIG.PERFORMANCE.HASH_SCROLL_DELAY_MS) || 400;
+    const delay = window.CONFIG?.PERFORMANCE?.HASH_SCROLL_DELAY_MS || 400;
     setTimeout(this._performScrollToTarget.bind(this, targetElement), delay);
   }
 
   _performScrollToTarget(targetElement) {
     const navbar = document.querySelector('.navbar');
     const headerHeight = navbar ? navbar.offsetHeight : 70;
-    const offset = headerHeight + 5;
     const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
+    window.scrollTo({ top: elementPosition - (headerHeight + 5), behavior: 'smooth' });
   }
 
   _initScrollProgressBar() {
     if (this.scrollProgressElements) return;
-
     const container = document.createElement('div');
     container.className = 'scroll-progress-container';
     const bar = document.createElement('div');
     bar.className = 'scroll-progress-bar';
     container.appendChild(bar);
     document.body.appendChild(container);
-
-    this.scrollProgressElements = { container: container, bar: bar };
-
+    this.scrollProgressElements = { container, bar };
     this._boundProgressHandler = this._updateScrollProgress.bind(this, bar);
     this._boundResizeHandler = this._updateScrollProgress.bind(this, bar);
-
     window.addEventListener('scroll', this._boundProgressHandler);
     window.addEventListener('resize', this._boundResizeHandler);
     this._updateScrollProgress(bar);
@@ -971,10 +681,9 @@ class Application {
   _destroyScrollProgressBar() {
     if (this.scrollProgressElements) {
       const container = this.scrollProgressElements.container;
-      if (container && container.parentNode) container.parentNode.removeChild(container);
+      if (container?.parentNode) container.parentNode.removeChild(container);
       this.scrollProgressElements = null;
     }
-
     if (this._boundProgressHandler) {
       window.removeEventListener('scroll', this._boundProgressHandler);
       window.removeEventListener('resize', this._boundResizeHandler);
@@ -984,150 +693,101 @@ class Application {
   }
 
   _initMapLoader() {
-    const container = document.getElementById('mapContainer');
-    if (!container) return;
-
-    const staticUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.STATIC_URL;
-    const mapPageUrl = window.CONFIG && window.CONFIG.MAP && window.CONFIG.MAP.MAP_PAGE_URL;
-
-    if (!staticUrl || !mapPageUrl) {
-      Logger.WARN('Map static URL or page URL not configured');
-      return;
-    }
-
-    container.innerHTML = '';
-
-    const img = document.createElement('img');
-    img.className = 'static-map';
-    img.src = staticUrl;
-    img.alt = 'Карта проезда к офису';
-    img.loading = 'lazy';
-
-    img.addEventListener('click', this._handleMapClick.bind(this, mapPageUrl));
-    container.appendChild(img);
+    // [FIX] Поддерживает как #mapContainer (обратная совместимость), так и
+    // [data-map-container] — для случаев, когда таких контейнеров несколько.
+    const containers = document.querySelectorAll('#mapContainer, [data-map-container]');
+    if (containers.length === 0) return;
+    const staticUrl = window.CONFIG?.MAP?.STATIC_URL;
+    const mapPageUrl = window.CONFIG?.MAP?.MAP_PAGE_URL;
+    if (!staticUrl || !mapPageUrl) { Logger.WARN('Map static URL or page URL not configured'); return; }
+    containers.forEach(container => {
+      container.innerHTML = '';
+      const img = document.createElement('img');
+      img.className = 'static-map';
+      img.src = staticUrl;
+      img.alt = 'Карта проезда к офису';
+      img.loading = 'lazy';
+      img.addEventListener('click', this._handleMapClick.bind(this, mapPageUrl));
+      container.appendChild(img);
+    });
     Logger.INFO('Статическая карта загружена');
   }
 
-  _handleMapClick(url) {
-    window.open(url, '_blank');
-  }
-
-  _handleVisibilityChange() {
-    if (!document.hidden && window.newsManager) {
-      const activeTab = document.querySelector('.news-tab.active');
-      if (activeTab) {
-        const year = activeTab.dataset.year || activeTab.dataset.tab;
-        if (year) {
-          const container = document.getElementById('newsGrid-' + year);
-          if (container && window.newsRenderer) {
-            window.newsRenderer.render(year, container);
-          }
-        }
-      }
-    }
-  }
+  _handleMapClick(url) { window.open(url, '_blank'); }
 
   _showError(error) {
     const errorContainer = document.getElementById('appError');
     if (errorContainer) {
       errorContainer.style.display = 'block';
       errorContainer.replaceChildren();
-
       const errorDiv = document.createElement('div');
       errorDiv.className = 'app-error-message-block';
-
       const h2 = document.createElement('h2');
       h2.className = 'app-error-title';
       h2.textContent = 'Ошибка загрузки приложения';
       errorDiv.appendChild(h2);
-
       const p1 = document.createElement('p');
       p1.className = 'app-error-text';
       p1.textContent = 'Произошла ошибка при инициализации сайта. Пожалуйста, обновите страницу.';
       errorDiv.appendChild(p1);
-
       const p2 = document.createElement('p');
       p2.className = 'app-error-detail';
       p2.textContent = Utils.Sanitizer.escapeHtml(error.message);
       errorDiv.appendChild(p2);
-
       const reloadBtn = document.createElement('button');
       reloadBtn.className = 'app-error-reload-btn';
       reloadBtn.textContent = 'Обновить страницу';
       reloadBtn.addEventListener('click', this._handleReloadClick.bind(this));
       errorDiv.appendChild(reloadBtn);
-
       errorContainer.appendChild(errorDiv);
     } else {
       alert('Ошибка загрузки приложения: ' + Utils.Sanitizer.escapeHtml(error.message));
     }
   }
 
-  _handleReloadClick() {
-    window.location.reload();
-  }
+  _handleReloadClick() { window.location.reload(); }
 
   destroy() {
     if (this._boundPopstateHandler) window.removeEventListener('popstate', this._boundPopstateHandler);
-    if (this._boundVisibilityHandler) document.removeEventListener('visibilitychange', this._boundVisibilityHandler);
-    if (this._boundCookieClickHandler) document.removeEventListener('click', this._boundCookieClickHandler);
     if (this._boundMotionChangeHandler && this._prefersReducedMotion) this._prefersReducedMotion.removeEventListener('change', this._boundMotionChangeHandler);
     if (this._boundComponentsLoadedScrollHandler) document.removeEventListener('components:loaded', this._boundComponentsLoadedScrollHandler);
     if (this._boundHashScrollTimeout) clearTimeout(this._boundHashScrollTimeout);
-
     if (this._heroObserverInstance) this._heroObserverInstance.disconnect();
-    if (this._imageObserverInstance) this._imageObserverInstance.disconnect();
     if (this._boundFloatingScrollHandler) window.removeEventListener('scroll', this._boundFloatingScrollHandler);
-
     this._destroyScrollProgressBar();
 
-    const servicesToDestroy = [
-      'navigationManager', 'animationManager', 'modalManager',
-      'newsManager', 'newsRenderer', 'formManager', 'consentManager', 'feedbackFormManager'
-    ];
-
-    for (let i = 0; i < servicesToDestroy.length; i++) {
-      this._destroyService(servicesToDestroy[i]);
+    // [FIX] Снимаем обработчики формы отчёта об ошибках.
+    if (this._boundErrorReportHandler) {
+      const errorForm = document.getElementById('errorReportForm');
+      if (errorForm) errorForm.removeEventListener('submit', this._boundErrorReportHandler);
+      this._boundErrorReportHandler = null;
+    }
+    if (this._boundErrorReportCancelHandler) {
+      const cancelBtn = document.getElementById('errorReportCancelBtn');
+      if (cancelBtn) cancelBtn.removeEventListener('click', this._boundErrorReportCancelHandler);
+      this._boundErrorReportCancelHandler = null;
     }
 
-    if (typeof UniversalApplicationModalManager !== 'undefined' && typeof UniversalApplicationModalManager.destroy === 'function') {
-      UniversalApplicationModalManager.destroy();
-    }
-    if (typeof textSelectionReporter !== 'undefined' && typeof textSelectionReporter.destroy === 'function') {
-      textSelectionReporter.destroy();
-    }
+    const servicesToDestroy = ['navigationManager', 'animationManager', 'modalManager', 'newsManager', 'newsRenderer', 'formManager', 'consentManager', 'feedbackFormManager', 'themeManager'];
+    for (const name of servicesToDestroy) this._destroyService(name);
+
+    if (typeof UniversalApplicationModalManager !== 'undefined' && UniversalApplicationModalManager.destroy) UniversalApplicationModalManager.destroy();
+    if (typeof textSelectionReporter !== 'undefined' && textSelectionReporter.destroy) textSelectionReporter.destroy();
 
     this._cleanupGlobals();
-
-    this.modules = [];
-    this.errors = [];
-    this.services = {};
-    this.initialized = false;
+    this.modules = []; this.errors = []; this.services = {};
+    this.initialized = false; this.themeManager = null;
   }
 
-  _destroyService(serviceName) {
-    const service = this.services[serviceName];
-    if (service && typeof service.destroy === 'function') {
-      service.destroy();
-    }
+  _destroyService(name) {
+    const service = this.services[name];
+    if (service && typeof service.destroy === 'function') service.destroy();
   }
 
   _cleanupGlobals() {
-    const globalFunctions = [
-      'scrollToTop', 'toggleMobileMenu', 'closeModal', 'removeFile', 'closeMobileMenu',
-      'closeAboutModal', 'closeDetailsModal', 'closeNewsModal', 'closePolicyModal',
-      'toggleWidget', 'openDetailsModal', 'openProjectModal', 'initProjectGallery',
-      'openApplicationModal', 'closeUniversalApplicationModal'
-    ];
-
-    for (let i = 0; i < globalFunctions.length; i++) {
-      this._cleanupGlobalFunction(globalFunctions[i]);
-    }
-  }
-
-  _cleanupGlobalFunction(fnName) {
-    if (typeof window[fnName] === 'function') {
-      delete window[fnName];
+    const fns = ['scrollToTop', 'toggleMobileMenu', 'closeModal', 'removeFile', 'closeMobileMenu', 'closeAboutModal', 'closeDetailsModal', 'closeNewsModal', 'closePolicyModal', 'openDetailsModal', 'openProjectModal', 'initProjectGallery', 'openApplicationModal', 'closeUniversalApplicationModal'];
+    for (const name of fns) {
+      if (typeof window[name] === 'function') delete window[name];
     }
   }
 }
@@ -1138,9 +798,8 @@ function initApp() {
   const hasConfig = typeof window.CONFIG !== 'undefined';
   const hasServices = typeof window.Services !== 'undefined';
   const hasUtils = typeof window.Utils !== 'undefined';
-
   if (!hasConfig || !hasServices || !hasUtils) {
-    setTimeout(retryInitialization, (window.CONFIG && window.CONFIG.PERFORMANCE && window.CONFIG.PERFORMANCE.INIT_APP_DELAY_MS) || 100);
+    setTimeout(retryInitialization, window.CONFIG?.PERFORMANCE?.INIT_APP_DELAY_MS || 100);
     return;
   }
 
@@ -1149,7 +808,6 @@ function initApp() {
       if (typeof NewsRenderer !== 'undefined' && typeof NewsManager !== 'undefined') {
         window.newsRenderer = new NewsRenderer(NEWS_DATA);
         window.newsManager = new NewsManager(NEWS_DATA, window.newsRenderer);
-        window.newsManager.init();
       } else {
         Logger.ERROR('NewsRenderer или NewsManager не определен');
       }
@@ -1167,10 +825,6 @@ function initApp() {
     }
   }
 
-  if (typeof initDocPreviews === 'function') {
-    initDocPreviews();
-  }
-
   const app = new Application();
   window.App = app;
 
@@ -1186,9 +840,7 @@ function initApp() {
   app.init();
 }
 
-function retryInitialization() {
-  initApp();
-}
+function retryInitialization() { initApp(); }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);

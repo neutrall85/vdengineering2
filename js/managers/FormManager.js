@@ -11,8 +11,8 @@ class FormManager {
       apiClient,
       rateLimiter,
       modalKey: 'proposal',
-      fileOptions: { 
-        maxFiles: 10, 
+      fileOptions: {
+        maxFiles: 10,
         maxTotalSize: 24 * 1024 * 1024
       },
       messages: {
@@ -35,12 +35,6 @@ class FormManager {
 
   removeFile(index) {
     if (this.handler) this.handler.removeFile(index);
-  }
-
-  openModal() {
-    if (typeof modalManager !== 'undefined') {
-      modalManager.open('proposal');
-    }
   }
 
   destroy() {

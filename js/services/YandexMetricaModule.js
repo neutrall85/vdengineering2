@@ -19,20 +19,17 @@ const YandexMetricaModule = {
       return;
     }
 
-    // Если ym уже существует, просто инициализируем счётчик
     if (typeof window.ym === 'function') {
       this._initCounter();
       this.state.initialized = true;
       return;
     }
 
-    // Загружаем скрипт через официальный сниппет (без document.write)
     this._loadWithSnippet();
   },
 
   _loadWithSnippet() {
     try {
-      // Официальный сниппет Яндекс.Метрики (без document.write)
       (function(m,e,t,r,i,k,a){
         m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
         m[i].l=1*new Date();
@@ -47,7 +44,6 @@ const YandexMetricaModule = {
       })
       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
 
-      // Ждём появления ym (до 2 секунд)
       let attempts = 0;
       const maxAttempts = 20;
       const checkInterval = 100;
@@ -62,10 +58,8 @@ const YandexMetricaModule = {
         return false;
       };
 
-      // Первая проверка сразу
       if (checkYm()) return;
 
-      // Повторные проверки с интервалом
       const intervalId = setInterval(() => {
         attempts++;
         if (checkYm()) {
@@ -111,22 +105,45 @@ const YandexMetricaModule = {
     }
   },
 
+  // [FIX] Отключение без отправки новых hit'ов.
+  // Было: ym(id, 'hit', ...) — то есть «отключение» само генерировало
+  // обращение к Метрике, что нарушает отзыв согласия.
+  // Стало: официальный 'destruct' + удаление cookie Метрики.
   disable() {
-    if (typeof window.ym !== 'function' || !this.state.counterId) {
+    if (!this.state.counterId) {
+      this.state.initialized = false;
       return;
     }
 
     try {
-      window.ym(this.state.counterId, 'userParams', { analytics_enabled: false });
-      window.ym(this.state.counterId, 'hit', window.location.href, {
-        params: { analytics: 'disabled' }
-      });
-      Logger.INFO('[YandexMetricaModule] Disabled tracking');
+      if (typeof window.ym === 'function') {
+        window.ym(this.state.counterId, 'destruct');
+      }
+      this._clearMetrikaCookies();
+      Logger.INFO('[YandexMetricaModule] Disabled (destructed)');
     } catch (error) {
       Logger.WARN('[YandexMetricaModule] Error disabling analytics:', error.message);
     } finally {
       this.state.initialized = false;
     }
+  },
+
+  // [FIX] Очистка cookie-файлов Метрики при отзыве согласия
+  _clearMetrikaCookies() {
+    const names = [
+      '_ym_uid', '_ym_d', '_ym_isad', '_ym_visorc', '_ym_hostIndex',
+      'yandexuid', 'yuidss', 'ymex'
+    ];
+    const expires = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    const host = location.hostname;
+    const parts = host.split('.');
+    const rootDomain = parts.length >= 2 ? '.' + parts.slice(-2).join('.') : host;
+
+    names.forEach(name => {
+      document.cookie = `${name}=; ${expires}; path=/`;
+      document.cookie = `${name}=; ${expires}; path=/; domain=${host}`;
+      document.cookie = `${name}=; ${expires}; path=/; domain=${rootDomain}`;
+    });
   }
 };
 

@@ -3,61 +3,94 @@
 # ООО "ВД Инжиниринг"
 # ============================================================
 
-# Отключаем листинг директорий и серверные подписи
-Options -Indexes
+Options -Indexes -MultiViews
 ServerSignature Off
 
+# JSON-тело для ошибок уровня Apache (до/без участия PHP).
+# Content-Type ответа задаст Apache (text/plain по умолчанию), но тело —
+# валидный JSON-объект. Фронтенд (TextSelectionReporter, FormUtils) умеет
+# обрабатывать такие ответы, парся body как строку.
+ErrorDocument 403 '{"success":false,"error":"Forbidden"}'
+ErrorDocument 404 '{"success":false,"error":"Not Found"}'
+ErrorDocument 405 '{"success":false,"error":"Method Not Allowed"}'
+
 # ============================================================
-# 1. ЗАПРЕТ ПО УМОЛЧАНИЮ (whitelist)
+# 1. ЗАПРЕТ ПО УМОЛЧАНИЮ
 # ============================================================
 <FilesMatch ".*">
     Require all denied
 </FilesMatch>
 
 # ============================================================
-# 2. ПУБЛИЧНЫЕ ЭНДПОИНТЫ
+# 2. ЯВНЫЙ WHITELIST ПУБЛИЧНЫХ ЭНДПОИНТОВ
+#    (переопределяет deny выше для конкретных файлов)
 # ============================================================
-<Files "submit.php">
+<FilesMatch "^(submit|csrf_token|cookie-consent|report-error)\.php$">
     Require all granted
+</FilesMatch>
+
+# ============================================================
+# 3. ОГРАНИЧЕНИЯ ПО МЕТОДУ И РАЗМЕРУ ТЕЛА
+# ============================================================
+
+# submit.php — только POST, до ~27 МБ (multipart + запас к 24 МБ)
+<Files "submit.php">
+    <LimitExcept POST>
+        Require all denied
+    </LimitExcept>
     LimitRequestBody 28311552
 </Files>
 
+# csrf_token.php — только GET (отдаёт ~100 байт JSON)
 <Files "csrf_token.php">
-    Require all granted
+    <LimitExcept GET>
+        Require all denied
+    </LimitExcept>
     LimitRequestBody 1024
 </Files>
 
+# cookie-consent.php — только POST (application/json, ~200 байт)
 <Files "cookie-consent.php">
-    Require all granted
+    <LimitExcept POST>
+        Require all denied
+    </LimitExcept>
     LimitRequestBody 1024
 </Files>
 
+# report-error.php — только POST (application/json, ~500 байт)
 <Files "report-error.php">
-    Require all granted
+    <LimitExcept POST>
+        Require all denied
+    </LimitExcept>
     LimitRequestBody 1024
 </Files>
 
 # ============================================================
-# 3. БЕЗОПАСНЫЕ HTTP-ЗАГОЛОВКИ
+# 4. БЕЗОПАСНЫЕ HTTP-ЗАГОЛОВКИ
+#    (дублирует secret_config.php — защита до запуска PHP)
 # ============================================================
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "DENY"
-    Header always set X-Robots-Tag "noindex, nofollow"
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+    Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+    Header always set Cross-Origin-Resource-Policy "same-site"
+
     Header always set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
     Header always set Pragma "no-cache"
     Header always set Expires "0"
-    Header always unset X-Powered-By
-    Header always unset Server
-    Header unset ETag
 </IfModule>
+
+# ETag выключается директивой ядра надёжнее, чем mod_headers.
 FileETag None
 
 # ============================================================
-# 4. ЗАЩИТА ОТ УТЕЧКИ ЧЕРЕЗ BACKUP-ФАЙЛЫ
+# 5. БЛОКИРОВКА АЛЬТЕРНАТИВНЫХ РАСШИРЕНИЙ PHP
+#    (страховка на случай изменения whitelist выше)
 # ============================================================
-# Даже если кто-то случайно создаст submit.php.bak или Logger.php~
-# — они останутся заблокированы общим правилом deny выше.
-# Это правило — дополнительная страховка на уровне DOCUMENT_ROOT.
+<FilesMatch "\.(phps|pht|phtml|php[0-9]?|phar|inc|shtml)$">
+    Require all denied
+</FilesMatch>

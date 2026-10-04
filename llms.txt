@@ -40,8 +40,8 @@ This file provides a structured overview of the **VD Engineering** website for L
 ### Numerical Data
 - **9+** years of development experience
 - **2** major aircraft design changes
-- **68** secondary aircraft design changes (including 11 for foreign aircraft/engines)
-- **900+** non-standard repairs performed (including 217+ on foreign aircraft/components)
+- **68** secondary aircraft design changes (including 17 for foreign aircraft/engines)
+- **900+** non-standard repairs performed (including 235 on foreign aircraft/components)
 
 ### Core Services
 - **Airframe:** Modification and repair of aircraft structure

@@ -3,7 +3,7 @@
   <!-- Статические страницы -->
   <url>
     <loc>https://vdengineering.ru/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -27,7 +27,7 @@
   </url>
   <url>
     <loc>https://vdengineering.ru/news</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -45,7 +45,7 @@
   </url>
   <url>
     <loc>https://vdengineering.ru/partners</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -56,6 +56,24 @@
     <priority>0.8</priority>
   </url>
   <!-- Новости (динамические URL) -->
+  <url>
+    <loc>https://vdengineering.ru/news/20260928</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://vdengineering.ru/news/20260904</loc>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://vdengineering.ru/news/20260828</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
   <url>
     <loc>https://vdengineering.ru/news/20260619</loc>
     <lastmod>2026-06-19</lastmod>

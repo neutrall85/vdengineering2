@@ -2,9 +2,10 @@
  * ComponentLoader - загрузчик общих компонентов (header, footer)
  * Отвечает за подстановку HTML-шаблонов в DOM.
  * Вся логика поведения делегируется специализированным менеджерам.
- * 
+ *
  * Зависимости:
- * - templates/ComponentTemplates.js
+ * - templates/NavbarTemplate.js
+ * - templates/FooterTemplate.js
  * - templates/ModalTemplates.js
  * - managers/PolicyModalManager.js
  * - managers/UniversalApplicationModalManager.js
@@ -12,8 +13,8 @@
 
 const ComponentLoader = {
     templates: {
-        navbar: typeof ComponentTemplates !== 'undefined' ? ComponentTemplates.navbar : '',
-        footer: typeof ComponentTemplates !== 'undefined' ? ComponentTemplates.footer : '',
+        navbar: typeof NavbarTemplate !== 'undefined' ? NavbarTemplate : '',
+        footer: typeof FooterTemplate !== 'undefined' ? FooterTemplate : '',
         proposalModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.proposalModal : '',
         universalApplicationModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.universalApplicationModal : '',
         successModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.successModal : '',
@@ -21,24 +22,34 @@ const ComponentLoader = {
         categoryNewsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.categoryNewsModal : '',
         projectCategoryModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectCategoryModal : '',
         newsModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.newsModal : '',
+        projectModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.projectModal : '',
+        serviceModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.serviceModal : '',
         errorReportModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.errorReportModal : '',
-        vacancyModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.vacancyModal : '' // добавлено
+        vacancyModal: typeof ModalTemplates !== 'undefined' ? ModalTemplates.vacancyModal : ''
     },
 
-    /**
-     * Инициализация компонентов на странице
-     */
     init(options = {}, callback = null) {
-        const { 
-            loadNavbar = true, 
-            loadFooter = true, 
+        const {
+            loadNavbar = true,
+            loadFooter = true,
             loadModal = true,
-            activePage = '' 
+            activePage = ''
         } = options;
 
-        if (loadNavbar) this._loadNavbar(activePage);
-        if (loadModal) this._loadModals();
-        if (loadFooter) this._loadFooter(activePage);
+        // Каждый шаг изолирован: исключение в одном
+        // не мешает диспатчу components:loaded.
+        if (loadNavbar) {
+            try { this._loadNavbar(activePage); }
+            catch (e) { Logger.ERROR('ComponentLoader._loadNavbar failed:', e); }
+        }
+        if (loadModal) {
+            try { this._loadModals(); }
+            catch (e) { Logger.ERROR('ComponentLoader._loadModals failed:', e); }
+        }
+        if (loadFooter) {
+            try { this._loadFooter(activePage); }
+            catch (e) { Logger.ERROR('ComponentLoader._loadFooter failed:', e); }
+        }
 
         document.dispatchEvent(new CustomEvent('components:loaded'));
         if (callback) {
@@ -46,30 +57,34 @@ const ComponentLoader = {
         }
     },
 
-    _loadNavbar(activePage) {
-        const navContainer = document.getElementById('navbar');
-        const parser = new DOMParser();
-        
-        if (navContainer && !navContainer.hasChildNodes()) {
-            const doc = parser.parseFromString(this.templates.navbar, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                navContainer.appendChild(node.cloneNode(true));
-            });
-            this.setActiveLink(activePage);
-        } else if (!navContainer) {
-            const newNavContainer = document.createElement('div');
-            newNavContainer.id = 'navbar';
-            const doc = parser.parseFromString(this.templates.navbar, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                newNavContainer.appendChild(node.cloneNode(true));
-            });
-            const firstBodyChild = document.body.firstChild;
-            document.body.insertBefore(newNavContainer, firstBodyChild);
-            this.setActiveLink(activePage);
-        } else {
-            this.setActiveLink(activePage);
+    /**
+     * Вставляет HTML-строку в родительский элемент.
+     * Поддерживает несколько корневых узлов (например, footer + scroll-to-top).
+     * Безопасен для пустой строки.
+     */
+    _appendHtml(parent, html) {
+        if (!parent || typeof html !== 'string' || html === '') return;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        while (wrapper.firstChild) {
+            parent.appendChild(wrapper.firstChild);
         }
-        
+    },
+
+    _loadNavbar(activePage) {
+        let navContainer = document.getElementById('navbar');
+        if (!navContainer) {
+            navContainer = document.createElement('div');
+            navContainer.id = 'navbar';
+            document.body.insertBefore(navContainer, document.body.firstChild);
+        }
+
+        if (!navContainer.hasChildNodes()) {
+            this._appendHtml(navContainer, this.templates.navbar);
+        }
+
+        this.setActiveLink(activePage);
+
         if (!document.getElementById('mobileMenuOverlay')) {
             const overlay = document.createElement('div');
             overlay.className = 'mobile-menu-overlay';
@@ -78,147 +93,18 @@ const ComponentLoader = {
         }
     },
 
-    _loadModals() {
-        // Загрузка модального окна КП
-        const existingModal = document.getElementById('modalOverlay');
-        if (!existingModal) {
-            const modalContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.proposalModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                modalContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(modalContainer.firstElementChild);
-        }
-        
-        // Загрузка универсального модального окна заявок
-        const existingUniversalModal = document.getElementById('universalApplicationModalOverlay');
-        if (!existingUniversalModal) {
-            const universalModalContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.universalApplicationModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                universalModalContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(universalModalContainer.firstElementChild);
-        }
-
-        // Загрузка модалки успеха
-        const existingSuccessModal = document.getElementById('successModalOverlay');
-        if (!existingSuccessModal) {
-            const successModalContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.successModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                successModalContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(successModalContainer.firstElementChild);
-        }
-
-        // Загрузка модалки обратной связи
-        if (!document.getElementById('feedbackModalOverlay')) {
-            const feedbackModalContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.feedbackModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                feedbackModalContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(feedbackModalContainer.firstElementChild);
-        }
-
-        // Загрузка модалки категории новостей
-        if (!document.getElementById('categoryNewsModalOverlay')) {
-            const categoryModalContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.categoryNewsModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                categoryModalContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(categoryModalContainer.firstElementChild);
-        }
-
-        // Загрузка модалки категории проектов
-        if (!document.getElementById('projectCategoryModalOverlay')) {
-            const projectCategoryContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.projectCategoryModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                projectCategoryContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(projectCategoryContainer.firstElementChild);
-        }
-
-        // Загрузка модалки новости
-        if (!document.getElementById('newsModalOverlay')) {
-            const newsModalContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.newsModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                newsModalContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(newsModalContainer.firstElementChild);
-        }
-
-        // ========== ЗАГРУЗКА МОДАЛКИ ОШИБКИ ==========
-        if (!document.getElementById('errorReportModalOverlay')) {
-            const errorReportContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.errorReportModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                errorReportContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(errorReportContainer.firstElementChild);
-        }
-
-        // ========== ЗАГРУЗКА МОДАЛКИ ВАКАНСИИ ==========
-        if (!document.getElementById('vacancyModalOverlay')) {
-            const vacancyContainer = document.createElement('div');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(this.templates.vacancyModal, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                vacancyContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(vacancyContainer.firstElementChild);
-        }
-
-        // ========== СОЗДАНИЕ ЛАЙТБОКСА (если отсутствует) ==========
-        if (!document.getElementById('lightboxOverlay')) {
-            const lightboxHTML = `
-                <div id="lightboxOverlay" class="lightbox-overlay" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">
-                    <div class="lightbox-content">
-                        <button class="lightbox-close" id="lightboxCloseBtn" aria-label="Закрыть">&times;</button>
-                        <img id="lightboxImage" src="" alt="Изображение в полном размере">
-                    </div>
-                </div>
-            `;
-            const temp = document.createElement('div');
-            temp.innerHTML = lightboxHTML;
-            document.body.appendChild(temp.firstElementChild);
-            Logger.INFO('Lightbox overlay created by ComponentLoader');
-        }
-    },
-
     _loadFooter(activePage) {
+        // Удаляем существующий футер и кнопку «наверх», если они есть
         const existingFooter = document.querySelector('body > footer.footer');
-        const parser = new DOMParser();
-        
-        if (!existingFooter) {
-            const footerContainer = document.createElement('div');
-            const doc = parser.parseFromString(this.templates.footer, 'text/html');
-            Array.from(doc.body.childNodes).forEach(node => {
-                footerContainer.appendChild(node.cloneNode(true));
-            });
-            document.body.appendChild(footerContainer.firstElementChild);
-        } else {
-            const doc = parser.parseFromString(this.templates.footer, 'text/html');
-            const newFooter = doc.body.firstElementChild;
-            if (newFooter) {
-                existingFooter.replaceWith(newFooter);
-            }
-        }
-        
+        if (existingFooter) existingFooter.remove();
+
+        const existingScrollToTop = document.querySelector('body > button.scroll-to-top');
+        if (existingScrollToTop) existingScrollToTop.remove();
+
+        this._appendHtml(document.body, this.templates.footer);
+
         this.updateYear();
-        
+
         if (typeof PolicyModalManager !== 'undefined') {
             PolicyModalManager.init();
         } else {
@@ -226,29 +112,84 @@ const ComponentLoader = {
         }
     },
 
+    _loadModals() {
+        const map = [
+            ['proposalModalOverlay',             this.templates.proposalModal],
+            ['universalApplicationModalOverlay', this.templates.universalApplicationModal],
+            ['successModalOverlay',              this.templates.successModal],
+            ['feedbackModalOverlay',             this.templates.feedbackModal],
+            ['categoryNewsModalOverlay',         this.templates.categoryNewsModal],
+            ['projectCategoryModalOverlay',      this.templates.projectCategoryModal],
+            ['newsModalOverlay',                 this.templates.newsModal],
+            // [ADD] Проект-модалка и модалка услуги — раньше их не было в templates,
+            // из-за чего на страницах без статической разметки (#projectModalOverlay)
+            // клик по карточке проекта/услуги не открывал модалку.
+            ['projectModalOverlay',              this.templates.projectModal],
+            ['serviceModalOverlay',              this.templates.serviceModal],
+            ['errorReportModalOverlay',          this.templates.errorReportModal],
+            ['vacancyModalOverlay',              this.templates.vacancyModal]
+        ];
+
+        for (const [overlayId, html] of map) {
+            if (!document.getElementById(overlayId) && html) {
+                this._appendHtml(document.body, html);
+            }
+        }
+
+        // Лайтбокс — полная разметка с навигацией и индикаторами.
+        if (!document.getElementById('lightboxOverlay')) {
+            const lightboxHTML = `
+                <div class="lightbox-overlay" id="lightboxOverlay" role="dialog" aria-modal="true" aria-label="Просмотр изображения">
+                    <div class="lightbox-content">
+                        <button class="lightbox-close" id="lightboxCloseBtn" aria-label="Закрыть">
+                            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </button>
+                        <button class="lightbox-nav lightbox-prev" id="lightboxPrevBtn" aria-label="Предыдущее изображение">
+                            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                        </button>
+                        <button class="lightbox-nav lightbox-next" id="lightboxNextBtn" aria-label="Следующее изображение">
+                            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
+                        </button>
+                        <img class="lightbox-image" id="lightboxImage" src="" alt="">
+                        <div class="lightbox-indicators" id="lightboxIndicators"></div>
+                    </div>
+                </div>
+            `;
+            this._appendHtml(document.body, lightboxHTML);
+            Logger.INFO('Lightbox overlay created by ComponentLoader');
+        }
+    },
+
+    /**
+     * Проставляет класс .active ссылкам меню, ведущим на текущую страницу.
+     * @param {string} activePage — 'about' | 'services' | '' (главная)
+     */
     setActiveLink(activePage) {
         const isHomePage = activePage === '' || activePage === 'index';
+
         const homeLinkDesktop = document.querySelector('.nav-links .home-link');
         if (homeLinkDesktop) {
-            if (isHomePage) homeLinkDesktop.classList.add('hidden');
-            else homeLinkDesktop.classList.remove('hidden');
+            homeLinkDesktop.classList.toggle('hidden', isHomePage);
         }
+
         const homeLinkMobile = document.querySelector('.mobile-menu .home-link-mobile');
         if (homeLinkMobile) {
-            if (isHomePage) homeLinkMobile.classList.add('hidden');
-            else homeLinkMobile.classList.remove('hidden');
+            homeLinkMobile.classList.toggle('hidden', isHomePage);
         }
+
+        const matches = (href) => {
+            if (!href) return false;
+            if (activePage && (href === `/${activePage}` || href === `/${activePage}.html`)) return true;
+            if (isHomePage && (href === '/' || href === '/index' || href === '/index.html')) return true;
+            return false;
+        };
+
         document.querySelectorAll('.nav-links a').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === activePage || link.getAttribute('href') === `${activePage}.html`) {
-                link.classList.add('active');
-            }
+            link.classList.toggle('active', matches(link.getAttribute('href')));
         });
+
         document.querySelectorAll('.mobile-menu a').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === activePage || link.getAttribute('href') === `${activePage}.html`) {
-                link.classList.add('active');
-            }
+            link.classList.toggle('active', matches(link.getAttribute('href')));
         });
     },
 

@@ -1,11 +1,6 @@
 /**
  * Управление модальными окнами – единая точка входа
  * ООО "ВД Инжиниринг"
- *
- * Версия с ЧПУ-ссылками (без #, ?, &)
- * Исправлено восстановление URL при закрытии модалок новостей и проектов
- * Добавлена автоматическая инициализация страницы проектов при закрытии
- * Исправлена корректировка originalPath для категорий (category, project-category)
  */
 class ModalManager {
   constructor() {
@@ -17,6 +12,7 @@ class ModalManager {
     this._boundClickHandler = null;
     this._boundOpenHandler = null;
     this._boundFocusTrapHandler = null;
+    this._boundPopstateHandler = null;    // [P0-FIX]
     this._handlersInitialized = false;
     this.currentModalId = null;
     this.currentCategory = null;
@@ -53,9 +49,7 @@ class ModalManager {
     if (overlay._clickHandlerAttached) return;
 
     const clickHandler = (e) => {
-      if (e.target === overlay) {
-        this.close(key);
-      }
+      if (e.target === overlay) this.close(key);
     };
     overlay.addEventListener('click', clickHandler, { capture: false });
     overlay._clickHandlerAttached = true;
@@ -68,14 +62,9 @@ class ModalManager {
 
     this._boundKeyHandler = (e) => {
       if (e.key !== 'Escape') return;
-      if (this.activeModal) {
-        this.close(this.activeModal);
-        return;
-      }
+      if (this.activeModal) { this.close(this.activeModal); return; }
       const policyModal = document.getElementById('policyModalOverlay');
-      if (policyModal && policyModal.classList.contains('active')) {
-        this.close('policy');
-      }
+      if (policyModal && policyModal.classList.contains('active')) this.close('policy');
     };
     document.addEventListener('keydown', this._boundKeyHandler);
 
@@ -87,15 +76,10 @@ class ModalManager {
 
       let modalKey = null;
       for (const [key, config] of this.modals) {
-        if (config.overlayId === overlay.id) {
-          modalKey = key;
-          break;
-        }
+        if (config.overlayId === overlay.id) { modalKey = key; break; }
       }
-
-      if (modalKey) {
-        this.close(modalKey);
-      } else {
+      if (modalKey) this.close(modalKey);
+      else {
         overlay.classList.remove('active');
         ScrollManager.unlock();
         this.activeModal = null;
@@ -119,35 +103,26 @@ class ModalManager {
 
   _handleModalOpen(modalType, trigger) {
     switch (modalType) {
-      case 'proposal':
-        this.open('proposal');
-        break;
+      case 'proposal': this.open('proposal'); break;
       case 'application':
-      case 'universal':
-        this._openUniversalApplication(trigger);
-        break;
-      case 'project':
-        this._openProject(trigger);
-        break;
-      case 'service':
-        this._openService(trigger);
-        break;
-      case 'news':
-        this._openNews(trigger);
-        break;
-      case 'feedback':
-        this.open('feedback');
-        break;
-      case 'category':
+      case 'universal': this._openUniversalApplication(trigger); break;
+      case 'project': this._openProject(trigger); break;
+      case 'service': this._openService(trigger); break;
+      case 'news': this._openNews(trigger); break;
+      case 'feedback': this.open('feedback'); break;
+      case 'category': {
         const cat = trigger?.getAttribute('data-category') || trigger?.textContent.trim();
-        this.openCategoryByName(cat);
+        const keepParent = trigger?.getAttribute('data-keep-parent') === 'true';
+        this.openCategoryByName(cat, { keepParentModal: keepParent });
         break;
-      case 'project-category':
+      }
+      case 'project-category': {
         const projCat = trigger?.getAttribute('data-category') || trigger?.textContent.trim();
-        this.openProjectCategoryByName(projCat);
+        const keepParent = trigger?.getAttribute('data-keep-parent') === 'true';
+        this.openProjectCategoryByName(projCat, { keepParentModal: keepParent });
         break;
-      default:
-        Logger.WARN(`Неизвестный тип модалки: ${modalType}`);
+      }
+      default: Logger.WARN(`Неизвестный тип модалки: ${modalType}`);
     }
   }
 
@@ -160,7 +135,6 @@ class ModalManager {
     const project = window.PROJECTS_DATA[projectId];
     this._populateProjectModal(project);
     this.currentModalId = projectId;
-
     const keepParent = this.activeModal === 'project-category';
     this.open('project', { id: projectId, keepParentModal: keepParent });
   }
@@ -173,7 +147,7 @@ class ModalManager {
     const container = document.getElementById('projectModalImageContainer');
 
     if (titleEl) titleEl.textContent = project.title;
-    if (categoryEl) categoryEl.textContent = project.category;
+    if (categoryEl) this._setupCategoryChip(categoryEl, project.category);
     if (contentEl) {
       const list = document.createElement('ul');
       list.className = 'modal-list';
@@ -203,6 +177,8 @@ class ModalManager {
       Logger.WARN(`Услуга с id ${serviceId} не найдена`);
       return;
     }
+    // [P0-FIX] Сбрасываем previous modal id, чтобы _getParentId не вернул чужой.
+    this.currentModalId = null;
     const service = window.servicesData[serviceId];
     this._populateServiceModal(service);
     this.open('service');
@@ -245,13 +221,9 @@ class ModalManager {
     if (!newsId) return;
     const allNews = Object.values(window.NEWS_DATA || {}).flat();
     const news = allNews.find(n => String(n.id) === String(newsId));
-    if (!news) {
-      Logger.WARN(`Новость с id ${newsId} не найдена`);
-      return;
-    }
+    if (!news) { Logger.WARN(`Новость с id ${newsId} не найдена`); return; }
     this._populateNewsModal(news);
     this.currentModalId = newsId;
-
     const keepParent = this.activeModal === 'category';
     this.open('news', { id: newsId, keepParentModal: keepParent });
   }
@@ -265,7 +237,7 @@ class ModalManager {
     const mainImage = document.getElementById('newsModalImage');
 
     if (titleEl) titleEl.textContent = news.title;
-    if (categoryEl) categoryEl.textContent = news.category;
+    if (categoryEl) this._setupCategoryChip(categoryEl, news.category);
     if (dateEl) dateEl.textContent = news.date;
     if (contentEl) {
       const div = document.createElement('div');
@@ -273,7 +245,6 @@ class ModalManager {
       div.innerHTML = Utils.Sanitizer.sanitizeHtml(news.content);
       contentEl.replaceChildren(div);
     }
-
     if (container && mainImage) {
       const images = news.images || (news.image ? [news.image] : []);
       const normalizedImages = images.map(img => this._normalizePath(img));
@@ -292,11 +263,23 @@ class ModalManager {
     }
   }
 
-  openCategoryByName(category) {
-    if (!category) {
-      Logger.WARN('openCategoryByName: Категория не передана');
-      return;
-    }
+  _setupCategoryChip(chip, category) {
+    if (!chip) return;
+    chip.textContent = category || '';
+    chip.classList.add('category-trigger');
+    const isInsideNewsModal = chip.closest('#newsModalOverlay') !== null;
+    const isInsideProjectModal = chip.closest('#projectModalOverlay') !== null;
+    if (isInsideNewsModal) chip.dataset.modalOpen = 'category';
+    else if (isInsideProjectModal) chip.dataset.modalOpen = 'project-category';
+    else if (!chip.dataset.modalOpen) chip.dataset.modalOpen = 'category';
+    if (category) chip.dataset.category = category;
+    else chip.removeAttribute('data-category');
+    chip.dataset.keepParent = 'true';
+  }
+
+  openCategoryByName(category, options = {}) {
+    const keepParentModal = options.keepParentModal === true;
+    if (!category) { Logger.WARN('openCategoryByName: Категория не передана'); return; }
 
     if (!window.newsRenderer) {
       if (this._categoryRetryCount < 30) {
@@ -304,29 +287,21 @@ class ModalManager {
         if (this._categoryRetryTimer) clearTimeout(this._categoryRetryTimer);
         this._categoryRetryTimer = setTimeout(() => {
           this._categoryRetryTimer = null;
-          this.openCategoryByName(category);
+          this.openCategoryByName(category, options);
         }, 100);
         return;
-      } else {
-        Logger.ERROR('openCategoryByName: newsRenderer так и не появился');
-        this._categoryRetryCount = 0;
-        return;
       }
+      Logger.ERROR('openCategoryByName: newsRenderer так и не появился');
+      this._categoryRetryCount = 0;
+      return;
     }
     this._categoryRetryCount = 0;
-    if (this._categoryRetryTimer) {
-      clearTimeout(this._categoryRetryTimer);
-      this._categoryRetryTimer = null;
-    }
+    if (this._categoryRetryTimer) { clearTimeout(this._categoryRetryTimer); this._categoryRetryTimer = null; }
 
     const titleEl = document.getElementById('categoryModalTitle');
     const listEl = document.getElementById('categoryNewsList');
     const emptyEl = document.getElementById('categoryNewsEmpty');
-
-    if (!titleEl || !listEl || !emptyEl) {
-      Logger.WARN('Элементы модалки категории новостей не найдены в DOM!');
-      return;
-    }
+    if (!titleEl || !listEl || !emptyEl) { Logger.WARN('Элементы модалки категории новостей не найдены'); return; }
 
     listEl.innerHTML = '';
     emptyEl.classList.add('hidden');
@@ -342,7 +317,6 @@ class ModalManager {
     } else {
       const fragment = document.createDocumentFragment();
       const renderer = window.newsRenderer;
-
       filteredNews.forEach((news, index) => {
         if (renderer && typeof renderer._createNewsCard === 'function') {
           const card = renderer._createNewsCard(news, index);
@@ -350,32 +324,22 @@ class ModalManager {
           fragment.appendChild(card);
         }
       });
-
       listEl.appendChild(fragment);
-
-      const cards = listEl.querySelectorAll('.news-card');
-      cards.forEach(card => {
+      listEl.querySelectorAll('.news-card').forEach(card => {
         card.classList.remove('animate-on-scroll', 'fade-up');
         card.classList.add('loaded');
       });
-
-      if (renderer && typeof renderer._lazyLoadImages === 'function') {
-        renderer._lazyLoadImages(listEl);
-      }
-      if (window.animationManager) {
-        window.animationManager.observeNewElements(listEl);
-      }
+      if (renderer && typeof renderer._lazyLoadImages === 'function') renderer._lazyLoadImages(listEl);
+      if (window.animationManager) window.animationManager.observeNewElements(listEl);
     }
 
     this.currentCategory = category;
-    this.open('category', { id: category });
+    this.open('category', { id: category, keepParentModal });
   }
 
-  openProjectCategoryByName(category) {
-    if (!category) {
-      Logger.WARN('openProjectCategoryByName: Категория не передана');
-      return;
-    }
+  openProjectCategoryByName(category, options = {}) {
+    const keepParentModal = options.keepParentModal === true;
+    if (!category) { Logger.WARN('openProjectCategoryByName: Категория не передана'); return; }
 
     if (!window.projectRenderer) {
       if (this._projectCategoryRetryCount < 30) {
@@ -383,29 +347,21 @@ class ModalManager {
         if (this._projectCategoryRetryTimer) clearTimeout(this._projectCategoryRetryTimer);
         this._projectCategoryRetryTimer = setTimeout(() => {
           this._projectCategoryRetryTimer = null;
-          this.openProjectCategoryByName(category);
+          this.openProjectCategoryByName(category, options);
         }, 100);
         return;
-      } else {
-        Logger.ERROR('openProjectCategoryByName: projectRenderer так и не появился');
-        this._projectCategoryRetryCount = 0;
-        return;
       }
+      Logger.ERROR('openProjectCategoryByName: projectRenderer так и не появился');
+      this._projectCategoryRetryCount = 0;
+      return;
     }
     this._projectCategoryRetryCount = 0;
-    if (this._projectCategoryRetryTimer) {
-      clearTimeout(this._projectCategoryRetryTimer);
-      this._projectCategoryRetryTimer = null;
-    }
+    if (this._projectCategoryRetryTimer) { clearTimeout(this._projectCategoryRetryTimer); this._projectCategoryRetryTimer = null; }
 
     const titleEl = document.getElementById('projectCategoryModalTitle');
     const listEl = document.getElementById('projectCategoryList');
     const emptyEl = document.getElementById('projectCategoryEmpty');
-
-    if (!titleEl || !listEl || !emptyEl) {
-      Logger.WARN('Элементы модалки категории проектов не найдены в DOM!');
-      return;
-    }
+    if (!titleEl || !listEl || !emptyEl) { Logger.WARN('Элементы модалки категории проектов не найдены'); return; }
 
     listEl.innerHTML = '';
     emptyEl.classList.add('hidden');
@@ -420,7 +376,6 @@ class ModalManager {
     } else {
       const fragment = document.createDocumentFragment();
       const renderer = window.projectRenderer;
-
       filteredProjects.forEach((project, index) => {
         if (renderer && typeof renderer._createProjectCard === 'function') {
           const card = renderer._createProjectCard(project, index);
@@ -428,32 +383,22 @@ class ModalManager {
           fragment.appendChild(card);
         }
       });
-
       listEl.appendChild(fragment);
-
-      const cards = listEl.querySelectorAll('.project-card');
-      cards.forEach(card => {
+      listEl.querySelectorAll('.project-card').forEach(card => {
         card.classList.remove('animate-on-scroll', 'fade-up');
         card.classList.add('loaded');
       });
-
-      if (renderer && typeof renderer._lazyLoadImages === 'function') {
-        renderer._lazyLoadImages(listEl);
-      }
-      if (window.animationManager) {
-        window.animationManager.observeNewElements(listEl);
-      }
+      if (renderer && typeof renderer._lazyLoadImages === 'function') renderer._lazyLoadImages(listEl);
+      if (window.animationManager) window.animationManager.observeNewElements(listEl);
     }
 
     this.currentProjectCategory = category;
-    this.open('project-category', { id: category });
+    this.open('project-category', { id: category, keepParentModal });
   }
 
   _openUniversalApplication(trigger) {
     const vacancyId = trigger?.getAttribute('data-vacancy-id') || null;
     const mode = vacancyId ? 'vacancy' : 'application';
-    
-    // Проверяем, есть ли атрибут keep-parent (или передаём через опции)
     const keepParent = trigger?.getAttribute('data-keep-parent') === 'true' || false;
     const modalTitle = document.getElementById('universalApplicationModalTitle');
     const modalSubtitle = document.getElementById('universalApplicationModalSubtitle');
@@ -482,18 +427,17 @@ class ModalManager {
         this._setHiddenField(form, 'vacancy_title', vacancyTitle);
       }
     }
-    // Открываем универсальную модалку с сохранением родительской, если нужно
     this.open('universal', { keepParentModal: keepParent });
   }
 
   _setHiddenField(form, name, value) {
     let input = form.querySelector(`input[name="${name}"]`);
     if (!input) {
-        input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.id = `hidden_${name}`; // добавляем id
-        form.appendChild(input);
+      input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.id = `hidden_${name}`;
+      form.appendChild(input);
     }
     input.value = value;
   }
@@ -503,56 +447,43 @@ class ModalManager {
       Logger.WARN(`Проект с id ${id} не найден`);
       return false;
     }
-    const project = window.PROJECTS_DATA[id];
-    this._populateProjectModal(project);
+    this._populateProjectModal(window.PROJECTS_DATA[id]);
     this.currentModalId = id;
-    this.open('project', { id: id, keepParentModal: false });
+    this.open('project', { id, keepParentModal: false });
     return true;
   }
 
   openNewsById(id) {
     const allNews = Object.values(window.NEWS_DATA || {}).flat();
     const news = allNews.find(n => String(n.id) === String(id));
-    if (!news) {
-      Logger.WARN(`Новость с id ${id} не найдена`);
-      return false;
-    }
+    if (!news) { Logger.WARN(`Новость с id ${id} не найдена`); return false; }
     this._populateNewsModal(news);
     this.currentModalId = id;
-    this.open('news', { id: id, keepParentModal: false });
+    this.open('news', { id, keepParentModal: false });
     return true;
   }
 
   _normalizePath(path) {
     if (!path) return '/assets/images/placeholder.jpg';
-    if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
+    if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) return path;
     return '/' + path;
   }
 
   _updateUrl(key, id) {
     if (!key) return;
     let path;
-    if (key === 'proposal') {
-      path = '/proposal';
-    } else if (key === 'feedback') {
-      path = '/feedback';
-    } else {
+    if (key === 'proposal') path = '/proposal';
+    else if (key === 'feedback') path = '/feedback';
+    else {
       const urlKey = key === 'project' ? 'projects' : key;
-      if (id) {
-        path = `/${urlKey}/${encodeURIComponent(id)}`;
-      } else {
-        return;
-      }
+      if (id) path = `/${urlKey}/${encodeURIComponent(id)}`;
+      else return;
     }
     window.history.pushState({ modal: key, id: id || null }, '', path);
   }
 
   _openFromUrl() {
     const path = window.location.pathname;
-    
-    // Проверяем /proposal
     if (path === '/proposal' || path === '/proposal.html') {
       if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
       this._openFromUrlTimeout = setTimeout(() => {
@@ -561,12 +492,10 @@ class ModalManager {
       }, 300);
       return;
     }
-
     const match = path.match(/^\/(news|projects|category|project-category|feedback)(?:\/(.+))?$/);
     if (match) {
       let [, key, id] = match;
       if (key === 'projects') key = 'project';
-
       if (key === 'feedback') {
         if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
         this._openFromUrlTimeout = setTimeout(() => {
@@ -575,12 +504,8 @@ class ModalManager {
         }, 300);
         return;
       }
-
       const decodedId = id ? decodeURIComponent(id) : null;
-      if (!decodedId) {
-        return;
-      }
-
+      if (!decodedId) return;
       if (this._openFromUrlTimeout) clearTimeout(this._openFromUrlTimeout);
       this._openFromUrlTimeout = setTimeout(() => {
         this._openFromUrlTimeout = null;
@@ -599,130 +524,62 @@ class ModalManager {
             this.currentModalId = decodedId;
             this.open('news', { id: decodedId, keepParentModal: false, skipUrlUpdate: true });
           }
-        } else if (key === 'category') {
-          this.openCategoryByName(decodedId);
-        } else if (key === 'project-category') {
-          this.openProjectCategoryByName(decodedId);
-        }
+        } else if (key === 'category') this.openCategoryByName(decodedId);
+        else if (key === 'project-category') this.openProjectCategoryByName(decodedId);
       }, 300);
     }
   }
 
+  // [P0-FIX] popstate: при state === null URL НЕ трогаем.
   _initPopstate() {
-    window.addEventListener('popstate', (event) => {
-        const state = event.state;
-        if (state && state.modal) {
-            const { modal, id } = state;
-
-            if (!id && modal !== 'feedback' && modal !== 'proposal' && modal !== 'vacancy') {
-                this.closeAll();
-                return;
-            }
-
-            if (modal === 'proposal') {
-                this.open('proposal', { skipUrlUpdate: true });
-            } else if (modal === 'feedback') {
-                this.open('feedback', { skipUrlUpdate: true });
-            } else if (modal === 'vacancy') {
-                if (id) {
-                    const vacancyId = id; // строковый ID
-                    // Проверяем существование вакансии по ID
-                    const vacancy = window.VACANCIES_DATA?.find(v => String(v.id) === String(vacancyId));
-                    if (vacancy) {
-                        // Заполняем модалку
-                        if (typeof window.fillVacancyModalById === 'function') {
-                            window.fillVacancyModalById(vacancyId);
-                        } else {
-                            // fallback – заполняем вручную
-                            const titleEl = document.getElementById('vacancyModalTitle');
-                            const deptEl = document.getElementById('vacancyModalDepartment');
-                            const bodyEl = document.getElementById('vacancyModalBody');
-                            if (titleEl) titleEl.textContent = vacancy.title;
-                            if (deptEl) deptEl.textContent = vacancy.department;
-                            if (bodyEl) {
-                                const content = document.createElement('div');
-                                content.className = 'vacancy-details';
-                                if (vacancy.responsibilities && vacancy.responsibilities.length) {
-                                    const respDiv = document.createElement('div');
-                                    const items = vacancy.responsibilities.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
-                                    respDiv.innerHTML = `<h4>Обязанности:</h4><ul>${items}</ul>`;
-                                    content.appendChild(respDiv);
-                                }
-                                if (vacancy.requirements && vacancy.requirements.length) {
-                                    const reqDiv = document.createElement('div');
-                                    const items = vacancy.requirements.map(r => `<li>${Utils.Sanitizer.escapeHtml(r)}</li>`).join('');
-                                    reqDiv.innerHTML = `<h4>Требования:</h4><ul>${items}</ul>`;
-                                    content.appendChild(reqDiv);
-                                }
-                                if (vacancy.conditions && vacancy.conditions.length) {
-                                    const condDiv = document.createElement('div');
-                                    const items = vacancy.conditions.map(c => `<li>${Utils.Sanitizer.escapeHtml(c)}</li>`).join('');
-                                    condDiv.innerHTML = `<h4>Условия:</h4><ul>${items}</ul>`;
-                                    content.appendChild(condDiv);
-                                }
-                                bodyEl.replaceChildren(content);
-                            }
-                        }
-                        this.open('vacancy', { id: vacancyId, skipUrlUpdate: true });
-                    } else {
-                        Logger.WARN(`Вакансия с id ${vacancyId} не найдена`);
-                    }
-                } else {
-                    this.open('vacancy', { skipUrlUpdate: true });
-                }
-            } else if (modal === 'project') {
-                if (id) {
-                    const project = window.PROJECTS_DATA?.[id];
-                    if (project) {
-                        this._populateProjectModal(project);
-                        this.currentModalId = id;
-                        this.open('project', { id, keepParentModal: false, skipUrlUpdate: true });
-                    }
-                } else {
-                    this.open('project', { skipUrlUpdate: true });
-                }
-            } else if (modal === 'news') {
-                if (id) {
-                    const allNews = Object.values(window.NEWS_DATA || {}).flat();
-                    const news = allNews.find(n => String(n.id) === String(id));
-                    if (news) {
-                        this._populateNewsModal(news);
-                        this.currentModalId = id;
-                        this.open('news', { id, keepParentModal: false, skipUrlUpdate: true });
-                    }
-                } else {
-                    this.open('news', { skipUrlUpdate: true });
-                }
-            } else if (modal === 'category') {
-                if (id) {
-                    this.openCategoryByName(id);
-                } else {
-                    this.open('category', { skipUrlUpdate: true });
-                }
-            } else if (modal === 'project-category') {
-                if (id) {
-                    this.openProjectCategoryByName(id);
-                } else {
-                    this.open('project-category', { skipUrlUpdate: true });
-                }
-            } else {
-                this.open(modal, { skipUrlUpdate: true });
-            }
-        } else {
-            this.closeAll();
-            if (window.location.pathname !== '/') {
-                window.history.replaceState({}, '', '/');
-            }
+    this._boundPopstateHandler = (event) => {
+      const state = event.state;
+      if (state && state.modal) {
+        const { modal, id } = state;
+        if (!id && !['feedback', 'proposal', 'vacancy'].includes(modal)) {
+          this.closeAll();
+          return;
         }
-    });
-}
+        if (modal === 'proposal') this.open('proposal', { skipUrlUpdate: true });
+        else if (modal === 'feedback') this.open('feedback', { skipUrlUpdate: true });
+        else if (modal === 'vacancy') {
+          if (id) {
+            const vacancy = window.VACANCIES_DATA?.find(v => String(v.id) === String(id));
+            if (vacancy) {
+              if (typeof window.fillVacancyModalById === 'function') window.fillVacancyModalById(id);
+              this.open('vacancy', { id, skipUrlUpdate: true });
+            }
+          } else this.open('vacancy', { skipUrlUpdate: true });
+        } else if (modal === 'project') {
+          if (id && window.PROJECTS_DATA?.[id]) {
+            this._populateProjectModal(window.PROJECTS_DATA[id]);
+            this.currentModalId = id;
+            this.open('project', { id, keepParentModal: false, skipUrlUpdate: true });
+          }
+        } else if (modal === 'news') {
+          if (id) {
+            const allNews = Object.values(window.NEWS_DATA || {}).flat();
+            const news = allNews.find(n => String(n.id) === String(id));
+            if (news) {
+              this._populateNewsModal(news);
+              this.currentModalId = id;
+              this.open('news', { id, keepParentModal: false, skipUrlUpdate: true });
+            }
+          }
+        } else if (modal === 'category') { if (id) this.openCategoryByName(id); }
+        else if (modal === 'project-category') { if (id) this.openProjectCategoryByName(id); }
+        else this.open(modal, { skipUrlUpdate: true });
+      } else {
+        // [P0-FIX] URL уже восстановлен браузером — просто закрываем модалки.
+        this.closeAll();
+      }
+    };
+    window.addEventListener('popstate', this._boundPopstateHandler);
+  }
 
   open(key, options = {}) {
     const config = this.modals.get(key);
-    if (!config) {
-      Logger.WARN(`Модалка "${key}" не зарегистрирована`);
-      return false;
-    }
+    if (!config) { Logger.WARN(`Модалка "${key}" не зарегистрирована`); return false; }
 
     const keepParentModal = options.keepParentModal === true;
     const skipStack = options.skipStack === true;
@@ -730,47 +587,19 @@ class ModalManager {
 
     if (this.activeModal === null && !skipUrlUpdate) {
       let path = window.location.pathname + window.location.search + window.location.hash;
-
-      const prefixMap = {
-        'news': '/news',
-        'project': '/projects',
-        'category': '/category',
-        'project-category': '/project-category'
-      };
-      const baseMap = {
-        'news': '/news',
-        'project': '/projects',
-        'category': '/news',
-        'project-category': '/projects'
-      };
-
+      const prefixMap = { news: '/news', project: '/projects', category: '/category', 'project-category': '/project-category' };
+      const baseMap = { news: '/news', project: '/projects', category: '/news', 'project-category': '/projects' };
       const prefix = prefixMap[key];
-      if (prefix && path.startsWith(prefix + '/')) {
-        path = baseMap[key];
-      }
-
-      if (key === 'proposal') {
-        path = '/proposal';
-      } else if (key === 'feedback') {
-        path = '/feedback';
-      } else if (key === 'vacancy') {
-        // Для вакансий базовый путь — /vacancies, но мы оставляем /vacancy, чтобы URL был /vacancy/123
-        // Ничего не меняем
-      }
-
+      if (prefix && path.startsWith(prefix + '/')) path = baseMap[key];
+      if (key === 'proposal') path = '/proposal';
+      else if (key === 'feedback') path = '/feedback';
       this.originalPath = path;
     }
 
     if (this.activeModal && this.activeModal !== key) {
-      if (!keepParentModal && !skipStack) {
-        this.close(this.activeModal);
-      } else if (keepParentModal) {
-        if (!skipStack) {
-          this.activeModalStack.push(this.activeModal);
-        }
-      }
+      if (!keepParentModal && !skipStack) this.close(this.activeModal);
+      else if (keepParentModal && !skipStack) this.activeModalStack.push(this.activeModal);
     }
-
     if (!keepParentModal && !skipStack) {
       this.activeModalStack = [];
       this.activeModal = null;
@@ -778,20 +607,18 @@ class ModalManager {
 
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return false;
-
-    if (keepParentModal) {
-      document.body.appendChild(overlay);
-    }
+    if (keepParentModal) document.body.appendChild(overlay);
 
     this.activeModal = key;
-
-    if (!skipStack) {
-      ScrollManager.lock();
-    }
+    if (!skipStack) ScrollManager.lock();
 
     if (this._openTimeout) clearTimeout(this._openTimeout);
     this._openTimeout = setTimeout(() => {
       this._openTimeout = null;
+      // [P0-FIX] Проверяем, что модалка всё ещё активна (race condition).
+      if (this.activeModal !== key) return;
+      if (!overlay.isConnected) return;
+
       overlay.classList.add('active');
       this._initFocusTrap(overlay);
       if (config.onOpen) config.onOpen(overlay);
@@ -799,16 +626,12 @@ class ModalManager {
       if (window.Services?.eventBus) {
         window.Services.eventBus.emit('modal:opened', { key, overlay });
       }
-
       if (!skipUrlUpdate) {
-        if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'feedback' || key === 'proposal' || key === 'vacancy') {
-          if (key === 'feedback' || key === 'proposal') {
-            this._updateUrl(key);
-          } else {
+        if (['project', 'news', 'category', 'project-category', 'feedback', 'proposal', 'vacancy'].includes(key)) {
+          if (key === 'feedback' || key === 'proposal') this._updateUrl(key);
+          else {
             const id = options.id || this.currentModalId || this.currentCategory || this.currentProjectCategory;
-            if (id) {
-              this._updateUrl(key, id);
-            }
+            if (id) this._updateUrl(key, id);
           }
         }
       }
@@ -821,108 +644,73 @@ class ModalManager {
     const config = this.modals.get(key);
     if (!config) return false;
     if (this.activeModal !== key) return false;
-
     const overlay = document.getElementById(config.overlayId);
     if (!overlay) return false;
 
     this._removeFocusTrap();
     overlay.classList.remove('active');
 
-    if (key === 'project' || key === 'news' || key === 'category' || key === 'project-category' || key === 'vacancy') {
-        this.currentModalId = null;
-        this.currentCategory = null;
-        this.currentProjectCategory = null;
+    if (['project', 'news', 'category', 'project-category', 'vacancy'].includes(key)) {
+      this.currentModalId = null;
+      this.currentCategory = null;
+      this.currentProjectCategory = null;
     }
 
     const previousModal = this.activeModalStack.length > 0 ? this.activeModalStack.pop() : null;
     if (previousModal) {
-        const parentId = this._getParentId(previousModal);
-        if (parentId) {
-            let basePath = `/${previousModal}`;
-            if (previousModal === 'news' || previousModal === 'project' || previousModal === 'vacancy') {
-                basePath += '/';
-            }
-            window.history.replaceState({ modal: previousModal, id: parentId }, '', basePath);
-        } else {
-            if (this.originalPath) {
-                window.history.replaceState({}, '', this.originalPath);
-            } else {
-                window.history.replaceState({}, '', '/');
-            }
-        }
-
-        ScrollManager.unlock();
-        this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
-        this.activeModal = previousModal;
+      const parentId = this._getParentId(previousModal);
+      if (parentId) {
+        let basePath = `/${previousModal}`;
+        if (['news', 'project', 'vacancy'].includes(previousModal)) basePath += '/';
+        window.history.replaceState({ modal: previousModal, id: parentId }, '', basePath);
+      } else {
+        if (this.originalPath) window.history.replaceState({}, '', this.originalPath);
+        else window.history.replaceState({}, '', '/');
+      }
+      ScrollManager.unlock();
+      this.open(previousModal, { keepParentModal: false, skipStack: true, skipUrlUpdate: true });
+      this.activeModal = previousModal;
     } else {
-        if (this.originalPath) {
-            window.history.replaceState({}, '', this.originalPath);
-            this.originalPath = null;
-        } else {
-            window.history.replaceState({}, '', '/');
-        }
-
-        if ((key === 'project' || key === 'project-category') && 
-            typeof window.initProjectsPage === 'function' && !window._projectsPageInitialized) {
-            setTimeout(() => {
-                window.initProjectsPage();
-            }, 50);
-        }
-
-        ScrollManager.unlock();
-        this.activeModal = null;
+      if (this.originalPath) {
+        window.history.replaceState({}, '', this.originalPath);
+        this.originalPath = null;
+      } else {
+        window.history.replaceState({}, '', '/');
+      }
+      if ((key === 'project' || key === 'project-category') && typeof window.initProjectsPage === 'function' && !window._projectsPageInitialized) {
+        setTimeout(() => window.initProjectsPage(), 50);
+      }
+      ScrollManager.unlock();
+      this.activeModal = null;
     }
 
-    if (config.onClose) {
-        config.onClose(overlay);
-    }
-    if (window.Services?.eventBus) {
-        window.Services.eventBus.emit('modal:closed', { key });
-    }
-
-    // ===== ДОБАВЛЕНО: снятие фокуса =====
-    if (document.activeElement && document.activeElement.blur) {
-        document.activeElement.blur();
-    }
-
+    if (config.onClose) config.onClose(overlay);
+    if (window.Services?.eventBus) window.Services.eventBus.emit('modal:closed', { key });
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     return true;
   }
 
   _getParentId(modalKey) {
     if (modalKey === 'category') return this.currentCategory;
     if (modalKey === 'project-category') return this.currentProjectCategory;
-    if (modalKey === 'news') return this.currentModalId;
-    if (modalKey === 'project') return this.currentModalId;
-    if (modalKey === 'vacancy') return this.currentModalId;
+    if (['news', 'project', 'vacancy'].includes(modalKey)) return this.currentModalId;
     return null;
   }
 
-  isOpen(key = null) {
-    return key ? this.activeModal === key : this.activeModal !== null;
-  }
-
-  closeAll() {
-    this.modals.forEach((_, key) => this.close(key));
-  }
+  isOpen(key = null) { return key ? this.activeModal === key : this.activeModal !== null; }
+  closeAll() { this.modals.forEach((_, key) => this.close(key)); }
 
   _initFocusTrap(overlay) {
     if (!overlay) return;
     this._removeFocusTrap();
-    const focusable = overlay.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
+    const focusable = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     if (focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     this._boundFocusTrapHandler = (e) => {
       if (e.key !== 'Tab') return;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', this._boundFocusTrapHandler);
   }
@@ -935,24 +723,18 @@ class ModalManager {
   }
 
   destroy() {
-    if (this._boundKeyHandler) {
-      document.removeEventListener('keydown', this._boundKeyHandler);
-      this._boundKeyHandler = null;
-    }
-    if (this._boundClickHandler) {
-      document.removeEventListener('click', this._boundClickHandler);
-      this._boundClickHandler = null;
-    }
-    if (this._boundOpenHandler) {
-      document.removeEventListener('click', this._boundOpenHandler);
-      this._boundOpenHandler = null;
+    if (this._boundKeyHandler) { document.removeEventListener('keydown', this._boundKeyHandler); this._boundKeyHandler = null; }
+    if (this._boundClickHandler) { document.removeEventListener('click', this._boundClickHandler); this._boundClickHandler = null; }
+    if (this._boundOpenHandler) { document.removeEventListener('click', this._boundOpenHandler); this._boundOpenHandler = null; }
+    // [P0-FIX] Снимаем popstate.
+    if (this._boundPopstateHandler) {
+      window.removeEventListener('popstate', this._boundPopstateHandler);
+      this._boundPopstateHandler = null;
     }
     this._removeFocusTrap();
 
     this.cleanupHandlers.forEach(({ overlay, clickHandler }) => {
-      if (overlay && clickHandler) {
-        overlay.removeEventListener('click', clickHandler);
-      }
+      if (overlay && clickHandler) overlay.removeEventListener('click', clickHandler);
     });
     this.cleanupHandlers.clear();
 
@@ -974,7 +756,6 @@ class ModalManager {
     this.currentProjectCategory = null;
     this.originalPath = null;
     this._handlersInitialized = false;
-    window.removeEventListener('popstate', this._popstateHandler);
   }
 }
 
